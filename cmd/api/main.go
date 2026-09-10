@@ -1,0 +1,100 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"go.internal/business-data-api/internal/config"
+	"go.internal/business-data-api/pkg/database"
+	"go.internal/business-data-api/pkg/jwt"
+	"go.internal/business-data-api/pkg/logger"
+
+	http_handler "go.internal/business-data-api/internal/handler/http"
+)
+
+func main() {
+	cfg := config.LoadConfig()
+	logger.SetupLogger(cfg.AppEnv)
+	jwt.InitJWT(cfg.JWTSecret, cfg.JWTTokenDuration)
+
+	slog.Info("Menjalankan API", "mode", cfg.AppEnv, "port", cfg.Port)
+
+	dbRegistry := database.NewDBRegistry()
+	ctx := context.Background()
+
+	pgMaxtop, err := database.NewPostgresPool(ctx, cfg.PostgresMaxtopURL)
+	if err != nil {
+		slog.Error("Gagal koneksi Postgres Maxtop", "error", err)
+		os.Exit(1)
+	}
+	msMaxtop, err := database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL)
+	if err != nil {
+		slog.Error("Gagal koneksi MSSQL Maxtop", "error", err)
+		os.Exit(1)
+	}
+	dbRegistry.Register("maxtop", pgMaxtop, msMaxtop)
+
+	pgPandora, err := database.NewPostgresPool(ctx, cfg.PostgresPandoraURL)
+	if err != nil {
+		slog.Error("Gagal koneksi Postgres Pandora", "error", err)
+		os.Exit(1)
+	}
+	msPandora, err := database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL)
+	if err != nil {
+		slog.Error("Gagal koneksi MSSQL Pandora", "error", err)
+		os.Exit(1)
+	}
+	dbRegistry.Register("pandora", pgPandora, msPandora)
+
+	pgToplink, err := database.NewPostgresPool(ctx, cfg.PostgresToplinkURL)
+	if err != nil {
+		slog.Error("Gagal koneksi Postgres Toplink", "error", err)
+		os.Exit(1)
+	}
+	msToplink, err := database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL)
+	if err != nil {
+		slog.Error("Gagal koneksi MSSQL Toplink", "error", err)
+		os.Exit(1)
+	}
+	dbRegistry.Register("toplink", pgToplink, msToplink)
+
+	activeModules, networkMatrix, roleMatrix := BuildModules(dbRegistry)
+	r := http_handler.SetupRoutes(cfg, networkMatrix, roleMatrix, activeModules...)
+
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Kesalahan server", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Sinyal berhenti diterima, mematikan server...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Server dipaksa mati", "error", err)
+	}
+
+	dbRegistry.CloseAll()
+	slog.Info("Server berhasil dimatikan dengan aman")
+}

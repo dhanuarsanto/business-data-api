@@ -1,0 +1,53 @@
+# 1. Binaries & Executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/tmp/
+/main
+
+# 2. Test, Profiling, & Coverage
+*.test
+*.prof
+*.out
+coverage.txt
+coverage.html
+
+# 3. Environment Variables (MUTLAK)
+.env
+.env.*
+!.env.example
+
+# 4. OS Specific Files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# 5. Air Watcher
+.air
+tmp/
+
+# 6. IDE / Editor
+.idea/
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/settings.json
+
+# 7. Logs & Temporary Data
+logs/
+*.log
+
+.serena
+grahify-out

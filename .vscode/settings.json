@@ -1,0 +1,13 @@
+{
+  "[go]": {
+    "editor.insertSpaces": false,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "golang.go",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "go.useLanguageServer": true,
+  "go.lintOnSave": "workspace",
+  "makefile.makePath": "C:\\Program Files (x86)\\GnuWin32\\bin\\make.exe"
+}
