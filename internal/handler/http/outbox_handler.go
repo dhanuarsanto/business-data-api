@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.internal/business-data-api/internal/config"
@@ -28,22 +29,71 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		dbSource = "postgres"
 	}
 
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	cursor, _ := strconv.ParseInt(r.URL.Query().Get("cursor"), 10, 64)
+	queryParams := r.URL.Query()
+
+	limit, _ := strconv.Atoi(queryParams.Get("limit"))
+	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
+
+	var startDatePtr, endDatePtr *time.Time
+	if val := queryParams.Get("startDate"); val != "" {
+		if t, err := time.Parse("2006-01-02", val); err == nil {
+			startDatePtr = &t
+		}
+	}
+	if val := queryParams.Get("endDate"); val != "" {
+		if t, err := time.Parse("2006-01-02", val); err == nil {
+			endDatePtr = &t
+		}
+	}
+
+	var resellerPtr *string
+	if val := queryParams.Get("reseller"); val != "" {
+		resellerPtr = &val
+	}
+
+	var penerimaPtr *string
+	if val := queryParams.Get("penerima"); val != "" {
+		penerimaPtr = &val
+	}
+
+	var tipePtr *string
+	if val := queryParams.Get("tipe"); val != "" {
+		tipePtr = &val
+	}
 
 	var statusPtr *int16
-	if statusStr := r.URL.Query().Get("status"); statusStr != "" {
+	if statusStr := queryParams.Get("status"); statusStr != "" {
 		if s, err := strconv.ParseInt(statusStr, 10, 16); err == nil {
 			val := int16(s)
 			statusPtr = &val
 		}
 	}
 
+	var replyToResellerPtr *bool
+	if val := queryParams.Get("replyToReseller"); val != "" {
+		b := val == "true" || val == "1"
+		replyToResellerPtr = &b
+	}
+
+	var perintahProviderPtr *bool
+	if val := queryParams.Get("perintahProvider"); val != "" {
+		b := val == "true" || val == "1"
+		perintahProviderPtr = &b
+	}
+
 	filter := domain.OutboxFilter{
-		Status: statusPtr,
-		Search: r.URL.Query().Get("search"),
-		Cursor: cursor,
-		Limit:  limit,
+		StartDate:        startDatePtr,
+		EndDate:          endDatePtr,
+		Limit:            limit,
+		Reseller:         resellerPtr,
+		Penerima:         penerimaPtr,
+		Tipe:             tipePtr,
+		Status:           statusPtr,
+		Pesan:            queryParams.Get("pesan"),
+		ReplyToReseller:  replyToResellerPtr,
+		PerintahProvider: perintahProviderPtr,
+		Search:           queryParams.Get("search"),
+		Cursor:           cursor,
 	}
 
 	data, nextCursor, err := h.usecase.GetOutbox(tenant, dbSource, filter)

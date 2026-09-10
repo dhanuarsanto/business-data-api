@@ -28,10 +28,18 @@ type Outbox struct {
 }
 
 type OutboxFilter struct {
-	Status *int16
-	Search string
-	Cursor int64
-	Limit  int
+	StartDate        *time.Time
+	EndDate          *time.Time
+	Limit            int
+	Reseller         *string
+	Penerima         *string
+	Tipe             *string
+	Status           *int16
+	Pesan            string
+	ReplyToReseller  *bool
+	PerintahProvider *bool
+	Search           string
+	Cursor           int64
 }
 
 type OutboxRepository interface {

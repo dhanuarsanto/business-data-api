@@ -25,10 +25,46 @@ func (r *outboxRepository) GetOutboxPG(tenant string, filter domain.OutboxFilter
 	args := []any{}
 	argID := 1
 
+	if filter.StartDate != nil {
+		query += fmt.Sprintf(` AND tgl_entri >= $%d`, argID)
+		args = append(args, *filter.StartDate)
+		argID++
+	}
+	if filter.EndDate != nil {
+		query += fmt.Sprintf(` AND tgl_entri <= $%d`, argID)
+		args = append(args, *filter.EndDate)
+		argID++
+	}
+	if filter.Reseller != nil {
+		query += fmt.Sprintf(` AND kode_reseller = $%d`, argID)
+		args = append(args, *filter.Reseller)
+		argID++
+	}
+	if filter.Penerima != nil {
+		query += fmt.Sprintf(` AND penerima = $%d`, argID)
+		args = append(args, *filter.Penerima)
+		argID++
+	}
+	if filter.Tipe != nil {
+		query += fmt.Sprintf(` AND tipe_penerima = $%d`, argID)
+		args = append(args, *filter.Tipe)
+		argID++
+	}
 	if filter.Status != nil {
 		query += fmt.Sprintf(` AND status = $%d`, argID)
 		args = append(args, *filter.Status)
 		argID++
+	}
+	if filter.Pesan != "" {
+		query += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
+		args = append(args, "%"+filter.Pesan+"%")
+		argID++
+	}
+	if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+		query += ` AND kode_reseller IS NOT NULL`
+	}
+	if filter.PerintahProvider != nil && *filter.PerintahProvider {
+		query += ` AND is_perintah = 1`
 	}
 	if filter.Search != "" {
 		query += fmt.Sprintf(` AND (pesan ILIKE $%d OR penerima ILIKE $%d)`, argID, argID)
@@ -78,9 +114,39 @@ func (r *outboxRepository) GetOutboxMS(tenant string, filter domain.OutboxFilter
 	query := `SELECT TOP (@limit) kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim FROM outbox WHERE 1=1`
 	namedArgs := []any{sql.Named("limit", filter.Limit)}
 
+	if filter.StartDate != nil {
+		query += ` AND tgl_entri >= @startDate`
+		namedArgs = append(namedArgs, sql.Named("startDate", *filter.StartDate))
+	}
+	if filter.EndDate != nil {
+		query += ` AND tgl_entri <= @endDate`
+		namedArgs = append(namedArgs, sql.Named("endDate", *filter.EndDate))
+	}
+	if filter.Reseller != nil {
+		query += ` AND kode_reseller = @reseller`
+		namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
+	}
+	if filter.Penerima != nil {
+		query += ` AND penerima = @penerima`
+		namedArgs = append(namedArgs, sql.Named("penerima", *filter.Penerima))
+	}
+	if filter.Tipe != nil {
+		query += ` AND tipe_penerima = @tipe`
+		namedArgs = append(namedArgs, sql.Named("tipe", *filter.Tipe))
+	}
 	if filter.Status != nil {
 		query += ` AND status = @status`
 		namedArgs = append(namedArgs, sql.Named("status", *filter.Status))
+	}
+	if filter.Pesan != "" {
+		query += ` AND pesan LIKE '%' + @pesan + '%'`
+		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
+	}
+	if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+		query += ` AND kode_reseller IS NOT NULL`
+	}
+	if filter.PerintahProvider != nil && *filter.PerintahProvider {
+		query += ` AND is_perintah = 1`
 	}
 	if filter.Search != "" {
 		query += ` AND (pesan LIKE '%' + @search + '%' OR penerima LIKE '%' + @search + '%')`
