@@ -96,16 +96,26 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Cursor:           cursor,
 	}
 
-	data, nextCursor, err := h.usecase.GetOutbox(tenant, dbSource, filter)
+	data, totalData, hasNextPage, err := h.usecase.GetOutbox(tenant, dbSource, filter)
 	if err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	var nextCursor int64
+	if len(data) > 0 {
+		nextCursor = data[len(data)-1].Kode
+	}
+
 	response.Success(w, map[string]any{
 		"trace_id": tCtx.TraceID,
 		"data":     data,
-		"cursor":   nextCursor,
+		"meta": response.CursorPaginationMeta{
+			TotalData:   totalData,
+			HasNextPage: hasNextPage,
+			HasPrevPage: filter.Cursor > 0,
+			NextCursor:  nextCursor,
+		},
 	})
 }
 

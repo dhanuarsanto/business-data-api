@@ -8,7 +8,7 @@ import (
 )
 
 type InboxUsecase interface {
-	GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int64, error)
+	GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error)
 	InsertInbox(tenant string, dbSource string, data domain.Inbox) error
 	UpdateInbox(tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error
 }
@@ -17,8 +17,8 @@ type inboxUsecase struct {
 	repo domain.InboxRepository
 }
 
-func (u *inboxUsecase) GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int64, error) {
-	if filter.Limit <= 0 || filter.Limit > 100 {
+func (u *inboxUsecase) GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
+	if filter.Limit <= 0 || filter.Limit > 500 {
 		filter.Limit = 10
 	}
 	switch dbSource {
@@ -27,7 +27,7 @@ func (u *inboxUsecase) GetInbox(tenant string, dbSource string, filter domain.In
 	case "mssql":
 		return u.repo.GetInboxMS(tenant, filter)
 	default:
-		return nil, 0, errors.New("sumber database tidak valid")
+		return nil, 0, false, errors.New("sumber database tidak valid")
 	}
 }
 

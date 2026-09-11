@@ -15,6 +15,13 @@ type JSONResponse struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+type CursorPaginationMeta struct {
+	TotalData   int   `json:"total_data"`
+	HasNextPage bool  `json:"has_next_page"`
+	HasPrevPage bool  `json:"has_prev_page"`
+	NextCursor  int64 `json:"next_cursor,omitempty"`
+}
+
 func Success(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -8,7 +8,7 @@ import (
 )
 
 type OutboxUsecase interface {
-	GetOutbox(tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int64, error)
+	GetOutbox(tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error)
 	InsertOutbox(tenant string, dbSource string, data domain.Outbox) error
 	UpdateOutbox(tenant string, dbSource string, kode int64, req dto.UpdateOutboxRequest) error
 }
@@ -17,8 +17,8 @@ type outboxUsecase struct {
 	repo domain.OutboxRepository
 }
 
-func (u *outboxUsecase) GetOutbox(tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int64, error) {
-	if filter.Limit <= 0 || filter.Limit > 100 {
+func (u *outboxUsecase) GetOutbox(tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
+	if filter.Limit <= 0 || filter.Limit > 500 {
 		filter.Limit = 10
 	}
 	switch dbSource {
@@ -27,7 +27,7 @@ func (u *outboxUsecase) GetOutbox(tenant string, dbSource string, filter domain.
 	case "mssql":
 		return u.repo.GetOutboxMS(tenant, filter)
 	default:
-		return nil, 0, errors.New("sumber database tidak valid")
+		return nil, 0, false, errors.New("sumber database tidak valid")
 	}
 }
 

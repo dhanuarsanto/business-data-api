@@ -15,182 +15,218 @@ type inboxRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int64, error) {
+func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
-		return nil, 0, fmt.Errorf("tenant tidak ditemukan")
+		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
 	}
 
-	query := `SELECT kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox WHERE 1=1`
+	whereClause := ` WHERE 1=1`
 	args := []any{}
 	argID := 1
 
 	if filter.StartDate != nil {
-		query += fmt.Sprintf(` AND tgl_entri >= $%d`, argID)
+		whereClause += fmt.Sprintf(` AND tgl_entri >= $%d`, argID)
 		args = append(args, *filter.StartDate)
 		argID++
 	}
 	if filter.EndDate != nil {
-		query += fmt.Sprintf(` AND tgl_entri <= $%d`, argID)
+		whereClause += fmt.Sprintf(` AND tgl_entri <= $%d`, argID)
 		args = append(args, *filter.EndDate)
 		argID++
 	}
 	if filter.Terminal != nil {
-		query += fmt.Sprintf(` AND kode_terminal = $%d`, argID)
+		whereClause += fmt.Sprintf(` AND kode_terminal = $%d`, argID)
 		args = append(args, *filter.Terminal)
 		argID++
 	}
 	if filter.Reseller != nil {
-		query += fmt.Sprintf(` AND kode_reseller = $%d`, argID)
+		whereClause += fmt.Sprintf(` AND kode_reseller = $%d`, argID)
 		args = append(args, *filter.Reseller)
 		argID++
 	}
 	if filter.Pengirim != nil {
-		query += fmt.Sprintf(` AND pengirim = $%d`, argID)
+		whereClause += fmt.Sprintf(` AND pengirim = $%d`, argID)
 		args = append(args, *filter.Pengirim)
 		argID++
 	}
 	if filter.Tipe != nil {
-		query += fmt.Sprintf(` AND tipe_pengirim = $%d`, argID)
+		whereClause += fmt.Sprintf(` AND tipe_pengirim = $%d`, argID)
 		args = append(args, *filter.Tipe)
 		argID++
 	}
 	if filter.Status != nil {
-		query += fmt.Sprintf(` AND status = $%d`, argID)
+		whereClause += fmt.Sprintf(` AND status = $%d`, argID)
 		args = append(args, *filter.Status)
 		argID++
 	}
 	if filter.Pesan != "" {
-		query += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
+		whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
 		args = append(args, "%"+filter.Pesan+"%")
 		argID++
 	}
 	if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
-		query += ` AND kode_reseller IS NOT NULL`
+		whereClause += ` AND kode_reseller IS NOT NULL`
 	}
 	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
-		query += ` AND is_jawaban = 1`
+		whereClause += ` AND is_jawaban = 1`
 	}
 	if filter.Search != "" {
-		query += fmt.Sprintf(` AND (pesan ILIKE $%d OR pengirim ILIKE $%d)`, argID, argID)
+		whereClause += fmt.Sprintf(` AND (pesan ILIKE $%d OR pengirim ILIKE $%d)`, argID, argID)
 		args = append(args, "%"+filter.Search+"%")
 		argID++
 	}
+
+	var totalData int
+	if whereClause == " WHERE 1=1" {
+		err := db.QueryRow(context.Background(), `SELECT COALESCE(reltuples::bigint, 0) FROM pg_class WHERE oid = 'inbox'::regclass`).Scan(&totalData)
+		if err != nil {
+			return nil, 0, false, err
+		}
+	} else {
+		err := db.QueryRow(context.Background(), `SELECT COUNT(*) FROM inbox`+whereClause, args...).Scan(&totalData)
+		if err != nil {
+			return nil, 0, false, err
+		}
+	}
+
 	if filter.Cursor > 0 {
-		query += fmt.Sprintf(` AND kode < $%d`, argID)
+		whereClause += fmt.Sprintf(` AND kode < $%d`, argID)
 		args = append(args, filter.Cursor)
 		argID++
 	}
 
+	query := `SELECT kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox` + whereClause
 	query += fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
-	args = append(args, filter.Limit)
+	args = append(args, filter.Limit+1)
 
 	rows, err := db.Query(context.Background(), query, args...)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 	defer rows.Close()
 
 	var inboxes []domain.Inbox
-	var lastCursor int64
 
 	for rows.Next() {
 		var i domain.Inbox
 		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.TglStatus, &i.Pengirim, &i.TipePengirim, &i.Penerima, &i.Pesan, &i.Status, &i.KodeTerminal, &i.KodeReseller, &i.KodeTransaksi, &i.IsJawaban, &i.ServiceCenter, &i.IsCs, &i.KodeJawabanCs, &i.Hash); err != nil {
-			return nil, 0, err
+			return nil, 0, false, err
 		}
 		inboxes = append(inboxes, i)
-		lastCursor = i.Kode
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 
-	return inboxes, lastCursor, nil
+	hasNextPage := len(inboxes) > filter.Limit
+	if hasNextPage {
+		inboxes = inboxes[:filter.Limit]
+	}
+
+	return inboxes, totalData, hasNextPage, nil
 }
 
-func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int64, error) {
+func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
-		return nil, 0, fmt.Errorf("tenant tidak ditemukan")
+		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
 	}
 
-	query := `SELECT TOP (@limit) kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox WHERE 1=1`
-	namedArgs := []any{sql.Named("limit", filter.Limit)}
+	whereClause := ` WHERE 1=1`
+	namedArgs := []any{}
 
 	if filter.StartDate != nil {
-		query += ` AND tgl_entri >= @startDate`
+		whereClause += ` AND tgl_entri >= @startDate`
 		namedArgs = append(namedArgs, sql.Named("startDate", *filter.StartDate))
 	}
 	if filter.EndDate != nil {
-		query += ` AND tgl_entri <= @endDate`
+		whereClause += ` AND tgl_entri <= @endDate`
 		namedArgs = append(namedArgs, sql.Named("endDate", *filter.EndDate))
 	}
 	if filter.Terminal != nil {
-		query += ` AND kode_terminal = @terminal`
+		whereClause += ` AND kode_terminal = @terminal`
 		namedArgs = append(namedArgs, sql.Named("terminal", *filter.Terminal))
 	}
 	if filter.Reseller != nil {
-		query += ` AND kode_reseller = @reseller`
+		whereClause += ` AND kode_reseller = @reseller`
 		namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
 	}
 	if filter.Pengirim != nil {
-		query += ` AND pengirim = @pengirim`
+		whereClause += ` AND pengirim = @pengirim`
 		namedArgs = append(namedArgs, sql.Named("pengirim", *filter.Pengirim))
 	}
 	if filter.Tipe != nil {
-		query += ` AND tipe_pengirim = @tipe`
+		whereClause += ` AND tipe_pengirim = @tipe`
 		namedArgs = append(namedArgs, sql.Named("tipe", *filter.Tipe))
 	}
 	if filter.Status != nil {
-		query += ` AND status = @status`
+		whereClause += ` AND status = @status`
 		namedArgs = append(namedArgs, sql.Named("status", *filter.Status))
 	}
 	if filter.Pesan != "" {
-		query += ` AND pesan LIKE '%' + @pesan + '%'`
+		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
 		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
 	}
 	if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
-		query += ` AND kode_reseller IS NOT NULL`
+		whereClause += ` AND kode_reseller IS NOT NULL`
 	}
 	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
-		query += ` AND is_jawaban = 1`
+		whereClause += ` AND is_jawaban = 1`
 	}
 	if filter.Search != "" {
-		query += ` AND (pesan LIKE '%' + @search + '%' OR pengirim LIKE '%' + @search + '%')`
+		whereClause += ` AND (pesan LIKE '%' + @search + '%' OR pengirim LIKE '%' + @search + '%')`
 		namedArgs = append(namedArgs, sql.Named("search", filter.Search))
 	}
+
+	var totalData int
+	if whereClause == " WHERE 1=1" {
+		err := db.QueryRowContext(context.Background(), `SELECT COALESCE(SUM(rows), 0) FROM sys.partitions WHERE object_id = OBJECT_ID('inbox') AND index_id IN (0, 1)`).Scan(&totalData)
+		if err != nil {
+			return nil, 0, false, err
+		}
+	} else {
+		err := db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM inbox`+whereClause, namedArgs...).Scan(&totalData)
+		if err != nil {
+			return nil, 0, false, err
+		}
+	}
+
 	if filter.Cursor > 0 {
-		query += ` AND kode < @cursor`
+		whereClause += ` AND kode < @cursor`
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	query += ` ORDER BY kode DESC`
+	namedArgs = append(namedArgs, sql.Named("limit", filter.Limit+1))
+	query := `SELECT TOP (@limit) kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox` + whereClause + ` ORDER BY kode DESC`
 
 	rows, err := db.Query(query, namedArgs...)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 	defer rows.Close()
 
 	var inboxes []domain.Inbox
-	var lastCursor int64
 
 	for rows.Next() {
 		var i domain.Inbox
 		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.TglStatus, &i.Pengirim, &i.TipePengirim, &i.Penerima, &i.Pesan, &i.Status, &i.KodeTerminal, &i.KodeReseller, &i.KodeTransaksi, &i.IsJawaban, &i.ServiceCenter, &i.IsCs, &i.KodeJawabanCs, &i.Hash); err != nil {
-			return nil, 0, err
+			return nil, 0, false, err
 		}
 		inboxes = append(inboxes, i)
-		lastCursor = i.Kode
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 
-	return inboxes, lastCursor, nil
+	hasNextPage := len(inboxes) > filter.Limit
+	if hasNextPage {
+		inboxes = inboxes[:filter.Limit]
+	}
+
+	return inboxes, totalData, hasNextPage, nil
 }
 
 func (r *inboxRepository) InsertPG(tenant string, data domain.Inbox) error {

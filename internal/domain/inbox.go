@@ -42,8 +42,8 @@ type InboxFilter struct {
 }
 
 type InboxRepository interface {
-	GetInboxPG(tenant string, filter InboxFilter) ([]Inbox, int64, error)
-	GetInboxMS(tenant string, filter InboxFilter) ([]Inbox, int64, error)
+	GetInboxPG(tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
+	GetInboxMS(tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
 	InsertPG(tenant string, data Inbox) error
 	InsertMS(tenant string, data Inbox) error
 	UpdatePG(tenant string, kode int64, req dto.UpdateInboxRequest) error

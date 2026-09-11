@@ -43,8 +43,8 @@ type OutboxFilter struct {
 }
 
 type OutboxRepository interface {
-	GetOutboxPG(tenant string, filter OutboxFilter) ([]Outbox, int64, error)
-	GetOutboxMS(tenant string, filter OutboxFilter) ([]Outbox, int64, error)
+	GetOutboxPG(tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
+	GetOutboxMS(tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
 	InsertPG(tenant string, data Outbox) error
 	InsertMS(tenant string, data Outbox) error
 	UpdatePG(tenant string, kode int64, req dto.UpdateOutboxRequest) error
