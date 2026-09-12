@@ -119,6 +119,7 @@ func (h *AuthHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix 
 	r.Route("/api/v1/{tenant}/auth/users", func(users chi.Router) {
 		users.Use(api_middleware.RequireToken())
 		users.Use(api_middleware.RequireRole(roleMatrix["ManageUsers"]...))
+		users.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
 		users.Post("/", h.CreateUser)
 		users.Put("/{username}", h.UpdateUser)
 	})
