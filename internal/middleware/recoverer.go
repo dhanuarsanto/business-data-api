@@ -17,7 +17,7 @@ func PanicRecoverer() func(http.Handler) http.Handler {
 				if err := recover(); err != nil {
 					tCtx := logger.GetTraceContext(r.Context())
 					stack := string(debug.Stack())
-					slog.Error("System Panic / Crash", "trace_id", tCtx.TraceID, "error", fmt.Sprintf("%v", err), "stack", stack)
+					slog.Error("System Panic / Crash", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "error", fmt.Sprintf("%v", err), "stack", stack)
 					response.Error(w, r, http.StatusInternalServerError, "Terjadi kesalahan sistem yang fatal")
 				}
 			}()

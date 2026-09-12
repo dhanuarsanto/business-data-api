@@ -96,7 +96,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Cursor:           cursor,
 	}
 
-	data, totalData, hasNextPage, err := h.usecase.GetOutbox(tenant, dbSource, filter)
+	data, totalData, hasNextPage, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
 	if err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -107,7 +107,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		nextCursor = data[len(data)-1].Kode
 	}
 
-	response.Success(w, map[string]any{
+	response.Success(w, r, map[string]any{
 		"trace_id": tCtx.TraceID,
 		"data":     data,
 		"meta": response.CursorPaginationMeta{
@@ -151,11 +151,11 @@ func (h *OutboxHandler) InsertOutbox(w http.ResponseWriter, r *http.Request) {
 		CtrKirim:      payload.CtrKirim,
 	}
 
-	if err := h.usecase.InsertOutbox(tenant, dbSource, data); err != nil {
+	if err := h.usecase.InsertOutbox(r.Context(), tenant, dbSource, data); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
@@ -179,11 +179,11 @@ func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.UpdateOutbox(tenant, dbSource, kode, payload); err != nil {
+	if err := h.usecase.UpdateOutbox(r.Context(), tenant, dbSource, kode, payload); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func NewOutboxHandler(usecase usecase.OutboxUsecase) *OutboxHandler {

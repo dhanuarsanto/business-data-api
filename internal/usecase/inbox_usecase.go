@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 
 	"go.internal/business-data-api/internal/domain"
@@ -8,46 +9,46 @@ import (
 )
 
 type InboxUsecase interface {
-	GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error)
-	InsertInbox(tenant string, dbSource string, data domain.Inbox) error
-	UpdateInbox(tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error
+	GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error)
+	InsertInbox(ctx context.Context, tenant string, dbSource string, data domain.Inbox) error
+	UpdateInbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error
 }
 
 type inboxUsecase struct {
 	repo domain.InboxRepository
 }
 
-func (u *inboxUsecase) GetInbox(tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
+func (u *inboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
 	if filter.Limit <= 0 || filter.Limit > 500 {
 		filter.Limit = 10
 	}
 	switch dbSource {
 	case "postgres":
-		return u.repo.GetInboxPG(tenant, filter)
+		return u.repo.GetInboxPG(ctx, tenant, filter)
 	case "mssql":
-		return u.repo.GetInboxMS(tenant, filter)
+		return u.repo.GetInboxMS(ctx, tenant, filter)
 	default:
 		return nil, 0, false, errors.New("sumber database tidak valid")
 	}
 }
 
-func (u *inboxUsecase) InsertInbox(tenant string, dbSource string, data domain.Inbox) error {
+func (u *inboxUsecase) InsertInbox(ctx context.Context, tenant string, dbSource string, data domain.Inbox) error {
 	switch dbSource {
 	case "postgres":
-		return u.repo.InsertPG(tenant, data)
+		return u.repo.InsertPG(ctx, tenant, data)
 	case "mssql":
-		return u.repo.InsertMS(tenant, data)
+		return u.repo.InsertMS(ctx, tenant, data)
 	default:
 		return errors.New("sumber database tidak valid")
 	}
 }
 
-func (u *inboxUsecase) UpdateInbox(tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error {
+func (u *inboxUsecase) UpdateInbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error {
 	switch dbSource {
 	case "postgres":
-		return u.repo.UpdatePG(tenant, kode, req)
+		return u.repo.UpdatePG(ctx, tenant, kode, req)
 	case "mssql":
-		return u.repo.UpdateMS(tenant, kode, req)
+		return u.repo.UpdateMS(ctx, tenant, kode, req)
 	default:
 		return errors.New("sumber database tidak valid")
 	}

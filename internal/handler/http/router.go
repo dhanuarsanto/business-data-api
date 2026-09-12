@@ -26,7 +26,6 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 
 	r.Use(api_middleware.PanicRecoverer())
 	r.Use(api_middleware.SecurityTracer())
-	r.Use(api_middleware.NewRateLimiter(50.0, 100).Middleware())
 
 	r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
 		http.ServeFile(w, req, "docs/swagger.yaml")
@@ -36,13 +35,25 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 		httpSwagger.URL("/docs/swagger.yaml"),
 	))
 
-	protected := r.With(
+	protectedApiKey := r.With(
 		api_middleware.APIKeyValidator(),
+		api_middleware.NewRateLimiter(50.0, 100).Middleware(),
+	)
+
+	protectedApiKey.NotFound(func(w http.ResponseWriter, req *http.Request) {
+		response.Error(w, req, http.StatusNotFound, "Endpoint tidak ditemukan")
+	})
+
+	protectedApiKey.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
+		response.Error(w, req, http.StatusMethodNotAllowed, "Method HTTP tidak diizinkan pada endpoint ini")
+	})
+
+	protected := protectedApiKey.With(
 		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix),
 	)
 
 	protected.Get("/health", func(w http.ResponseWriter, req *http.Request) {
-		response.Success(w, map[string]string{
+		response.Success(w, req, map[string]string{
 			"status": "API berjalan dengan normal!",
 		})
 	})

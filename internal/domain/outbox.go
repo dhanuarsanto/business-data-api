@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"go.internal/business-data-api/internal/dto"
@@ -43,10 +44,10 @@ type OutboxFilter struct {
 }
 
 type OutboxRepository interface {
-	GetOutboxPG(tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
-	GetOutboxMS(tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
-	InsertPG(tenant string, data Outbox) error
-	InsertMS(tenant string, data Outbox) error
-	UpdatePG(tenant string, kode int64, req dto.UpdateOutboxRequest) error
-	UpdateMS(tenant string, kode int64, req dto.UpdateOutboxRequest) error
+	GetOutboxPG(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
+	GetOutboxMS(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
+	InsertPG(ctx context.Context, tenant string, data Outbox) error
+	InsertMS(ctx context.Context, tenant string, data Outbox) error
+	UpdatePG(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
+	UpdateMS(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
 }

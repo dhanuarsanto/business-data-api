@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type User struct {
 	UserID   int    `json:"user_id,omitempty"`
 	Username string `json:"username"`
@@ -8,10 +10,10 @@ type User struct {
 }
 
 type UserRepository interface {
-	GetByUsernamePG(tenant string, username string) (User, error)
-	GetByUsernameMS(tenant string, username string) (User, error)
-	InsertPG(tenant string, data User) error
-	InsertMS(tenant string, data User) error
-	UpdatePG(tenant string, username string, data User) error
-	UpdateMS(tenant string, username string, data User) error
+	GetByUsernamePG(ctx context.Context, tenant string, username string) (User, error)
+	GetByUsernameMS(ctx context.Context, tenant string, username string) (User, error)
+	InsertPG(ctx context.Context, tenant string, data User) error
+	InsertMS(ctx context.Context, tenant string, data User) error
+	UpdatePG(ctx context.Context, tenant string, username string, data User) error
+	UpdateMS(ctx context.Context, tenant string, username string, data User) error
 }

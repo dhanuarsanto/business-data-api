@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"go.internal/business-data-api/internal/dto"
@@ -42,10 +43,10 @@ type InboxFilter struct {
 }
 
 type InboxRepository interface {
-	GetInboxPG(tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
-	GetInboxMS(tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
-	InsertPG(tenant string, data Inbox) error
-	InsertMS(tenant string, data Inbox) error
-	UpdatePG(tenant string, kode int64, req dto.UpdateInboxRequest) error
-	UpdateMS(tenant string, kode int64, req dto.UpdateInboxRequest) error
+	GetInboxPG(ctx context.Context, tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
+	GetInboxMS(ctx context.Context, tenant string, filter InboxFilter) ([]Inbox, int, bool, error)
+	InsertPG(ctx context.Context, tenant string, data Inbox) error
+	InsertMS(ctx context.Context, tenant string, data Inbox) error
+	UpdatePG(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error
+	UpdateMS(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error
 }

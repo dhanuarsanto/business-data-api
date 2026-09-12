@@ -34,9 +34,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
-	user, err := h.authUsecase.Login(tenant, dbSource, payload.Username, payload.Password)
+	user, err := h.authUsecase.Login(r.Context(), tenant, dbSource, payload.Username, payload.Password)
 	if err != nil {
-		slog.Warn("Security Alert - Bruteforce / Invalid Login", "trace_id", tCtx.TraceID, "ip", tCtx.IP, "username", payload.Username)
+		slog.Warn("Security Alert - Bruteforce / Invalid Login", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "username", payload.Username)
 		response.Error(w, r, http.StatusUnauthorized, "Username atau password salah")
 		return
 	}
@@ -61,7 +61,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	})
-	response.Success(w, map[string]any{
+	response.Success(w, r, map[string]any{
 		"username": user.Username,
 		"rules":    user.Rules,
 		"token":    token,
@@ -80,11 +80,11 @@ func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
-	if err := h.authUsecase.CreateUser(tenant, dbSource, domain.User{Username: payload.Username, Password: payload.Password, Rules: payload.Rules}); err != nil {
+	if err := h.authUsecase.CreateUser(r.Context(), tenant, dbSource, domain.User{Username: payload.Username, Password: payload.Password, Rules: payload.Rules}); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembuatan user sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembuatan user sukses"})
 }
 
 func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -100,11 +100,11 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
-	if err := h.authUsecase.UpdateUser(tenant, dbSource, username, domain.User{Password: payload.Password, Rules: payload.Rules}); err != nil {
+	if err := h.authUsecase.UpdateUser(r.Context(), tenant, dbSource, username, domain.User{Password: payload.Password, Rules: payload.Rules}); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembaruan user sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembaruan user sukses"})
 }
 
 func NewAuthHandler(authUsecase usecase.AuthUsecase, networkMatrix map[string]bool) *AuthHandler {

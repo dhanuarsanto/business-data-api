@@ -15,7 +15,7 @@ type inboxRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
+func (r *inboxRepository) GetInboxPG(ctx context.Context, tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
@@ -79,12 +79,12 @@ func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) (
 
 	var totalData int
 	if whereClause == " WHERE 1=1" {
-		err := db.QueryRow(context.Background(), `SELECT COALESCE(reltuples::bigint, 0) FROM pg_class WHERE oid = 'inbox'::regclass`).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COALESCE(reltuples::bigint, 0) FROM pg_class WHERE oid = 'inbox'::regclass`).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRow(context.Background(), `SELECT COUNT(*) FROM inbox`+whereClause, args...).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COUNT(*) FROM inbox`+whereClause, args...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -100,7 +100,7 @@ func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) (
 	query += fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
 	args = append(args, filter.Limit+1)
 
-	rows, err := db.Query(context.Background(), query, args...)
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -128,7 +128,7 @@ func (r *inboxRepository) GetInboxPG(tenant string, filter domain.InboxFilter) (
 	return inboxes, totalData, hasNextPage, nil
 }
 
-func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
+func (r *inboxRepository) GetInboxMS(ctx context.Context, tenant string, filter domain.InboxFilter) ([]domain.Inbox, int, bool, error) {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
@@ -182,12 +182,12 @@ func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) (
 
 	var totalData int
 	if whereClause == " WHERE 1=1" {
-		err := db.QueryRowContext(context.Background(), `SELECT COALESCE(SUM(rows), 0) FROM sys.partitions WHERE object_id = OBJECT_ID('inbox') AND index_id IN (0, 1)`).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COALESCE(SUM(rows), 0) FROM sys.partitions WHERE object_id = OBJECT_ID('inbox') AND index_id IN (0, 1)`).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM inbox`+whereClause, namedArgs...).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM inbox`+whereClause, namedArgs...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -201,7 +201,7 @@ func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) (
 	namedArgs = append(namedArgs, sql.Named("limit", filter.Limit+1))
 	query := `SELECT TOP (@limit) kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox` + whereClause + ` ORDER BY kode DESC`
 
-	rows, err := db.Query(query, namedArgs...)
+	rows, err := db.QueryContext(ctx, query, namedArgs...)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -229,25 +229,25 @@ func (r *inboxRepository) GetInboxMS(tenant string, filter domain.InboxFilter) (
 	return inboxes, totalData, hasNextPage, nil
 }
 
-func (r *inboxRepository) InsertPG(tenant string, data domain.Inbox) error {
+func (r *inboxRepository) InsertPG(ctx context.Context, tenant string, data domain.Inbox) error {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
 	}
-	_, err := db.Exec(context.Background(), `INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`, time.Now(), data.Pengirim, data.TipePengirim, data.Penerima, data.Pesan, data.Status, data.KodeTerminal, data.KodeReseller, data.KodeTransaksi, data.IsJawaban, data.ServiceCenter, data.IsCs, data.KodeJawabanCs, data.Hash)
+	_, err := db.Exec(ctx, `INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`, time.Now(), data.Pengirim, data.TipePengirim, data.Penerima, data.Pesan, data.Status, data.KodeTerminal, data.KodeReseller, data.KodeTransaksi, data.IsJawaban, data.ServiceCenter, data.IsCs, data.KodeJawabanCs, data.Hash)
 	return err
 }
 
-func (r *inboxRepository) InsertMS(tenant string, data domain.Inbox) error {
+func (r *inboxRepository) InsertMS(ctx context.Context, tenant string, data domain.Inbox) error {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
 	}
-	_, err := db.Exec(`INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES (@tgl_entri, @pengirim, @tipe_pengirim, @penerima, @pesan, @status, @kode_terminal, @kode_reseller, @kode_transaksi, @is_jawaban, @service_center, @is_cs, @kode_jawaban_cs, @hash)`, sql.Named("tgl_entri", time.Now()), sql.Named("pengirim", data.Pengirim), sql.Named("tipe_pengirim", data.TipePengirim), sql.Named("penerima", data.Penerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("kode_reseller", data.KodeReseller), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("is_jawaban", data.IsJawaban), sql.Named("service_center", data.ServiceCenter), sql.Named("is_cs", data.IsCs), sql.Named("kode_jawaban_cs", data.KodeJawabanCs), sql.Named("hash", data.Hash))
+	_, err := db.ExecContext(ctx, `INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES (@tgl_entri, @pengirim, @tipe_pengirim, @penerima, @pesan, @status, @kode_terminal, @kode_reseller, @kode_transaksi, @is_jawaban, @service_center, @is_cs, @kode_jawaban_cs, @hash)`, sql.Named("tgl_entri", time.Now()), sql.Named("pengirim", data.Pengirim), sql.Named("tipe_pengirim", data.TipePengirim), sql.Named("penerima", data.Penerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("kode_reseller", data.KodeReseller), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("is_jawaban", data.IsJawaban), sql.Named("service_center", data.ServiceCenter), sql.Named("is_cs", data.IsCs), sql.Named("kode_jawaban_cs", data.KodeJawabanCs), sql.Named("hash", data.Hash))
 	return err
 }
 
-func (r *inboxRepository) UpdatePG(tenant string, kode int64, req dto.UpdateInboxRequest) error {
+func (r *inboxRepository) UpdatePG(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
@@ -268,11 +268,11 @@ func (r *inboxRepository) UpdatePG(tenant string, kode int64, req dto.UpdateInbo
 		kode_jawaban_cs = COALESCE($13, kode_jawaban_cs),
 		hash = COALESCE($14, hash)
 	WHERE kode = $15`
-	_, err := db.Exec(context.Background(), query, time.Now(), req.Pesan, req.Status, req.Pengirim, req.TipePengirim, req.Penerima, req.KodeTerminal, req.KodeReseller, req.KodeTransaksi, req.IsJawaban, req.ServiceCenter, req.IsCs, req.KodeJawabanCs, req.Hash, kode)
+	_, err := db.Exec(ctx, query, time.Now(), req.Pesan, req.Status, req.Pengirim, req.TipePengirim, req.Penerima, req.KodeTerminal, req.KodeReseller, req.KodeTransaksi, req.IsJawaban, req.ServiceCenter, req.IsCs, req.KodeJawabanCs, req.Hash, kode)
 	return err
 }
 
-func (r *inboxRepository) UpdateMS(tenant string, kode int64, req dto.UpdateInboxRequest) error {
+func (r *inboxRepository) UpdateMS(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
@@ -293,7 +293,7 @@ func (r *inboxRepository) UpdateMS(tenant string, kode int64, req dto.UpdateInbo
 		kode_jawaban_cs = COALESCE(@kode_jawaban_cs, kode_jawaban_cs),
 		hash = COALESCE(@hash, hash)
 	WHERE kode = @kode`
-	_, err := db.Exec(query,
+	_, err := db.ExecContext(ctx, query,
 		sql.Named("tgl_status", time.Now()),
 		sql.Named("pesan", req.Pesan),
 		sql.Named("status", req.Status),

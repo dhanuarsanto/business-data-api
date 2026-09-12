@@ -103,7 +103,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		Cursor:              cursor,
 	}
 
-	data, totalData, hasNextPage, err := h.usecase.GetInbox(tenant, dbSource, filter)
+	data, totalData, hasNextPage, err := h.usecase.GetInbox(r.Context(), tenant, dbSource, filter)
 	if err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
@@ -114,7 +114,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		nextCursor = data[len(data)-1].Kode
 	}
 
-	response.Success(w, map[string]any{
+	response.Success(w, r, map[string]any{
 		"trace_id": tCtx.TraceID,
 		"data":     data,
 		"meta": response.CursorPaginationMeta{
@@ -169,11 +169,11 @@ func (h *InboxHandler) InsertInbox(w http.ResponseWriter, r *http.Request) {
 		Hash:          payload.Hash,
 	}
 
-	if err := h.usecase.InsertInbox(tenant, dbSource, data); err != nil {
+	if err := h.usecase.InsertInbox(r.Context(), tenant, dbSource, data); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
@@ -197,11 +197,11 @@ func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.usecase.UpdateInbox(tenant, dbSource, kode, payload); err != nil {
+	if err := h.usecase.UpdateInbox(r.Context(), tenant, dbSource, kode, payload); err != nil {
 		response.Error(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.Success(w, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func NewInboxHandler(usecase usecase.InboxUsecase) *InboxHandler {

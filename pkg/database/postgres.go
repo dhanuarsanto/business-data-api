@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"go.internal/business-data-api/pkg/logger"
 )
 
 type SlogLogger struct{}
@@ -20,10 +21,12 @@ func (l *SlogLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 			ms = execTime.Milliseconds()
 		}
 
+		tCtx := logger.GetTraceContext(ctx)
+
 		if ms > 500 {
-			slog.Warn("Slow SQL Query", "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
+			slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
 		} else {
-			slog.Info("SQL Query Executed", "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
+			slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
 		}
 	}
 }

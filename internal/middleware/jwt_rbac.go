@@ -54,7 +54,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 			claims, ok := r.Context().Value(claimsKey).(map[string]any)
 			if !ok {
 				tCtx := logger.GetTraceContext(r.Context())
-				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "ip", tCtx.IP, "role", claims["rules"], "path", tCtx.Path)
+				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
 				response.Error(w, r, http.StatusForbidden, "Gagal mengidentifikasi role")
 				return
 			}
@@ -62,14 +62,14 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 			userRole, ok := claims["rules"].(string)
 			if !ok {
 				tCtx := logger.GetTraceContext(r.Context())
-				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "ip", tCtx.IP, "role", claims["rules"], "path", tCtx.Path)
+				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
 				response.Error(w, r, http.StatusForbidden, "Role tidak ditemukan pada token")
 				return
 			}
 
 			if !slices.Contains(allowedRoles, userRole) {
 				tCtx := logger.GetTraceContext(r.Context())
-				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "ip", tCtx.IP, "role", claims["rules"], "path", tCtx.Path)
+				slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
 				response.Error(w, r, http.StatusForbidden, "Anda tidak memiliki akses ke resource ini")
 				return
 			}

@@ -15,7 +15,7 @@ type outboxRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *outboxRepository) GetOutboxPG(tenant string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
+func (r *outboxRepository) GetOutboxPG(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
@@ -74,12 +74,12 @@ func (r *outboxRepository) GetOutboxPG(tenant string, filter domain.OutboxFilter
 
 	var totalData int
 	if whereClause == " WHERE 1=1" {
-		err := db.QueryRow(context.Background(), `SELECT COALESCE(reltuples::bigint, 0) FROM pg_class WHERE oid = 'outbox'::regclass`).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COALESCE(reltuples::bigint, 0) FROM pg_class WHERE oid = 'outbox'::regclass`).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRow(context.Background(), `SELECT COUNT(*) FROM outbox`+whereClause, args...).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COUNT(*) FROM outbox`+whereClause, args...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -95,7 +95,7 @@ func (r *outboxRepository) GetOutboxPG(tenant string, filter domain.OutboxFilter
 	query += fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
 	args = append(args, filter.Limit+1)
 
-	rows, err := db.Query(context.Background(), query, args...)
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -123,7 +123,7 @@ func (r *outboxRepository) GetOutboxPG(tenant string, filter domain.OutboxFilter
 	return outboxes, totalData, hasNextPage, nil
 }
 
-func (r *outboxRepository) GetOutboxMS(tenant string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
+func (r *outboxRepository) GetOutboxMS(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return nil, 0, false, fmt.Errorf("tenant tidak ditemukan")
@@ -173,12 +173,12 @@ func (r *outboxRepository) GetOutboxMS(tenant string, filter domain.OutboxFilter
 
 	var totalData int
 	if whereClause == " WHERE 1=1" {
-		err := db.QueryRowContext(context.Background(), `SELECT COALESCE(SUM(rows), 0) FROM sys.partitions WHERE object_id = OBJECT_ID('outbox') AND index_id IN (0, 1)`).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COALESCE(SUM(rows), 0) FROM sys.partitions WHERE object_id = OBJECT_ID('outbox') AND index_id IN (0, 1)`).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM outbox`+whereClause, namedArgs...).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM outbox`+whereClause, namedArgs...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -192,7 +192,7 @@ func (r *outboxRepository) GetOutboxMS(tenant string, filter domain.OutboxFilter
 	namedArgs = append(namedArgs, sql.Named("limit", filter.Limit+1))
 	query := `SELECT TOP (@limit) kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim FROM outbox` + whereClause + ` ORDER BY kode DESC`
 
-	rows, err := db.Query(query, namedArgs...)
+	rows, err := db.QueryContext(ctx, query, namedArgs...)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -220,27 +220,27 @@ func (r *outboxRepository) GetOutboxMS(tenant string, filter domain.OutboxFilter
 	return outboxes, totalData, hasNextPage, nil
 }
 
-func (r *outboxRepository) InsertPG(tenant string, data domain.Outbox) error {
+func (r *outboxRepository) InsertPG(ctx context.Context, tenant string, data domain.Outbox) error {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
 	}
 	query := `INSERT INTO outbox (tgl_entri, penerima, tipe_penerima, pesan, status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
-	_, err := db.Exec(context.Background(), query, time.Now(), data.Penerima, data.TipePenerima, data.Pesan, data.Status, data.KodeInbox, data.KodeTransaksi, data.KodeReseller, data.BebasBiaya, data.IsPerintah, data.KodeModul, data.Prioritas, data.ModulProses, data.Pengirim, data.KodeTerminal, data.CtrKirim)
+	_, err := db.Exec(ctx, query, time.Now(), data.Penerima, data.TipePenerima, data.Pesan, data.Status, data.KodeInbox, data.KodeTransaksi, data.KodeReseller, data.BebasBiaya, data.IsPerintah, data.KodeModul, data.Prioritas, data.ModulProses, data.Pengirim, data.KodeTerminal, data.CtrKirim)
 	return err
 }
 
-func (r *outboxRepository) InsertMS(tenant string, data domain.Outbox) error {
+func (r *outboxRepository) InsertMS(ctx context.Context, tenant string, data domain.Outbox) error {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
 	}
 	query := `INSERT INTO outbox (tgl_entri, penerima, tipe_penerima, pesan, status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim) VALUES (@tgl_entri, @penerima, @tipe_penerima, @pesan, @status, @kode_inbox, @kode_transaksi, @kode_reseller, @bebas_biaya, @is_perintah, @kode_modul, @prioritas, @modul_proses, @pengirim, @kode_terminal, @ctr_kirim)`
-	_, err := db.Exec(query, sql.Named("tgl_entri", time.Now()), sql.Named("penerima", data.Penerima), sql.Named("tipe_penerima", data.TipePenerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_inbox", data.KodeInbox), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("kode_reseller", data.KodeReseller), sql.Named("bebas_biaya", data.BebasBiaya), sql.Named("is_perintah", data.IsPerintah), sql.Named("kode_modul", data.KodeModul), sql.Named("prioritas", data.Prioritas), sql.Named("modul_proses", data.ModulProses), sql.Named("pengirim", data.Pengirim), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("ctr_kirim", data.CtrKirim))
+	_, err := db.ExecContext(ctx, query, sql.Named("tgl_entri", time.Now()), sql.Named("penerima", data.Penerima), sql.Named("tipe_penerima", data.TipePenerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_inbox", data.KodeInbox), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("kode_reseller", data.KodeReseller), sql.Named("bebas_biaya", data.BebasBiaya), sql.Named("is_perintah", data.IsPerintah), sql.Named("kode_modul", data.KodeModul), sql.Named("prioritas", data.Prioritas), sql.Named("modul_proses", data.ModulProses), sql.Named("pengirim", data.Pengirim), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("ctr_kirim", data.CtrKirim))
 	return err
 }
 
-func (r *outboxRepository) UpdatePG(tenant string, kode int64, req dto.UpdateOutboxRequest) error {
+func (r *outboxRepository) UpdatePG(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error {
 	db := r.dbRegistry.Postgres(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
@@ -263,11 +263,11 @@ func (r *outboxRepository) UpdatePG(tenant string, kode int64, req dto.UpdateOut
 		kode_terminal = COALESCE($15, kode_terminal),
 		ctr_kirim = COALESCE($16, ctr_kirim)
 	WHERE kode = $17`
-	_, err := db.Exec(context.Background(), query, time.Now(), req.Penerima, req.TipePenerima, req.Pesan, req.Status, req.BebasBiaya, req.KodeInbox, req.KodeTransaksi, req.KodeReseller, req.IsPerintah, req.KodeModul, req.Prioritas, req.ModulProses, req.Pengirim, req.KodeTerminal, req.CtrKirim, kode)
+	_, err := db.Exec(ctx, query, time.Now(), req.Penerima, req.TipePenerima, req.Pesan, req.Status, req.BebasBiaya, req.KodeInbox, req.KodeTransaksi, req.KodeReseller, req.IsPerintah, req.KodeModul, req.Prioritas, req.ModulProses, req.Pengirim, req.KodeTerminal, req.CtrKirim, kode)
 	return err
 }
 
-func (r *outboxRepository) UpdateMS(tenant string, kode int64, req dto.UpdateOutboxRequest) error {
+func (r *outboxRepository) UpdateMS(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error {
 	db := r.dbRegistry.MSSQL(tenant)
 	if db == nil {
 		return fmt.Errorf("tenant tidak ditemukan")
@@ -290,7 +290,7 @@ func (r *outboxRepository) UpdateMS(tenant string, kode int64, req dto.UpdateOut
 		kode_terminal = COALESCE(@kode_terminal, kode_terminal),
 		ctr_kirim = COALESCE(@ctr_kirim, ctr_kirim)
 	WHERE kode = @kode`
-	_, err := db.Exec(query,
+	_, err := db.ExecContext(ctx, query,
 		sql.Named("tgl_status", time.Now()),
 		sql.Named("penerima", req.Penerima),
 		sql.Named("tipe_penerima", req.TipePenerima),

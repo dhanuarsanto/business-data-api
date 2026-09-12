@@ -22,7 +22,10 @@ type CursorPaginationMeta struct {
 	NextCursor  int64 `json:"next_cursor,omitempty"`
 }
 
-func Success(w http.ResponseWriter, data any) {
+func Success(w http.ResponseWriter, r *http.Request, data any) {
+	tCtx := logger.GetTraceContext(r.Context())
+	slog.Info("API Success", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", http.StatusOK)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(JSONResponse{
@@ -33,7 +36,7 @@ func Success(w http.ResponseWriter, data any) {
 
 func Error(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	tCtx := logger.GetTraceContext(r.Context())
-	slog.Error("API Error", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "status", statusCode, "error", message, "path", tCtx.Path)
+	slog.Error("API Error", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", statusCode, "error", message)
 
 	env := os.Getenv("APP_ENV")
 	if env != "development" {
