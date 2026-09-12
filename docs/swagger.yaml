@@ -1,15 +1,7 @@
 openapi: 3.0.0
 info:
   title: Data API Gateway
-  description: |
-    API Gateway multi-tenant (Maxtop, Pandora, Toplink) dengan dukungan Dual-DB (Postgres & MSSQL) dan Keyset Pagination.
-
-    ### Cara Menggunakan Filter pada Endpoint GET Inbox & Outbox:
-    - **Tanggal (startDate & endDate)**: Menggunakan format `YYYY-MM-DD` (contoh: `2026-09-01`). Memfilter record berdasarkan `tgl_entri`.
-    - **Text Search (reseller, pengirim, penerima, pesan)**: Pencarian string secara fleksibel. Filter `pesan` menggunakan pencarian kata kunci (`LIKE`/`ILIKE`).
-    - **Select/Dropdown (terminal, tipe, status)**: Memfilter secara presisi berdasarkan kode terminal, tipe pengirim/penerima, atau status angka.
-    - **Checkbox/Boolean (requestFromReseller, jawabanFromProvider, replyToReseller, perintahProvider)**: Nilai `true` atau `1` akan mengaktifkan kriteria khusus (seperti memfilter record non-null atau bendera status).
-    - **Pagination (limit & cursor)**: Gunakan `limit` untuk menentukan jumlah data dan `cursor` (kode record terakhir) untuk memuat halaman berikutnya.
+  description: "API Gateway multi-tenant (Maxtop, Pandora, Toplink) dengan dukungan Dual-DB (Postgres & MSSQL)."
   version: 1.0.0
 tags:
   - name: auth
@@ -362,6 +354,43 @@ components:
         ctr_kirim:
           type: integer
 
+    CursorPaginationMeta:
+      type: object
+      properties:
+        total_data:
+          type: integer
+        has_next_page:
+          type: boolean
+        has_prev_page:
+          type: boolean
+        next_cursor:
+          type: integer
+          format: int64
+
+    InboxResponse:
+      type: object
+      properties:
+        trace_id:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Inbox"
+        meta:
+          $ref: "#/components/schemas/CursorPaginationMeta"
+
+    OutboxResponse:
+      type: object
+      properties:
+        trace_id:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Outbox"
+        meta:
+          $ref: "#/components/schemas/CursorPaginationMeta"
+
 paths:
   /api/v1/{tenant}/auth/login:
     post:
@@ -434,18 +463,7 @@ paths:
   /api/v1/{tenant}/inbox:
     get:
       summary: Get Inbox (dengan 10 Opsi Filter)
-      description: |
-        Mengambil daftar pesan Inbox dengan filter dinamis:
-        1. **startDate** & **endDate**: Rentang tanggal (YYYY-MM-DD).
-        2. **limit**: Jumlah maksimal record (default: 10).
-        3. **terminal**: Kode terminal (integer).
-        4. **reseller**: Kode reseller (string).
-        5. **pengirim**: Nama atau nomor pengirim (string).
-        6. **tipe**: Tipe pengirim (string).
-        7. **status**: Status pesan (integer).
-        8. **pesan**: Pencarian kata kunci pesan (LIKE).
-        9. **requestFromReseller**: Filter boolean (`true` = memiliki kode_reseller).
-        10. **jawabanFromProvider**: Filter boolean (`true` = is_jawaban = 1).
+      description: "Mengambil daftar pesan Inbox"
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
@@ -460,69 +478,57 @@ paths:
           schema:
             type: string
             format: date
-            example: "2026-09-01"
         - name: endDate
           in: query
           description: Tanggal akhir (Format YYYY-MM-DD)
           schema:
             type: string
             format: date
-            example: "2026-09-30"
         - name: limit
           in: query
           description: Jumlah record yang diambil
           schema:
             type: integer
-            default: 10
-            example: 20
         - name: terminal
           in: query
           description: Filter kode terminal
           schema:
             type: integer
-            example: 2
         - name: reseller
           in: query
           description: Filter kode reseller
           schema:
             type: string
-            example: "R001"
         - name: pengirim
           in: query
           description: Filter pengirim
           schema:
             type: string
-            example: "08123456789"
         - name: tipe
           in: query
           description: Filter tipe pengirim
           schema:
             type: string
-            example: "S"
         - name: status
           in: query
           description: Filter status pesan
           schema:
             type: integer
-            example: 1
         - name: pesan
           in: query
           description: Pencarian kata kunci pada kolom pesan (LIKE)
           schema:
             type: string
-            example: "SALDO"
         - name: requestFromReseller
           in: query
           description: Checkbox filter request dari reseller (kode_reseller IS NOT NULL)
           schema:
             type: boolean
-            example: true
         - name: jawabanFromProvider
           in: query
           description: Checkbox filter jawaban dari provider (is_jawaban = 1)
           schema:
             type: boolean
-            example: true
         - name: search
           in: query
           description: Pencarian umum (pesan atau pengirim)
@@ -587,17 +593,7 @@ paths:
   /api/v1/{tenant}/outbox:
     get:
       summary: Get Outbox (dengan 9 Opsi Filter)
-      description: |
-        Mengambil daftar pesan Outbox dengan filter dinamis:
-        1. **startDate** & **endDate**: Rentang tanggal entri (YYYY-MM-DD).
-        2. **limit**: Jumlah maksimal record (default: 10).
-        3. **reseller**: Kode reseller (string).
-        4. **penerima**: Nomor atau identifier penerima (string).
-        5. **tipe**: Tipe penerima (string).
-        6. **status**: Status outbox (integer).
-        7. **pesan**: Pencarian kata kunci pesan (LIKE).
-        8. **replyToReseller**: Filter boolean (`true` = memiliki kode_reseller).
-        9. **perintahProvider**: Filter boolean (`true` = is_perintah = 1).
+      description: "Mengambil daftar pesan Outbox"
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
@@ -612,63 +608,52 @@ paths:
           schema:
             type: string
             format: date
-            example: "2026-09-01"
         - name: endDate
           in: query
           description: Tanggal entri akhir (Format YYYY-MM-DD)
           schema:
             type: string
             format: date
-            example: "2026-09-30"
         - name: limit
           in: query
           description: Jumlah record yang diambil
           schema:
             type: integer
-            default: 10
-            example: 20
         - name: reseller
           in: query
           description: Filter kode reseller
           schema:
             type: string
-            example: "R001"
         - name: penerima
           in: query
           description: Filter penerima
           schema:
             type: string
-            example: "08123456789"
         - name: tipe
           in: query
           description: Filter tipe penerima
           schema:
             type: string
-            example: "S"
         - name: status
           in: query
           description: Filter status pesan
           schema:
             type: integer
-            example: 1
         - name: pesan
           in: query
           description: Pencarian kata kunci pada kolom pesan (LIKE)
           schema:
             type: string
-            example: "Sukses"
         - name: replyToReseller
           in: query
           description: Checkbox filter reply ke reseller (kode_reseller IS NOT NULL)
           schema:
             type: boolean
-            example: true
         - name: perintahProvider
           in: query
           description: Checkbox filter perintah provider (is_perintah = 1)
           schema:
             type: boolean
-            example: true
         - name: search
           in: query
           description: Pencarian umum (pesan atau penerima)
