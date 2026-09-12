@@ -79,7 +79,7 @@ func (r *outboxRepository) GetOutboxPG(ctx context.Context, tenant string, filte
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRow(ctx, `SELECT COUNT(*) FROM outbox`+whereClause, args...).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COUNT(1) FROM (SELECT 1 FROM outbox`+whereClause+` LIMIT 10000) AS c`, args...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -178,7 +178,7 @@ func (r *outboxRepository) GetOutboxMS(ctx context.Context, tenant string, filte
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM outbox`+whereClause, namedArgs...).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COUNT(1) FROM (SELECT TOP 10000 1 AS dummy FROM outbox`+whereClause+`) AS c`, namedArgs...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}

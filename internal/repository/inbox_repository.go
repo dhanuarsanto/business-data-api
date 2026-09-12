@@ -84,7 +84,7 @@ func (r *inboxRepository) GetInboxPG(ctx context.Context, tenant string, filter 
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRow(ctx, `SELECT COUNT(*) FROM inbox`+whereClause, args...).Scan(&totalData)
+		err := db.QueryRow(ctx, `SELECT COUNT(1) FROM (SELECT 1 FROM inbox`+whereClause+` LIMIT 10000) AS c`, args...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -187,7 +187,7 @@ func (r *inboxRepository) GetInboxMS(ctx context.Context, tenant string, filter 
 			return nil, 0, false, err
 		}
 	} else {
-		err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM inbox`+whereClause, namedArgs...).Scan(&totalData)
+		err := db.QueryRowContext(ctx, `SELECT COUNT(1) FROM (SELECT TOP 10000 1 AS dummy FROM inbox`+whereClause+`) AS c`, namedArgs...).Scan(&totalData)
 		if err != nil {
 			return nil, 0, false, err
 		}
