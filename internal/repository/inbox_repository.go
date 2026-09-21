@@ -392,11 +392,10 @@ func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {
 		args = append(args, "%"+filter.Pesan+"%")
 		argID++
 	}
-	if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
-		whereClause += ` AND kode_reseller IS NOT NULL`
-	}
 	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
 		whereClause += ` AND is_jawaban = 1`
+	} else if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
+		whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
 	}
 
 	return whereClause, args, argID
@@ -438,11 +437,10 @@ func buildInboxFilterMS(filter domain.InboxFilter) (string, []any) {
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
 		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
 	}
-	if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
-		whereClause += ` AND kode_reseller IS NOT NULL`
-	}
 	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
 		whereClause += ` AND is_jawaban = 1`
+	} else if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
+		whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
 	}
 
 	return whereClause, namedArgs

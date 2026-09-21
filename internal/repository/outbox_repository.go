@@ -334,11 +334,10 @@ func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
 		args = append(args, "%"+filter.Pesan+"%")
 		argID++
 	}
-	if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
-		whereClause += ` AND kode_reseller IS NOT NULL`
-	}
 	if filter.PerintahProvider != nil && *filter.PerintahProvider {
 		whereClause += ` AND is_perintah = 1`
+	} else if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+		whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
 	}
 
 	return whereClause, args, argID
@@ -376,11 +375,10 @@ func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
 		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
 	}
-	if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
-		whereClause += ` AND kode_reseller IS NOT NULL`
-	}
 	if filter.PerintahProvider != nil && *filter.PerintahProvider {
 		whereClause += ` AND is_perintah = 1`
+	} else if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+		whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
 	}
 
 	return whereClause, namedArgs

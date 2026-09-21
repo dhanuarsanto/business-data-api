@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"strings"
@@ -74,6 +74,50 @@ func TestBuildInboxFilterMS(t *testing.T) {
 	}
 	if len(args) != 2 {
 		t.Fatalf("named args harus 2, dapat %d", len(args))
+	}
+}
+
+func TestBuildInboxFilterCheckboxPriority(t *testing.T) {
+	jawaban := true
+	request := true
+
+	where, _, _ := buildInboxFilterPG(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
+	if !strings.Contains(where, "AND is_jawaban = 1") {
+		t.Fatalf("jawaban true harus menambah is_jawaban: %q", where)
+	}
+	if strings.Contains(where, "kode_reseller IS NOT NULL") {
+		t.Fatalf("jawaban true harus menahan requestFromReseller: %q", where)
+	}
+
+	jawaban = false
+	where, _, _ = buildInboxFilterPG(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
+	if !strings.Contains(where, "kode_reseller IS NOT NULL") || !strings.Contains(where, "is_jawaban = 0") {
+		t.Fatalf("jawaban false harus menjalankan request request asli is_jawaban=0: %q", where)
+	}
+	if strings.Contains(where, "is_jawaban = 1") {
+		t.Fatalf("jawaban false tidak boleh menambah is_jawaban: %q", where)
+	}
+}
+
+func TestBuildOutboxFilterCheckboxPriority(t *testing.T) {
+	perintah := true
+	reply := true
+
+	where, _, _ := buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &perintah, ReplyToReseller: &reply})
+	if !strings.Contains(where, "AND is_perintah = 1") {
+		t.Fatalf("perintah true harus menambah is_perintah: %q", where)
+	}
+	if strings.Contains(where, "kode_reseller IS NOT NULL") {
+		t.Fatalf("perintah true harus menahan replyToReseller: %q", where)
+	}
+
+	perintah = false
+	where, _, _ = buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &perintah, ReplyToReseller: &reply})
+	if !strings.Contains(where, "kode_reseller IS NOT NULL") || !strings.Contains(where, "is_perintah = 0") {
+		t.Fatalf("perintah false harus menjalankan reply request is_perintah=0: %q", where)
+	}
+	if strings.Contains(where, "is_perintah = 1") {
+		t.Fatalf("perintah false tidak boleh menambah is_perintah: %q", where)
 	}
 }
 
