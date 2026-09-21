@@ -16,22 +16,24 @@ type Outbox struct {
 	Status        int16      `json:"status"`
 	TglStatus     *time.Time `json:"tgl_status,omitempty"`
 	KodeInbox     *int64     `json:"kode_inbox,omitempty"`
-	KodeTransaksi *int32     `json:"kode_transaksi,omitempty"`
+	KodeTransaksi *int       `json:"kode_transaksi,omitempty"`
 	KodeReseller  *string    `json:"kode_reseller,omitempty"`
 	BebasBiaya    int16      `json:"bebas_biaya"`
 	IsPerintah    *int16     `json:"is_perintah,omitempty"`
-	KodeModul     *int32     `json:"kode_modul,omitempty"`
+	KodeModul     *int       `json:"kode_modul,omitempty"`
 	Prioritas     *int16     `json:"prioritas,omitempty"`
 	ModulProses   *string    `json:"modul_proses,omitempty"`
 	Pengirim      *string    `json:"pengirim,omitempty"`
-	KodeTerminal  *int32     `json:"kode_terminal,omitempty"`
+	KodeTerminal  *int       `json:"kode_terminal,omitempty"`
 	CtrKirim      *int16     `json:"ctr_kirim,omitempty"`
 }
 
 type OutboxFilter struct {
 	StartDate        *time.Time
 	EndDate          *time.Time
-	Limit            int
+	PageSize         int
+	LimitTotal       *int
+	LowerBound       int64
 	Reseller         *string
 	Penerima         *string
 	Tipe             *string
@@ -39,15 +41,12 @@ type OutboxFilter struct {
 	Pesan            string
 	ReplyToReseller  *bool
 	PerintahProvider *bool
-	Search           string
 	Cursor           int64
 }
 
 type OutboxRepository interface {
-	GetOutboxPG(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
-	GetOutboxMS(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, int, bool, error)
-	InsertPG(ctx context.Context, tenant string, data Outbox) error
-	InsertMS(ctx context.Context, tenant string, data Outbox) error
-	UpdatePG(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
-	UpdateMS(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
+	Get(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, bool, error)
+	LowerBound(ctx context.Context, tenant string, filter OutboxFilter) (int64, error)
+	Insert(ctx context.Context, tenant string, data Outbox) error
+	Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
 }

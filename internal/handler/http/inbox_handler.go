@@ -1,9 +1,10 @@
-package http
+﻿package http
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,7 +19,7 @@ import (
 )
 
 type InboxHandler struct {
-	usecase usecase.InboxUsecase
+	usecase *usecase.InboxUsecase
 }
 
 func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +32,15 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 
 	queryParams := r.URL.Query()
 
-	limit, _ := strconv.Atoi(queryParams.Get("limit"))
+	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
 	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
+
+	var limitTotalPtr *int
+	if val := queryParams.Get("limit"); val != "" {
+		if v, err := strconv.Atoi(val); err == nil && v > 0 {
+			limitTotalPtr = &v
+		}
+	}
 
 	var startDatePtr, endDatePtr *time.Time
 	if val := queryParams.Get("startDate"); val != "" {
@@ -42,6 +50,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	if val := queryParams.Get("endDate"); val != "" {
 		if t, err := time.Parse("2006-01-02", val); err == nil {
+			t = t.AddDate(0, 0, 1).Add(-time.Second)
 			endDatePtr = &t
 		}
 	}
@@ -55,23 +64,27 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 
 	var resellerPtr *string
 	if val := queryParams.Get("reseller"); val != "" {
-		resellerPtr = &val
+		v := strings.TrimSpace(val)
+		resellerPtr = &v
 	}
 
 	var pengirimPtr *string
 	if val := queryParams.Get("pengirim"); val != "" {
-		pengirimPtr = &val
+		v := strings.TrimSpace(val)
+		pengirimPtr = &v
 	}
 
 	var tipePtr *string
 	if val := queryParams.Get("tipe"); val != "" {
-		tipePtr = &val
+		v := strings.TrimSpace(val)
+		tipePtr = &v
 	}
 
-	var statusPtr *int
+	var statusPtr *int16
 	if val := queryParams.Get("status"); val != "" {
-		if s, err := strconv.Atoi(val); err == nil {
-			statusPtr = &s
+		if s, err := strconv.ParseInt(val, 10, 16); err == nil {
+			v := int16(s)
+			statusPtr = &v
 		}
 	}
 
@@ -87,25 +100,25 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		jawFromProviderPtr = &b
 	}
 
-	filter := domain.InboxFilter{
+filter := domain.InboxFilter{
 		StartDate:           startDatePtr,
 		EndDate:             endDatePtr,
-		Limit:               limit,
+		PageSize:            pageSize,
+		LimitTotal:          limitTotalPtr,
 		Terminal:            terminalPtr,
 		Reseller:            resellerPtr,
 		Pengirim:            pengirimPtr,
 		Tipe:                tipePtr,
 		Status:              statusPtr,
-		Pesan:               queryParams.Get("pesan"),
+		Pesan:               strings.TrimSpace(queryParams.Get("pesan")),
 		RequestFromReseller: reqFromResellerPtr,
 		JawabanFromProvider: jawFromProviderPtr,
-		Search:              queryParams.Get("search"),
 		Cursor:              cursor,
 	}
 
-	data, totalData, hasNextPage, err := h.usecase.GetInbox(r.Context(), tenant, dbSource, filter)
+	data, hasNextPage, err := h.usecase.GetInbox(r.Context(), tenant, dbSource, filter)
 	if err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+		writeError(w, r, err)
 		return
 	}
 
@@ -116,9 +129,8 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, r, map[string]any{
 		"trace_id": tCtx.TraceID,
-		"data":     data,
+		"items":    data,
 		"meta": response.CursorPaginationMeta{
-			TotalData:   totalData,
 			HasNextPage: hasNextPage,
 			HasPrevPage: filter.Cursor > 0,
 			NextCursor:  nextCursor,
@@ -126,7 +138,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *InboxHandler) InsertInbox(w http.ResponseWriter, r *http.Request) {
+func (h *InboxHandler) CreateInbox(w http.ResponseWriter, r *http.Request) {
 	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
@@ -134,7 +146,7 @@ func (h *InboxHandler) InsertInbox(w http.ResponseWriter, r *http.Request) {
 		dbSource = "postgres"
 	}
 
-	var payload dto.InsertInboxRequest
+	var payload dto.CreateInboxRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
 		return
@@ -144,11 +156,11 @@ func (h *InboxHandler) InsertInbox(w http.ResponseWriter, r *http.Request) {
 	if tipePengirim == "" {
 		tipePengirim = "S"
 	}
-	status := 0
+	status := int16(0)
 	if payload.Status != nil {
 		status = *payload.Status
 	}
-	isJawaban := 0
+	isJawaban := int16(0)
 	if payload.IsJawaban != nil {
 		isJawaban = *payload.IsJawaban
 	}
@@ -169,11 +181,11 @@ func (h *InboxHandler) InsertInbox(w http.ResponseWriter, r *http.Request) {
 		Hash:          payload.Hash,
 	}
 
-	if err := h.usecase.InsertInbox(r.Context(), tenant, dbSource, data); err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+	if err := h.usecase.CreateInbox(r.Context(), tenant, dbSource, data); err != nil {
+		writeError(w, r, err)
 		return
 	}
-	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.SuccessCreated(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
@@ -198,13 +210,13 @@ func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.usecase.UpdateInbox(r.Context(), tenant, dbSource, kode, payload); err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+		writeError(w, r, err)
 		return
 	}
 	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
-func NewInboxHandler(usecase usecase.InboxUsecase) *InboxHandler {
+func NewInboxHandler(usecase *usecase.InboxUsecase) *InboxHandler {
 	return &InboxHandler{usecase: usecase}
 }
 
@@ -219,7 +231,7 @@ func (h *InboxHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix
 		inbox.Group(func(write chi.Router) {
 			write.Use(api_middleware.RequireRole(roleMatrix["WriteInbox"]...))
 			write.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
-			write.Post("/", h.InsertInbox)
+			write.Post("/", h.CreateInbox)
 			write.Put("/{kode}", h.UpdateInbox)
 		})
 	})

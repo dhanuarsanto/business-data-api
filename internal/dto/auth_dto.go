@@ -12,6 +12,6 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Password string `json:"password"`
-	Rules    string `json:"rules"`
+	Password *string `json:"password,omitempty"`
+	Rules    *string `json:"rules,omitempty"`
 }

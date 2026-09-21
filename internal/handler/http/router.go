@@ -12,7 +12,7 @@ import (
 	api_middleware "go.internal/business-data-api/internal/middleware"
 )
 
-func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix map[string][]string, modules ...Module) *chi.Mux {
+func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolver, networkMatrix map[string]bool, roleMatrix map[string][]string, modules ...Module) (*chi.Mux, []*api_middleware.RateLimiter, *api_middleware.KeyManager) {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
@@ -26,6 +26,7 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 
 	r.Use(api_middleware.PanicRecoverer())
 	r.Use(api_middleware.SecurityTracer())
+	r.Use(api_middleware.RequestBodyLimit(cfg.MaxBodyBytes))
 
 	r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
 		http.ServeFile(w, req, "docs/swagger.yaml")
@@ -35,9 +36,15 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 		httpSwagger.URL("/docs/swagger.yaml"),
 	))
 
+	keyManager := api_middleware.NewKeyManager("api_keys.json")
+
+	var limiters []*api_middleware.RateLimiter
+	globalLimiter := api_middleware.NewRateLimiter(50.0, 100)
+	limiters = append(limiters, globalLimiter)
+
 	protectedApiKey := r.With(
-		api_middleware.APIKeyValidator(),
-		api_middleware.NewRateLimiter(50.0, 100).Middleware(),
+		keyManager.Middleware(),
+		globalLimiter.Middleware(),
 	)
 
 	protectedApiKey.NotFound(func(w http.ResponseWriter, req *http.Request) {
@@ -49,7 +56,7 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 	})
 
 	protected := protectedApiKey.With(
-		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix),
+		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
 	)
 
 	protected.Get("/health", func(w http.ResponseWriter, req *http.Request) {
@@ -60,7 +67,12 @@ func SetupRoutes(cfg *config.Config, networkMatrix map[string]bool, roleMatrix m
 
 	for _, m := range modules {
 		m.RegisterRoutes(protected.(*chi.Mux), cfg, roleMatrix)
+		if limiterProvider, ok := m.(interface {
+			RateLimiters() []*api_middleware.RateLimiter
+		}); ok {
+			limiters = append(limiters, limiterProvider.RateLimiters()...)
+		}
 	}
 
-	return r
+	return r, limiters, keyManager
 }

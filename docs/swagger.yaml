@@ -1,9 +1,11 @@
-openapi: 3.0.0
+﻿openapi: 3.0.0
 info:
   title: Data API Gateway
   description: "API Gateway multi-tenant (Maxtop, Pandora, Toplink) dengan dukungan Dual-DB (Postgres & MSSQL)."
   version: 1.0.0
 tags:
+  - name: health
+    description: Health check
   - name: auth
     description: Authentication endpoints
   - name: user
@@ -83,9 +85,11 @@ components:
       properties:
         password:
           type: string
+          nullable: true
           example: "newsecret123"
         rules:
           type: string
+          nullable: true
           example: "opout"
 
     Inbox:
@@ -144,15 +148,16 @@ components:
           nullable: true
           example: 0
         kode_jawaban_cs:
-          type: string
+          type: integer
+          format: int64
           nullable: true
-          example: "1234"
+          example: 1234
         hash:
           type: string
           nullable: true
           example: "a1b2c3d4"
 
-    InsertInboxRequest:
+    CreateInboxRequest:
       type: object
       required:
         - pesan
@@ -190,30 +195,44 @@ components:
       properties:
         pesan:
           type: string
+          nullable: true
         status:
           type: integer
+          nullable: true
         pengirim:
           type: string
+          nullable: true
         tipe_pengirim:
           type: string
+          nullable: true
         penerima:
           type: string
+          nullable: true
         kode_terminal:
           type: integer
+          nullable: true
         kode_reseller:
           type: string
+          nullable: true
         kode_transaksi:
           type: integer
+          nullable: true
         is_jawaban:
           type: integer
+          nullable: true
         service_center:
           type: string
+          nullable: true
         is_cs:
           type: integer
+          nullable: true
         kode_jawaban_cs:
-          type: string
+          type: integer
+          format: int64
+          nullable: true
         hash:
           type: string
+          nullable: true
 
     Outbox:
       type: object
@@ -278,7 +297,7 @@ components:
           type: integer
           nullable: true
 
-    InsertOutboxRequest:
+    CreateOutboxRequest:
       type: object
       required:
         - penerima
@@ -324,41 +343,81 @@ components:
       properties:
         penerima:
           type: string
+          nullable: true
         tipe_penerima:
           type: string
+          nullable: true
         pesan:
           type: string
+          nullable: true
         status:
           type: integer
+          nullable: true
         bebas_biaya:
           type: integer
+          nullable: true
         kode_inbox:
           type: integer
           format: int64
+          nullable: true
         kode_transaksi:
           type: integer
+          nullable: true
         kode_reseller:
           type: string
+          nullable: true
         is_perintah:
           type: integer
+          nullable: true
         kode_modul:
           type: integer
+          nullable: true
         prioritas:
           type: integer
+          nullable: true
         modul_proses:
           type: string
+          nullable: true
         pengirim:
           type: string
+          nullable: true
         kode_terminal:
           type: integer
+          nullable: true
         ctr_kirim:
           type: integer
+          nullable: true
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: gagal
+        message:
+          type: string
+
+    Reseller:
+      type: object
+      properties:
+        kode:
+          type: string
+        nama:
+          type: string
 
     CursorPaginationMeta:
       type: object
       properties:
-        total_data:
-          type: integer
         has_next_page:
           type: boolean
         has_prev_page:
@@ -372,7 +431,7 @@ components:
       properties:
         trace_id:
           type: string
-        data:
+        items:
           type: array
           items:
             $ref: "#/components/schemas/Inbox"
@@ -384,14 +443,57 @@ components:
       properties:
         trace_id:
           type: string
-        data:
+        items:
           type: array
           items:
             $ref: "#/components/schemas/Outbox"
         meta:
           $ref: "#/components/schemas/CursorPaginationMeta"
 
+x-error-responses: &errorResponses
+  "401":
+    description: Api key atau token tidak valid
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/ErrorResponse"
+  "403":
+    description: Akses ditolak (role/tenant/tulis DB)
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/ErrorResponse"
+  "404":
+    description: Resource atau tenant tidak ditemukan
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/ErrorResponse"
+  "413":
+    description: Body permintaan melebihi batas (MAX_BODY_BYTES)
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/ErrorResponse"
+
 paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Cek ketersediaan API (dilindungi API Key)
+      tags:
+        - health
+      security:
+        - ApiKeyAuth: []
+      responses:
+        <<: *errorResponses
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /api/v1/{tenant}/auth/login:
     post:
       summary: User Login
@@ -410,8 +512,13 @@ paths:
             schema:
               $ref: "#/components/schemas/LoginRequest"
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/auth/users:
     post:
@@ -431,8 +538,13 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateUserRequest"
       responses:
-        "200":
-          description: OK
+        <<: *errorResponses
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/auth/users/{username}:
     put:
@@ -457,12 +569,17 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateUserRequest"
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/inbox:
     get:
-      summary: Get Inbox (dengan 10 Opsi Filter)
+      summary: Get Inbox (13 Opsi Filter)
       description: "Mengambil daftar pesan Inbox"
       security:
         - ApiKeyAuth: []
@@ -484,9 +601,14 @@ paths:
           schema:
             type: string
             format: date
+        - name: pageSize
+          in: query
+          description: Jumlah data per halaman (default 10, maksimal 500)
+          schema:
+            type: integer
         - name: limit
           in: query
-          description: Jumlah record yang diambil
+          description: Total data maksimal yang boleh di-deliver selama pagination (opsional, maksimum 100.000)
           schema:
             type: integer
         - name: terminal
@@ -496,12 +618,12 @@ paths:
             type: integer
         - name: reseller
           in: query
-          description: Filter kode reseller
+          description: Filter kode reseller (kode persis / dropdown)
           schema:
             type: string
         - name: pengirim
           in: query
-          description: Filter pengirim
+          description: Filter pengirim (pencocokan sebagian / ILIKE)
           schema:
             type: string
         - name: tipe
@@ -529,11 +651,6 @@ paths:
           description: Checkbox filter jawaban dari provider (is_jawaban = 1)
           schema:
             type: boolean
-        - name: search
-          in: query
-          description: Pencarian umum (pesan atau pengirim)
-          schema:
-            type: string
         - name: cursor
           in: query
           description: Cursor pagination (kode record terakhir)
@@ -541,8 +658,13 @@ paths:
             type: integer
             format: int64
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboxResponse"
     post:
       summary: Insert Inbox
       security:
@@ -558,10 +680,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InsertInboxRequest"
+              $ref: "#/components/schemas/CreateInboxRequest"
       responses:
-        "200":
-          description: OK
+        <<: *errorResponses
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/inbox/{kode}:
     put:
@@ -587,12 +714,17 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateInboxRequest"
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/outbox:
     get:
-      summary: Get Outbox (dengan 9 Opsi Filter)
+      summary: Get Outbox (12 Opsi Filter)
       description: "Mengambil daftar pesan Outbox"
       security:
         - ApiKeyAuth: []
@@ -614,19 +746,24 @@ paths:
           schema:
             type: string
             format: date
+        - name: pageSize
+          in: query
+          description: Jumlah data per halaman (default 10, maksimal 500)
+          schema:
+            type: integer
         - name: limit
           in: query
-          description: Jumlah record yang diambil
+          description: Total data maksimal yang boleh di-deliver selama pagination (opsional, maksimum 100.000)
           schema:
             type: integer
         - name: reseller
           in: query
-          description: Filter kode reseller
+          description: Filter kode reseller (kode persis / dropdown)
           schema:
             type: string
         - name: penerima
           in: query
-          description: Filter penerima
+          description: Filter penerima (pencocokan sebagian / ILIKE)
           schema:
             type: string
         - name: tipe
@@ -654,11 +791,6 @@ paths:
           description: Checkbox filter perintah provider (is_perintah = 1)
           schema:
             type: boolean
-        - name: search
-          in: query
-          description: Pencarian umum (pesan atau penerima)
-          schema:
-            type: string
         - name: cursor
           in: query
           description: Cursor pagination (kode record terakhir)
@@ -666,8 +798,13 @@ paths:
             type: integer
             format: int64
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboxResponse"
     post:
       summary: Insert Outbox
       security:
@@ -683,10 +820,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/InsertOutboxRequest"
+              $ref: "#/components/schemas/CreateOutboxRequest"
       responses:
-        "200":
-          description: OK
+        <<: *errorResponses
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /api/v1/{tenant}/outbox/{kode}:
     put:
@@ -712,5 +854,38 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateOutboxRequest"
       responses:
+        <<: *errorResponses
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /api/v1/{tenant}/master/reseller-dropdown:
+    get:
+      summary: Daftar Reseller Aktif (dropdown)
+      description: Master reseller aktif untuk dropdown filter inbox/outbox
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      tags:
+        - master
+      parameters:
+        - $ref: "#/components/parameters/TenantParam"
+        - $ref: "#/components/parameters/DbSourceHeader"
+      responses:
+        <<: *errorResponses
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Reseller"

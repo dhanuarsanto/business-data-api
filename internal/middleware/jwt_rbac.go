@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"go.internal/business-data-api/pkg/jwt"
 	"go.internal/business-data-api/pkg/logger"
 	"go.internal/business-data-api/pkg/response"
@@ -40,6 +41,12 @@ func RequireToken() func(http.Handler) http.Handler {
 			if userID, ok := claims["user_id"].(float64); ok {
 				tCtx := logger.GetTraceContext(r.Context())
 				tCtx.UserID = int(userID)
+			}
+
+			tenant := chi.URLParam(r, "tenant")
+			if claimTenant, ok := claims["tenant"].(string); !ok || claimTenant == "" || claimTenant != tenant {
+				response.Error(w, r, http.StatusForbidden, "Token tidak berlaku untuk tenant ini")
+				return
 			}
 
 			ctx := context.WithValue(r.Context(), claimsKey, map[string]any(claims))

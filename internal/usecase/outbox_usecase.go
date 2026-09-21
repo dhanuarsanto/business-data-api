@@ -1,4 +1,4 @@
-package usecase
+﻿package usecase
 
 import (
 	"context"
@@ -8,52 +8,77 @@ import (
 	"go.internal/business-data-api/internal/dto"
 )
 
-type OutboxUsecase interface {
-	GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error)
-	InsertOutbox(ctx context.Context, tenant string, dbSource string, data domain.Outbox) error
-	UpdateOutbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateOutboxRequest) error
-}
-
-type outboxUsecase struct {
-	repo domain.OutboxRepository
-}
-
-func (u *outboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, int, bool, error) {
-	if filter.Limit <= 0 || filter.Limit > 500 {
-		filter.Limit = 10
-	}
-	switch dbSource {
+func pickOutboxRepo(source string, pg, ms domain.OutboxRepository) (domain.OutboxRepository, error) {
+	switch source {
 	case "postgres":
-		return u.repo.GetOutboxPG(ctx, tenant, filter)
+		return pg, nil
 	case "mssql":
-		return u.repo.GetOutboxMS(ctx, tenant, filter)
+		return ms, nil
 	default:
-		return nil, 0, false, errors.New("sumber database tidak valid")
+		return nil, errors.New("sumber database tidak valid")
 	}
 }
 
-func (u *outboxUsecase) InsertOutbox(ctx context.Context, tenant string, dbSource string, data domain.Outbox) error {
-	switch dbSource {
-	case "postgres":
-		return u.repo.InsertPG(ctx, tenant, data)
-	case "mssql":
-		return u.repo.InsertMS(ctx, tenant, data)
-	default:
-		return errors.New("sumber database tidak valid")
-	}
+type OutboxUsecase struct {
+	repoPG domain.OutboxRepository
+	repoMS domain.OutboxRepository
 }
 
-func (u *outboxUsecase) UpdateOutbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateOutboxRequest) error {
-	switch dbSource {
-	case "postgres":
-		return u.repo.UpdatePG(ctx, tenant, kode, req)
-	case "mssql":
-		return u.repo.UpdateMS(ctx, tenant, kode, req)
-	default:
-		return errors.New("sumber database tidak valid")
+func (u *OutboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, bool, error) {
+	if filter.PageSize <= 0 || filter.PageSize > 500 {
+		filter.PageSize = 10
 	}
+	if filter.LimitTotal != nil {
+		if *filter.LimitTotal <= 0 {
+			filter.LimitTotal = nil
+		} else if *filter.LimitTotal > 100000 {
+			v := 100000
+			filter.LimitTotal = &v
+		}
+	}
+
+	repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if filter.LimitTotal != nil {
+		key := filterCacheKey("outbox", dbSource, tenant, *filter.LimitTotal, outboxFilterID(filter))
+		if lb, ok := cacheGet(key); ok {
+			filter.LowerBound = lb
+		} else {
+			lb, err := repo.LowerBound(ctx, tenant, filter)
+			if err != nil {
+				return nil, false, err
+			}
+			filter.LowerBound = lb
+			cacheSet(key, lb)
+		}
+	}
+
+	data, hasNext, err := repo.Get(ctx, tenant, filter)
+	if err != nil {
+		return nil, false, err
+	}
+	return data, hasNext, nil
 }
 
-func NewOutboxUsecase(repo domain.OutboxRepository) OutboxUsecase {
-	return &outboxUsecase{repo: repo}
+func (u *OutboxUsecase) CreateOutbox(ctx context.Context, tenant string, dbSource string, data domain.Outbox) error {
+	repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+	if err != nil {
+		return err
+	}
+	return repo.Insert(ctx, tenant, data)
+}
+
+func (u *OutboxUsecase) UpdateOutbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateOutboxRequest) error {
+	repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+	if err != nil {
+		return err
+	}
+	return repo.Update(ctx, tenant, kode, req)
+}
+
+func NewOutboxUsecase(repoPG domain.OutboxRepository, repoMS domain.OutboxRepository) *OutboxUsecase {
+	return &OutboxUsecase{repoPG: repoPG, repoMS: repoMS}
 }

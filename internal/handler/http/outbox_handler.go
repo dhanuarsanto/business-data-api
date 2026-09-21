@@ -1,9 +1,10 @@
-package http
+﻿package http
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,7 +19,7 @@ import (
 )
 
 type OutboxHandler struct {
-	usecase usecase.OutboxUsecase
+	usecase *usecase.OutboxUsecase
 }
 
 func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +32,15 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 
 	queryParams := r.URL.Query()
 
-	limit, _ := strconv.Atoi(queryParams.Get("limit"))
+	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
 	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
+
+	var limitTotalPtr *int
+	if val := queryParams.Get("limit"); val != "" {
+		if v, err := strconv.Atoi(val); err == nil && v > 0 {
+			limitTotalPtr = &v
+		}
+	}
 
 	var startDatePtr, endDatePtr *time.Time
 	if val := queryParams.Get("startDate"); val != "" {
@@ -42,23 +50,27 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 	if val := queryParams.Get("endDate"); val != "" {
 		if t, err := time.Parse("2006-01-02", val); err == nil {
+			t = t.AddDate(0, 0, 1).Add(-time.Second)
 			endDatePtr = &t
 		}
 	}
 
 	var resellerPtr *string
 	if val := queryParams.Get("reseller"); val != "" {
-		resellerPtr = &val
+		v := strings.TrimSpace(val)
+		resellerPtr = &v
 	}
 
 	var penerimaPtr *string
 	if val := queryParams.Get("penerima"); val != "" {
-		penerimaPtr = &val
+		v := strings.TrimSpace(val)
+		penerimaPtr = &v
 	}
 
 	var tipePtr *string
 	if val := queryParams.Get("tipe"); val != "" {
-		tipePtr = &val
+		v := strings.TrimSpace(val)
+		tipePtr = &v
 	}
 
 	var statusPtr *int16
@@ -81,24 +93,24 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		perintahProviderPtr = &b
 	}
 
-	filter := domain.OutboxFilter{
+filter := domain.OutboxFilter{
 		StartDate:        startDatePtr,
 		EndDate:          endDatePtr,
-		Limit:            limit,
+		PageSize:         pageSize,
+		LimitTotal:       limitTotalPtr,
 		Reseller:         resellerPtr,
 		Penerima:         penerimaPtr,
 		Tipe:             tipePtr,
 		Status:           statusPtr,
-		Pesan:            queryParams.Get("pesan"),
+		Pesan:            strings.TrimSpace(queryParams.Get("pesan")),
 		ReplyToReseller:  replyToResellerPtr,
 		PerintahProvider: perintahProviderPtr,
-		Search:           queryParams.Get("search"),
 		Cursor:           cursor,
 	}
 
-	data, totalData, hasNextPage, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
+	data, hasNextPage, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
 	if err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+		writeError(w, r, err)
 		return
 	}
 
@@ -109,9 +121,8 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, r, map[string]any{
 		"trace_id": tCtx.TraceID,
-		"data":     data,
+		"items":    data,
 		"meta": response.CursorPaginationMeta{
-			TotalData:   totalData,
 			HasNextPage: hasNextPage,
 			HasPrevPage: filter.Cursor > 0,
 			NextCursor:  nextCursor,
@@ -119,7 +130,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *OutboxHandler) InsertOutbox(w http.ResponseWriter, r *http.Request) {
+func (h *OutboxHandler) CreateOutbox(w http.ResponseWriter, r *http.Request) {
 	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
@@ -127,7 +138,7 @@ func (h *OutboxHandler) InsertOutbox(w http.ResponseWriter, r *http.Request) {
 		dbSource = "postgres"
 	}
 
-	var payload dto.InsertOutboxRequest
+	var payload dto.CreateOutboxRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
 		return
@@ -151,11 +162,11 @@ func (h *OutboxHandler) InsertOutbox(w http.ResponseWriter, r *http.Request) {
 		CtrKirim:      payload.CtrKirim,
 	}
 
-	if err := h.usecase.InsertOutbox(r.Context(), tenant, dbSource, data); err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+	if err := h.usecase.CreateOutbox(r.Context(), tenant, dbSource, data); err != nil {
+		writeError(w, r, err)
 		return
 	}
-	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.SuccessCreated(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
 func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
@@ -180,13 +191,13 @@ func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.usecase.UpdateOutbox(r.Context(), tenant, dbSource, kode, payload); err != nil {
-		response.Error(w, r, http.StatusInternalServerError, err.Error())
+		writeError(w, r, err)
 		return
 	}
 	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
 }
 
-func NewOutboxHandler(usecase usecase.OutboxUsecase) *OutboxHandler {
+func NewOutboxHandler(usecase *usecase.OutboxUsecase) *OutboxHandler {
 	return &OutboxHandler{usecase: usecase}
 }
 
@@ -201,7 +212,7 @@ func (h *OutboxHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatri
 		outbox.Group(func(write chi.Router) {
 			write.Use(api_middleware.RequireRole(roleMatrix["WriteOutbox"]...))
 			write.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
-			write.Post("/", h.InsertOutbox)
+			write.Post("/", h.CreateOutbox)
 			write.Put("/{kode}", h.UpdateOutbox)
 		})
 	})

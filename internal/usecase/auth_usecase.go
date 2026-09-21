@@ -3,33 +3,36 @@ package usecase
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"go.internal/business-data-api/internal/domain"
 )
 
-type AuthUsecase interface {
-	Login(ctx context.Context, tenant string, dbSource string, username string, password string) (domain.User, error)
-	CreateUser(ctx context.Context, tenant string, dbSource string, data domain.User) error
-	UpdateUser(ctx context.Context, tenant string, dbSource string, username string, data domain.User) error
-}
+var ErrInvalidInput = errors.New("input tidak valid")
 
-type authUsecase struct {
-	userRepo domain.UserRepository
-}
-
-func (u *authUsecase) Login(ctx context.Context, tenant string, dbSource string, username string, password string) (domain.User, error) {
-	var user domain.User
-	var err error
-
-	switch dbSource {
+func pickUserRepo(source string, pg, ms domain.UserRepository) (domain.UserRepository, error) {
+	switch source {
 	case "postgres":
-		user, err = u.userRepo.GetByUsernamePG(ctx, tenant, username)
+		return pg, nil
 	case "mssql":
-		user, err = u.userRepo.GetByUsernameMS(ctx, tenant, username)
+		return ms, nil
 	default:
-		return user, errors.New("sumber database tidak valid")
+		return nil, errors.New("sumber database tidak valid")
+	}
+}
+
+type AuthUsecase struct {
+	userRepoPG domain.UserRepository
+	userRepoMS domain.UserRepository
+}
+
+func (u *AuthUsecase) Login(ctx context.Context, tenant string, dbSource string, username string, password string) (domain.User, error) {
+	repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+	if err != nil {
+		return domain.User{}, err
 	}
 
+	user, err := repo.GetByUsername(ctx, tenant, username)
 	if err != nil {
 		return user, errors.New("user tidak ditemukan")
 	}
@@ -41,28 +44,31 @@ func (u *authUsecase) Login(ctx context.Context, tenant string, dbSource string,
 	return user, nil
 }
 
-func (u *authUsecase) CreateUser(ctx context.Context, tenant string, dbSource string, data domain.User) error {
-	switch dbSource {
-	case "postgres":
-		return u.userRepo.InsertPG(ctx, tenant, data)
-	case "mssql":
-		return u.userRepo.InsertMS(ctx, tenant, data)
-	default:
-		return errors.New("sumber database tidak valid")
+func (u *AuthUsecase) CreateUser(ctx context.Context, tenant string, dbSource string, data domain.User) error {
+	if strings.TrimSpace(data.Username) == "" || strings.TrimSpace(data.Password) == "" || strings.TrimSpace(data.Rules) == "" {
+		return ErrInvalidInput
 	}
+	repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+	if err != nil {
+		return err
+	}
+	return repo.Insert(ctx, tenant, data)
 }
 
-func (u *authUsecase) UpdateUser(ctx context.Context, tenant string, dbSource string, username string, data domain.User) error {
-	switch dbSource {
-	case "postgres":
-		return u.userRepo.UpdatePG(ctx, tenant, username, data)
-	case "mssql":
-		return u.userRepo.UpdateMS(ctx, tenant, username, data)
-	default:
-		return errors.New("sumber database tidak valid")
+func (u *AuthUsecase) UpdateUser(ctx context.Context, tenant string, dbSource string, username string, password *string, rules *string) error {
+	if password != nil && *password == "" {
+		return ErrInvalidInput
 	}
+	if rules != nil && *rules == "" {
+		return ErrInvalidInput
+	}
+	repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+	if err != nil {
+		return err
+	}
+	return repo.Update(ctx, tenant, username, password, rules)
 }
 
-func NewAuthUsecase(userRepo domain.UserRepository) AuthUsecase {
-	return &authUsecase{userRepo: userRepo}
+func NewAuthUsecase(userRepoPG domain.UserRepository, userRepoMS domain.UserRepository) *AuthUsecase {
+	return &AuthUsecase{userRepoPG: userRepoPG, userRepoMS: userRepoMS}
 }

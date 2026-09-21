@@ -18,6 +18,8 @@ type RateLimiter struct {
 	visitors map[string]*clientVisitor
 	rate     float64
 	capacity float64
+	done     chan struct{}
+	once     sync.Once
 }
 
 func (rl *RateLimiter) allow(ip string) bool {
@@ -27,19 +29,16 @@ func (rl *RateLimiter) allow(ip string) bool {
 	now := time.Now()
 	v, exists := rl.visitors[ip]
 	if !exists {
-		rl.visitors[ip] = &clientVisitor{
-			tokens:     rl.capacity - 1,
-			lastRefill: now,
+		v = &clientVisitor{tokens: rl.capacity, lastRefill: now}
+		rl.visitors[ip] = v
+	} else {
+		elapsed := now.Sub(v.lastRefill).Seconds()
+		v.tokens += elapsed * rl.rate
+		if v.tokens > rl.capacity {
+			v.tokens = rl.capacity
 		}
-		return true
+		v.lastRefill = now
 	}
-
-	elapsed := now.Sub(v.lastRefill).Seconds()
-	v.tokens += elapsed * rl.rate
-	if v.tokens > rl.capacity {
-		v.tokens = rl.capacity
-	}
-	v.lastRefill = now
 
 	if v.tokens >= 1 {
 		v.tokens -= 1
@@ -49,17 +48,33 @@ func (rl *RateLimiter) allow(ip string) bool {
 	return false
 }
 
-func (rl *RateLimiter) cleanup(ttl time.Duration) {
+func (rl *RateLimiter) runCleanup(ttl time.Duration) {
 	ticker := time.NewTicker(ttl)
-	for range ticker.C {
-		rl.mu.Lock()
-		for ip, v := range rl.visitors {
-			if time.Since(v.lastRefill) > ttl {
-				delete(rl.visitors, ip)
-			}
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			rl.cleanup(ttl)
+		case <-rl.done:
+			return
 		}
-		rl.mu.Unlock()
 	}
+}
+
+func (rl *RateLimiter) cleanup(ttl time.Duration) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	for ip, v := range rl.visitors {
+		if time.Since(v.lastRefill) > ttl {
+			delete(rl.visitors, ip)
+		}
+	}
+}
+
+func (rl *RateLimiter) Stop() {
+	rl.once.Do(func() {
+		close(rl.done)
+	})
 }
 
 func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
@@ -88,7 +103,8 @@ func NewRateLimiter(ratePerSec float64, capacity int) *RateLimiter {
 		visitors: make(map[string]*clientVisitor),
 		rate:     ratePerSec,
 		capacity: float64(capacity),
+		done:     make(chan struct{}),
 	}
-	go rl.cleanup(3 * time.Minute)
+	go rl.runCleanup(3 * time.Minute)
 	return rl
 }

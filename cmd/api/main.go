@@ -15,14 +15,17 @@ import (
 	"go.internal/business-data-api/pkg/database"
 	"go.internal/business-data-api/pkg/jwt"
 	"go.internal/business-data-api/pkg/logger"
+	"go.internal/business-data-api/pkg/response"
 
 	http_handler "go.internal/business-data-api/internal/handler/http"
+	api_middleware "go.internal/business-data-api/internal/middleware"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 	logger.SetupLogger(cfg.AppEnv)
-	jwt.InitJWT(cfg.JWTSecret, cfg.JWTTokenDuration)
+	response.Init(cfg.AppEnv)
+	jwt.InitJWT(cfg.JWTSecret, cfg.JWTTokenDuration, cfg.JWTIssuer)
 
 	slog.Info("Menjalankan API", "mode", cfg.AppEnv, "port", cfg.Port)
 
@@ -65,15 +68,23 @@ func main() {
 	}
 	dbRegistry.Register("toplink", pgToplink, msToplink)
 
-	activeModules, networkMatrix, roleMatrix := BuildModules(dbRegistry)
-	r := http_handler.SetupRoutes(cfg, networkMatrix, roleMatrix, activeModules...)
+	trustedProxies, err := cfg.ParseTrustedProxies()
+	if err != nil {
+		slog.Error("Konfigurasi TRUSTED_PROXIES tidak valid", "error", err)
+		os.Exit(1)
+	}
+	ipResolver := api_middleware.NewTrustedProxyResolver(trustedProxies)
+
+	activeModules, networkMatrix, roleMatrix := BuildModules(dbRegistry, cfg, ipResolver)
+	r, limiters, keyManager := http_handler.SetupRoutes(cfg, ipResolver, networkMatrix, roleMatrix, activeModules...)
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Handler:           r,
+		ReadTimeout:       10 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {
@@ -94,6 +105,11 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server dipaksa mati", "error", err)
 	}
+
+	for _, l := range limiters {
+		l.Stop()
+	}
+	keyManager.Stop()
 
 	dbRegistry.CloseAll()
 	slog.Info("Server berhasil dimatikan dengan aman")

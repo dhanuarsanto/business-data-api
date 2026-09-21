@@ -4,10 +4,15 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"os"
 
 	"go.internal/business-data-api/pkg/logger"
 )
+
+var hideInternalDetails bool
+
+func Init(appEnv string) {
+	hideInternalDetails = appEnv != "development"
+}
 
 type JSONResponse struct {
 	Status  string `json:"status"`
@@ -16,18 +21,25 @@ type JSONResponse struct {
 }
 
 type CursorPaginationMeta struct {
-	TotalData   int   `json:"total_data"`
-	HasNextPage bool  `json:"has_next_page"`
-	HasPrevPage bool  `json:"has_prev_page"`
-	NextCursor  int64 `json:"next_cursor,omitempty"`
+	HasNextPage bool   `json:"has_next_page"`
+	HasPrevPage bool   `json:"has_prev_page"`
+	NextCursor  int64  `json:"next_cursor,omitempty"`
 }
 
 func Success(w http.ResponseWriter, r *http.Request, data any) {
+	write(w, r, http.StatusOK, "API Success", data)
+}
+
+func SuccessCreated(w http.ResponseWriter, r *http.Request, data any) {
+	write(w, r, http.StatusCreated, "API Created", data)
+}
+
+func write(w http.ResponseWriter, r *http.Request, statusCode int, logMsg string, data any) {
 	tCtx := logger.GetTraceContext(r.Context())
-	slog.Info("API Success", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", http.StatusOK)
+	slog.Info(logMsg, "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", statusCode)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(JSONResponse{
 		Status: "sukses",
 		Data:   data,
@@ -38,8 +50,7 @@ func Error(w http.ResponseWriter, r *http.Request, statusCode int, message strin
 	tCtx := logger.GetTraceContext(r.Context())
 	slog.Error("API Error", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", statusCode, "error", message)
 
-	env := os.Getenv("APP_ENV")
-	if env != "development" {
+	if hideInternalDetails {
 		switch {
 		case statusCode >= 500:
 			message = "Terjadi kesalahan internal pada server"

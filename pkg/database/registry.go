@@ -2,11 +2,14 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrTenantNotFound = errors.New("tenant tidak ditemukan")
 
 type TenantDB struct {
 	Postgres *pgxpool.Pool
@@ -33,24 +36,24 @@ func (r *DBRegistry) Register(tenantName string, pg *pgxpool.Pool, ms *sql.DB) {
 	}
 }
 
-func (r *DBRegistry) Postgres(tenantName string) *pgxpool.Pool {
+func (r *DBRegistry) Postgres(tenantName string) (*pgxpool.Pool, error) {
 	r.mu.RLock()
 	tenant, exists := r.tenants[tenantName]
 	r.mu.RUnlock()
 	if !exists {
-		panic(fmt.Sprintf("koneksi postgres untuk tenant %s tidak ditemukan", tenantName))
+		return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, tenantName)
 	}
-	return tenant.Postgres
+	return tenant.Postgres, nil
 }
 
-func (r *DBRegistry) MSSQL(tenantName string) *sql.DB {
+func (r *DBRegistry) MSSQL(tenantName string) (*sql.DB, error) {
 	r.mu.RLock()
 	tenant, exists := r.tenants[tenantName]
 	r.mu.RUnlock()
 	if !exists {
-		panic(fmt.Sprintf("koneksi mssql untuk tenant %s tidak ditemukan", tenantName))
+		return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, tenantName)
 	}
-	return tenant.MSSQL
+	return tenant.MSSQL, nil
 }
 
 func (r *DBRegistry) CloseAll() {

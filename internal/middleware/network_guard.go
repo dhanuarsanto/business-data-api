@@ -3,34 +3,66 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 
 	"go.internal/business-data-api/pkg/jwt"
 	"go.internal/business-data-api/pkg/response"
 )
 
-func IsLocalIP(r *http.Request) bool {
-	ipStr := r.Header.Get("X-Real-IP")
-	if ipStr == "" {
-		ipStr = r.Header.Get("X-Forwarded-For")
-	}
-	if ipStr == "" {
-		ipStr, _, _ = net.SplitHostPort(r.RemoteAddr)
-	} else {
-		ipStr = strings.Split(ipStr, ",")[0]
-	}
+type TrustedProxyResolver struct {
+	prefixes []netip.Prefix
+}
 
-	ip := net.ParseIP(strings.TrimSpace(ipStr))
-	if ip == nil {
-		return false
+func NewTrustedProxyResolver(prefixes []netip.Prefix) *TrustedProxyResolver {
+	return &TrustedProxyResolver{prefixes: prefixes}
+}
+
+func (t *TrustedProxyResolver) trust(remote netip.Addr) bool {
+	for _, p := range t.prefixes {
+		if p.Contains(remote) {
+			return true
+		}
 	}
+	return false
+}
+
+func (t *TrustedProxyResolver) clientAddr(r *http.Request) netip.Addr {
+	remoteStr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		remoteStr = r.RemoteAddr
+	}
+	remote, err := netip.ParseAddr(strings.TrimSpace(remoteStr))
+	if err != nil || !remote.IsValid() {
+		return netip.Addr{}
+	}
+	remote = remote.Unmap()
+
+	if t.trust(remote) {
+		if ipStr := r.Header.Get("X-Real-IP"); ipStr != "" {
+			if ip, err := netip.ParseAddr(strings.TrimSpace(ipStr)); err == nil {
+				return ip.Unmap()
+			}
+		}
+		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+			first := strings.TrimSpace(strings.Split(fwd, ",")[0])
+			if ip, err := netip.ParseAddr(first); err == nil {
+				return ip.Unmap()
+			}
+		}
+	}
+	return remote
+}
+
+func (t *TrustedProxyResolver) IsLocal(r *http.Request) bool {
+	ip := t.clientAddr(r)
 	return ip.IsLoopback() || ip.IsPrivate()
 }
 
-func NetworkRoleGuard(globalLocalOnly bool, roleMatrix map[string]bool) func(http.Handler) http.Handler {
+func NetworkRoleGuard(globalLocalOnly bool, roleMatrix map[string]bool, resolver *TrustedProxyResolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			isLocal := IsLocalIP(r)
+			isLocal := resolver.IsLocal(r)
 			if globalLocalOnly {
 				if !isLocal {
 					response.Error(w, r, http.StatusForbidden, "Akses global ditutup. Hanya menerima koneksi lokal.")

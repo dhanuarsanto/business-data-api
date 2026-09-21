@@ -9,12 +9,14 @@ import (
 
 var secretKey []byte
 var tokenDuration time.Duration = 24 * time.Hour
+var issuer string
 
-func InitJWT(secret string, duration time.Duration) {
+func InitJWT(secret string, duration time.Duration, jwtIssuer string) {
 	secretKey = []byte(secret)
 	if duration > 0 {
 		tokenDuration = duration
 	}
+	issuer = jwtIssuer
 }
 
 func GenerateToken(userID int, username string, rules string, tenant string) (string, error) {
@@ -26,6 +28,7 @@ func GenerateToken(userID int, username string, rules string, tenant string) (st
 		"username": username,
 		"rules":    rules,
 		"tenant":   tenant,
+		"iss":      issuer,
 		"exp":      time.Now().Add(tokenDuration).Unix(),
 	}
 
@@ -48,8 +51,14 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("token tidak valid")
 	}
-	return nil, errors.New("token tidak valid")
+	if claimIss, exists := claims["iss"]; exists && issuer != "" {
+		if iss, isStr := claimIss.(string); !isStr || iss != issuer {
+			return nil, errors.New("penerbit token tidak sesuai")
+		}
+	}
+	return claims, nil
 }
