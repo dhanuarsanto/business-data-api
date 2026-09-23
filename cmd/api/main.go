@@ -73,6 +73,9 @@ func main() {
 		slog.Error("Konfigurasi TRUSTED_PROXIES tidak valid", "error", err)
 		os.Exit(1)
 	}
+	if len(trustedProxies) == 0 {
+		slog.Warn("TRUSTED_PROXIES kosong — rate limit memakai RemoteAddr. Set IP/CIDR proxy (nginx/IIS/LB) bila API di belakang reverse-proxy")
+	}
 	ipResolver := api_middleware.NewTrustedProxyResolver(trustedProxies)
 
 	activeModules, networkMatrix, roleMatrix := BuildModules(dbRegistry, cfg, ipResolver)
@@ -81,9 +84,9 @@ func main() {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           r,
-		ReadTimeout:       10 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
 

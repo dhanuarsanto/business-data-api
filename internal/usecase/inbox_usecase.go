@@ -3,6 +3,7 @@
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
@@ -68,7 +69,11 @@ func (u *InboxUsecase) CreateInbox(ctx context.Context, tenant string, dbSource 
 	if err != nil {
 		return err
 	}
-	return repo.Insert(ctx, tenant, data)
+	if err := repo.Insert(ctx, tenant, data); err != nil {
+		return err
+	}
+	cacheInvalidatePrefix(fmt.Sprintf("inbox|%s|%s", dbSource, tenant))
+	return nil
 }
 
 func (u *InboxUsecase) UpdateInbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error {
@@ -76,7 +81,11 @@ func (u *InboxUsecase) UpdateInbox(ctx context.Context, tenant string, dbSource 
 	if err != nil {
 		return err
 	}
-	return repo.Update(ctx, tenant, kode, req)
+	if err := repo.Update(ctx, tenant, kode, req); err != nil {
+		return err
+	}
+	cacheInvalidatePrefix(fmt.Sprintf("inbox|%s|%s", dbSource, tenant))
+	return nil
 }
 
 func NewInboxUsecase(repoPG domain.InboxRepository, repoMS domain.InboxRepository) *InboxUsecase {

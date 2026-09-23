@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +31,15 @@ func cacheGet(key string) (int64, bool) {
 
 func cacheSet(key string, val int64) {
 	boundCache.Store(key, boundEntry{val: val, at: time.Now()})
+}
+
+func cacheInvalidatePrefix(prefix string) {
+	boundCache.Range(func(k, _ any) bool {
+		if strings.HasPrefix(k.(string), prefix) {
+			boundCache.Delete(k)
+		}
+		return true
+	})
 }
 
 func filterCacheKey(prefix, dbSource, tenant string, limit int, filterID string) string {

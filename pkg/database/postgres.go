@@ -24,9 +24,9 @@ func (l *SlogLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 		tCtx := logger.GetTraceContext(ctx)
 
 		if ms > 500 {
-			slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
+			slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
 		} else {
-			slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "args", data["args"], "duration_ms", ms)
+			slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
 		}
 	}
 }

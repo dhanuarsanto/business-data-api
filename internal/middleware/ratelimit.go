@@ -18,6 +18,7 @@ type RateLimiter struct {
 	visitors map[string]*clientVisitor
 	rate     float64
 	capacity float64
+	resolver *TrustedProxyResolver
 	done     chan struct{}
 	once     sync.Once
 }
@@ -80,12 +81,11 @@ func (rl *RateLimiter) Stop() {
 func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := r.Header.Get("X-Real-IP")
-			if ip == "" {
-				ip = r.Header.Get("X-Forwarded-For")
-			}
-			if ip == "" {
-				ip = r.RemoteAddr
+			ip := r.RemoteAddr
+			if rl.resolver != nil {
+				if addr := rl.resolver.clientAddr(r); addr.IsValid() {
+					ip = addr.String()
+				}
 			}
 
 			if !rl.allow(ip) {
@@ -98,11 +98,12 @@ func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 	}
 }
 
-func NewRateLimiter(ratePerSec float64, capacity int) *RateLimiter {
+func NewRateLimiter(ratePerSec float64, capacity int, resolver *TrustedProxyResolver) *RateLimiter {
 	rl := &RateLimiter{
 		visitors: make(map[string]*clientVisitor),
 		rate:     ratePerSec,
 		capacity: float64(capacity),
+		resolver: resolver,
 		done:     make(chan struct{}),
 	}
 	go rl.runCleanup(3 * time.Minute)

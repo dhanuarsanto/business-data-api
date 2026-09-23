@@ -34,3 +34,33 @@ func TestValidateTokenIssuer(t *testing.T) {
 		t.Fatal("token dengan issuer berbeda harus ditolak")
 	}
 }
+
+func TestValidateTokenRejectsWeakClaims(t *testing.T) {
+	InitJWT("secret-uji", 1*time.Hour, "issuer-a")
+
+	sign := func(claims jwt.MapClaims) string {
+		tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secretKey)
+		if err != nil {
+			t.Fatalf("sign token gagal: %v", err)
+		}
+		return tok
+	}
+
+	futureIat := sign(jwt.MapClaims{
+		"iss":    "issuer-a",
+		"iat":    time.Now().Add(2 * time.Hour).Unix(),
+		"nbf":    time.Now().Unix(),
+		"exp":    time.Now().Add(3 * time.Hour).Unix(),
+	})
+	if _, err := ValidateToken(futureIat); err == nil {
+		t.Fatal("token dengan iat di masa depan harus ditolak")
+	}
+
+	noExp := sign(jwt.MapClaims{
+		"iss": "issuer-a",
+		"iat": time.Now().Unix(),
+	})
+	if _, err := ValidateToken(noExp); err == nil {
+		t.Fatal("token tanpa exp harus ditolak")
+	}
+}

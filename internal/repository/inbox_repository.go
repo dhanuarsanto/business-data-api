@@ -85,11 +85,11 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		argID++
 	}
 
-	query := `SELECT kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox` + whereClause
-	query += fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
-	args = append(args, filter.PageSize+1)
+	cols := `kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash`
 
-	rows, err := db.Query(ctx, query, args...)
+	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
+	query, pqArgs := buildPageQueryPG(cols, "inbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
+	rows, err := db.Query(ctx, query, pqArgs...)
 	if err != nil {
 		return nil, false, err
 	}
@@ -178,10 +178,11 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	namedArgs = append(namedArgs, sql.Named("limit", filter.PageSize+1))
-	query := `SELECT TOP (@limit) kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash FROM inbox` + whereClause + ` ORDER BY kode DESC`
+	cols := `kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash`
+	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
+	query, pqNamed := buildPageQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
-	rows, err := db.QueryContext(ctx, query, namedArgs...)
+	rows, err := db.QueryContext(ctx, query, pqNamed...)
 	if err != nil {
 		return nil, false, err
 	}

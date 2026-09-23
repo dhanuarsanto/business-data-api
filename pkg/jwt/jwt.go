@@ -23,13 +23,16 @@ func GenerateToken(userID int, username string, rules string, tenant string) (st
 	if len(secretKey) == 0 {
 		return "", errors.New("JWT secret belum diinisialisasi")
 	}
+	now := time.Now()
 	claims := jwt.MapClaims{
 		"user_id":  userID,
 		"username": username,
 		"rules":    rules,
 		"tenant":   tenant,
 		"iss":      issuer,
-		"exp":      time.Now().Add(tokenDuration).Unix(),
+		"iat":      now.Unix(),
+		"nbf":      now.Unix(),
+		"exp":      now.Add(tokenDuration).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -45,7 +48,7 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 			return nil, errors.New("metode signature tidak valid")
 		}
 		return secretKey, nil
-	})
+	}, jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(30*time.Second))
 
 	if err != nil {
 		return nil, err

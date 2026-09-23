@@ -1,84 +1,86 @@
-# Rekomendasi Index — Inbox & Outbox
+# Index PostgreSQL — Inbox & Outbox (Status Aktual)
 
-Dibuat setelah audit langsung ke `pg_indexes`/`pg_stats` (PostgreSQL) dan `sys.indexes` (MSSQL).
-Semua DDL di bawah dieksekusi MANUAL di database masing-masing.
+Dokumen ini mencerminkan **kondisi index aktual di PostgreSQL** (`pandora_dw.staging`) dan daftar index MSSQL yang harus dibuat manual (bagian bawah).
 
-## Kondisi saat ini
+Semua DDL sudah DIEKSEKUSI manual di database. Jangan membuat ulang tanpa alasan.
 
-| DB | Tabel | Index yang sudah ada |
+## Kondisi aktual — `inbox`
+
+| Index | Definisi (perkiraan) | Dipakai untuk |
 |---|---|---|
-| PostgreSQL | inbox | `pk_inbox (kode)`, `idx_inbox_status (partial status<20)`, `idx_inbox_tgl_status` |
-| PostgreSQL | outbox | `pk_outbox (kode)`, `ix_kode_inbox`, `ix_kode_transaksi`, `ix_outbox_status`, `ix_outbox_tgl_status` |
-| MSSQL | inbox | PK `kode`, `IX_status`, `IX_tgl_status` |
-| MSSQL | outbox | PK `kode`, `IX_status`, `IX_tgl_status`, `IX_kode_inbox`, `IX_kode_transaksi` |
+| `pk_inbox` | UNIQUE btree (kode) | PK / pagination |
+| `idx_inbox_tgl_entri` | btree (tgl_entri DESC, kode DESC) | filter tanggal |
+| `idx_inbox_kode_tgl` | btree (kode DESC) INCLUDE (tgl_entri) | **bisection pagination** (`kode_cut`) — jangan di-drop |
+| `idx_inbox_status` | btree (status) WHERE status<20 | dropdown status |
+| `idx_inbox_status_tipe` | btree (status, tipe_pengirim) | kombinasi dropdown |
+| `idx_inbox_terminal` | btree (kode_terminal) WHERE IS NOT NULL | dropdown terminal |
+| `idx_inbox_tipe` | btree (tipe_pengirim) WHERE IS NOT NULL | dropdown tipe |
+| `idx_inbox_kode_reseller` | btree (kode_reseller) | dropdown equality reseller |
+| `idx_inbox_tgl_status` | btree (tgl_status) | lookup tgl_status |
+| `idx_inbox_pesan_trgm` | GIN (pesan gin_trgm_ops) | ILIKE pesan |
+| `idx_inbox_pengirim_trgm` | GIN (pengirim gin_trgm_ops) | ILIKE pengirim |
+| `idx_inbox_kode_reseller_jawaban` | partial btree (kode DESC) WHERE kode_reseller IS NOT NULL AND is_jawaban = 0 | filter triage `requestFromReseller` |
+| `idx_inbox_tgl_entri_kode_reseller_jawaban` | partial btree (tgl_entri DESC, kode DESC) WHERE ... | kombinasi tanggal + triage |
 
-Kolom filter yang BELUM di-index: `tgl_entri`, `kode_terminal`, `tipe_pengirim`/`tipe_penerima`, `pengirim`/`penerima`, `pesan`, `kode_reseller`.
+> Trigram **kode_reseller** (`idx_*_reseller_trgm`) sudah **DIDROP** — diganti btree equality (dropdown). Selesai.
 
-## Selektivitas (dari `pg_stats`)
+## Kondisi aktual — `outbox`
 
-| Kolom | Selektivitas | Prioritas |
-|---|---|---|
-| `tgl_entri` | sangat unik (±80% baris unik) | P0 |
-| `pesan` | sangat unik | P1 (teks) |
-| `pengirim`/`penerima` | 134 / 136 nilai | P2 |
-| `kode_reseller` | 24–30 nilai | P2 |
-| `status` | 10 nilai | sudah partial |
-| `kode_terminal`/`tipe` | 1–4 nilai (tidak selektif) | P3 |
+| Index | Dipakai untuk |
+|---|---|
+| `pk_outbox` | PK / pagination |
+| `idx_outbox_tgl_entri` | filter tanggal |
+| `idx_outbox_kode_tgl` | **bisection pagination** — jangan di-drop |
+| `idx_outbox_kode_reseller` | dropdown equality reseller |
+| `idx_outbox_tipe` | dropdown tipe |
+| `idx_outbox_penerima_trgm` / `idx_outbox_pesan_trgm` | ILIKE penerima / pesan |
+| `ix_kode_inbox` / `ix_kode_transaksi` | lookup relasional |
+| `ix_outbox_status` / `ix_outbox_tgl_status` | dropdown status |
+| `idx_inbox_kode_reseller_perintah` | partial (kode DESC) WHERE kode_reseller IS NOT NULL AND is_perintah=0 — triage `replyToReseller` |
+| `idx_inbox_tgl_entri_kode_reseller_perintah` | partial (tgl_entri DESC, kode DESC) WHERE ... — triage + tanggal |
 
-## PostgreSQL
+> Nama `idx_inbox_*_perintah` di tabel `outbox` — nama memang terdengar aneh (hasil kreasi manual), tapi menunjuk tabel outbox dengan benar. Perbaikan nama = DDL opsional, bukan keharusan.
 
-### P0 — filter tanggal + urutan `kode DESC`
+## Perilaku yang bergantung pada index ini
+
+1. **Pagination default = `ORDER BY kode DESC`** (terbaru dulu). Kosongkan seluruh `tgl_entri` dukungan bisection & index terarah.
+2. **Bisection** (`kode_cut`) memanfaatkan `idx_*_kode_tgl (kode DESC INCLUDE tgl_entri)` + slack 50k.
+3. **Partial jawaban/perintah** duduk untuk filter triase (`requestFromReseller` / `replyToReseller` + `is_jawaban=0` / `is_perintah=0`); versi `tgl_entri DESC` digunakan saat filter tanggal + triase.
+4. Sort kolom di luar `kode DESC` **belum** didukung (butuh keputusan & index per kolom — lihat catatan).
+
+## MSSQL — index yang HARUS dibuat manual (untuk pola varian tgl+flag)
+
+Query varian di API (PG) memakai index tgl-leading; untuk MSSQL jalur yang sama cepat,
+bikin index berikut (DBeaver / SQL, manual):
+
 ```sql
-CREATE INDEX idx_inbox_tgl  ON inbox  (tgl_entri DESC, kode DESC);
-CREATE INDEX idx_outbox_tgl ON outbox (tgl_entri DESC, kode DESC);
+-- range tanggal umum
+CREATE NONCLUSTERED INDEX IX_inbox_tgl ON dbo.inbox (tgl_entri DESC, kode DESC);
+CREATE NONCLUSTERED INDEX IX_outbox_tgl ON dbo.outbox (tgl_entri DESC, kode DESC);
+
+-- jawaban provider (is_jawaban = 1)
+CREATE NONCLUSTERED INDEX IX_inbox_jawaban     ON dbo.inbox (kode DESC) WHERE is_jawaban = 1;
+CREATE NONCLUSTERED INDEX IX_inbox_tgl_jawaban ON dbo.inbox (tgl_entri DESC, kode DESC) WHERE is_jawaban = 1;
+
+-- request dari reseller (is_jawaban = 0)
+CREATE NONCLUSTERED INDEX IX_inbox_request     ON dbo.inbox (kode DESC) WHERE kode_reseller IS NOT NULL AND is_jawaban = 0;
+CREATE NONCLUSTERED INDEX IX_inbox_tgl_request ON dbo.inbox (tgl_entri DESC, kode DESC) WHERE kode_reseller IS NOT NULL AND is_jawaban = 0;
+
+-- outbox: perintah provider (is_perintah = 1)
+CREATE NONCLUSTERED INDEX IX_outbox_perintah     ON dbo.outbox (kode DESC) WHERE is_perintah = 1;
+CREATE NONCLUSTERED INDEX IX_outbox_tgl_perintah ON dbo.outbox (tgl_entri DESC, kode DESC) WHERE is_perintah = 1;
+
+-- outbox: reply ke reseller (is_perintah = 0)
+CREATE NONCLUSTERED INDEX IX_outbox_reply     ON dbo.outbox (kode DESC) WHERE kode_reseller IS NOT NULL AND is_perintah = 0;
+CREATE NONCLUSTERED INDEX IX_outbox_tgl_reply ON dbo.outbox (tgl_entri DESC, kode DESC) WHERE kode_reseller IS NOT NULL AND is_perintah = 0;
 ```
 
-### P1 — pencarian teks (pesan, pengirim, penerima) via trigram
-Kolom teks masih memakai `ILIKE '%..%'`; index btree tidak membantu — wajib `pg_trgm`.
-`kode_reseller` TIDAK lagi di sini (sudah jadi dropdown equality, lihat P2).
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX idx_inbox_pesan_trgm  ON inbox  USING gin (pesan gin_trgm_ops);
-CREATE INDEX idx_inbox_pengirim_trgm ON inbox USING gin (pengirim gin_trgm_ops);
-CREATE INDEX idx_outbox_pesan_trgm  ON outbox USING gin (pesan gin_trgm_ops);
-CREATE INDEX idx_outbox_penerima_trgm ON outbox USING gin (penerima gin_trgm_ops);
+Setelah dibuat, jalankan update statistik: `UPDATE STATISTICS dbo.inbox; UPDATE STATISTICS dbo.outbox;`
 
--- MIGRASI: reseller kini equality dropdown — trigram lama tidak terpakai, ganti btree
--- DROP INDEX IF EXISTS idx_inbox_reseller_trgm;
--- DROP INDEX IF EXISTS idx_outbox_reseller_trgm;
-```
-
-### P2 — filter equality/range dropdown (terminal, tipe, reseller)
-```sql
-CREATE INDEX idx_inbox_terminal ON inbox  (kode_terminal) WHERE kode_terminal IS NOT NULL;
-CREATE INDEX idx_inbox_tipe     ON inbox  (tipe_pengirim) WHERE tipe_pengirim IS NOT NULL;
-CREATE INDEX idx_outbox_tipe    ON outbox (tipe_penerima) WHERE tipe_penerima IS NOT NULL;
-CREATE INDEX idx_inbox_reseller ON inbox  (kode_reseller);
-CREATE INDEX idx_outbox_reseller ON outbox (kode_reseller);
-```
-
-## MSSQL
-
-### P0 — filter tanggal + urutan `kode DESC`
-```sql
-CREATE NONCLUSTERED INDEX IX_inbox_tgl  ON inbox  (tgl_entri DESC, kode DESC);
-CREATE NONCLUSTERED INDEX IX_outbox_tgl ON outbox (tgl_entri DESC, kode DESC);
-```
-
-### P2 — filter equality dropdown (terminal, tipe, reseller)
-```sql
-CREATE NONCLUSTERED INDEX IX_inbox_terminal ON inbox (kode_terminal) WHERE kode_terminal IS NOT NULL;
-CREATE NONCLUSTERED INDEX IX_inbox_tipe     ON inbox (tipe_pengirim) WHERE tipe_pengirim IS NOT NULL;
-CREATE NONCLUSTERED INDEX IX_outbox_tipe    ON outbox (tipe_penerima) WHERE tipe_penerima IS NOT NULL;
-CREATE NONCLUSTERED INDEX IX_inbox_reseller ON inbox (kode_reseller);
-CREATE NONCLUSTERED INDEX IX_outbox_reseller ON outbox (kode_reseller);
-```
+> Tanpa index tersebut, query varian/flag di MSSQL akan tetap scan (tidak di-fast-path).
 
 ## Catatan
 
-- **P0 adalah prioritas utama** — filter TGL paling sering dipakai dan paling selektif; dampak terbesar.
-- **Kolom teks yang masih `ILIKE '%..%'`: `pesan`, `pengirim`, `penerima`** — tidak bisa memakai index biasa. PostgreSQL: `pg_trgm`. MSSQL: scan saja, atau Full-Text Search bila nanti terlalu lambat.
-- **`kode_reseller` sekarang equality (`=`) / dropdown** (dari tabel `reseller` via `GET /master/reseller`) — butuh **index btree biasa** (P2), bukan trigram. Jika trigram reseller lama (`idx_*_reseller_trgm`) sudah terpasang, drop & ganti seperti di P1.
-- **`kode_terminal` / `tipe`** (1–4 nilai, tidak selektif): bantu hanya saat digabung dengan filter `tgl_entri` (bitmap combine); kerjakan terakhir.
-- Index menambah overhead kecil pada INSERT/UPDATE — tetap aman untuk volume inbox ±10jt / outbox ±7jt baris.
-- Sebelum eksekusi, pastikan `ANALYZE` (PG) berjalan agar statistik segar.
+- Jangan drop oleh index yang ditandai "dipakai bisection" tanpa menyesuaikan logika repo.
+- `ANALYZE` sebaiknya dijalankan setelah mass-change data agar perencana segar.
+- Fitur sort non-trivial di FE masih *open* — bila dibutuhkan, inventaris index per kolom sort (keyset) diputuskan dulu, bukan otomatis buat.

@@ -17,9 +17,9 @@ func SecurityTracer() func(http.Handler) http.Handler {
 			start := time.Now()
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-			b := make([]byte, 4)
+			b := make([]byte, 16)
 			rand.Read(b)
-			traceID := fmt.Sprintf("TRC-%x-%d", b, time.Now().Unix())
+			traceID := fmt.Sprintf("TRC-%x", b)
 
 			tCtx := &logger.TraceContext{
 				TraceID:   traceID,

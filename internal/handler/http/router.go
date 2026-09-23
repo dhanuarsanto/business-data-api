@@ -2,6 +2,8 @@ package http
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -11,6 +13,26 @@ import (
 
 	api_middleware "go.internal/business-data-api/internal/middleware"
 )
+
+func swaggerYAMLPath() string {
+	candidates := []string{"docs/swagger.yaml"}
+	if exe, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exe)
+		candidates = append(candidates,
+			filepath.Join(dir, "docs", "swagger.yaml"),
+			filepath.Join(dir, "..", "docs", "swagger.yaml"),
+		)
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			if abs, err := filepath.Abs(p); err == nil {
+				return abs
+			}
+			return p
+		}
+	}
+	return candidates[0]
+}
 
 func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolver, networkMatrix map[string]bool, roleMatrix map[string][]string, modules ...Module) (*chi.Mux, []*api_middleware.RateLimiter, *api_middleware.KeyManager) {
 	r := chi.NewRouter()
@@ -29,7 +51,7 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 	r.Use(api_middleware.RequestBodyLimit(cfg.MaxBodyBytes))
 
 	r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
-		http.ServeFile(w, req, "docs/swagger.yaml")
+		http.ServeFile(w, req, swaggerYAMLPath())
 	})
 
 	r.Get("/swagger/*", httpSwagger.Handler(
@@ -39,7 +61,7 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 	keyManager := api_middleware.NewKeyManager("api_keys.json")
 
 	var limiters []*api_middleware.RateLimiter
-	globalLimiter := api_middleware.NewRateLimiter(50.0, 100)
+	globalLimiter := api_middleware.NewRateLimiter(50.0, 100, resolver)
 	limiters = append(limiters, globalLimiter)
 
 	protectedApiKey := r.With(

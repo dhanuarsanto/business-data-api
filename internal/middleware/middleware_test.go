@@ -95,7 +95,7 @@ func TestRequireTokenTenantMatch(t *testing.T) {
 }
 
 func TestRateLimiterFirstRequests(t *testing.T) {
-	rl := NewRateLimiter(0, 2)
+	rl := NewRateLimiter(0, 2, nil)
 
 	if !rl.allow("1.1.1.1") {
 		t.Fatal("request pertama harus lolos (kapasitas penuh)")
@@ -109,9 +109,28 @@ func TestRateLimiterFirstRequests(t *testing.T) {
 }
 
 func TestRateLimiterStop(t *testing.T) {
-	rl := NewRateLimiter(10, 5)
+	rl := NewRateLimiter(10, 5, nil)
 	rl.Stop()
 	rl.Stop()
+}
+
+func TestRateLimiterIgnoresSpoofedHeaders(t *testing.T) {
+	resolver := NewTrustedProxyResolver(nil)
+	rl := NewRateLimiter(0, 1, resolver)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "203.0.113.9:1234"
+	req.Header.Set("X-Real-IP", "198.51.100.7")
+	req.Header.Set("X-Forwarded-For", "198.51.100.8")
+
+	rec := httptest.NewRecorder()
+	rl.Middleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("spoof header tanpa proxy tepercaya harus memakai RemoteAddr dan lolos, dapat %d", rec.Code)
+	}
 }
 
 func TestPostgresWriteGuard(t *testing.T) {

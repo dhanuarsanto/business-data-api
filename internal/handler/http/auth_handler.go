@@ -124,7 +124,7 @@ func NewAuthHandler(authUsecase *usecase.AuthUsecase, networkMatrix map[string]b
 }
 
 func (h *AuthHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string) {
-	h.authLimiter = api_middleware.NewRateLimiter(0.2, 5)
+	h.authLimiter = api_middleware.NewRateLimiter(0.2, 5, h.ipResolver)
 
 	r.With(h.authLimiter.Middleware()).Post("/api/v1/{tenant}/auth/login", h.Login)
 

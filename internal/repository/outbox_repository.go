@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"context"
@@ -53,11 +53,11 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		argID++
 	}
 
-	query := `SELECT kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim FROM outbox` + whereClause
-	query += fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
-	args = append(args, filter.PageSize+1)
+	cols := `kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim`
 
-	rows, err := db.Query(ctx, query, args...)
+	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
+	query, pqArgs := buildPageQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
+	rows, err := db.Query(ctx, query, pqArgs...)
 	if err != nil {
 		return nil, false, err
 	}
@@ -149,10 +149,11 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	namedArgs = append(namedArgs, sql.Named("limit", filter.PageSize+1))
-	query := `SELECT TOP (@limit) kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim FROM outbox` + whereClause + ` ORDER BY kode DESC`
+	cols := `kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim`
+	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
+	query, pqNamed := buildPageQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
-	rows, err := db.QueryContext(ctx, query, namedArgs...)
+	rows, err := db.QueryContext(ctx, query, pqNamed...)
 	if err != nil {
 		return nil, false, err
 	}

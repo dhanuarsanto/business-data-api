@@ -277,6 +277,129 @@ func TestPaginationLimitTotal(t *testing.T) {
 	}
 }
 
+func TestJawabanVariantMatchesLegacy(t *testing.T) {
+	ready(t)
+	ctx := context.Background()
+	start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 9, 23, 23, 59, 59, 0, time.UTC)
+	jawaban := true
+
+	legacy := func(tbl string) ([]int64, error) {
+		rows, err := rawPG.Query(ctx, `SELECT kode FROM pandora_dw.staging.`+tbl+` WHERE tgl_entri >= $1 AND tgl_entri <= $2 AND is_jawaban = 1 ORDER BY kode DESC LIMIT 6`, start, end)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var ks []int64
+		for rows.Next() {
+			var k int64
+			if err := rows.Scan(&k); err != nil {
+				return nil, err
+			}
+			ks = append(ks, k)
+		}
+		return ks, rows.Err()
+	}
+
+	got, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, JawabanFromProvider: &jawaban})
+	if err != nil {
+		t.Fatalf("varian inbox: %v", err)
+	}
+	want, err := legacy("inbox")
+	if err != nil {
+		t.Fatalf("legacy inbox: %v", err)
+	}
+	if len(got) != len(want) {
+		t.Fatalf("inbox: jumlah beda varian=%d legacy=%d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i].Kode != want[i] {
+			t.Fatalf("inbox: kode ke-%d beda varian=%d legacy=%d", i, got[i].Kode, want[i])
+		}
+	}
+}
+
+func TestFlagVariantsMatchLegacy(t *testing.T) {
+	ready(t)
+	ctx := context.Background()
+	start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 9, 23, 23, 59, 59, 0, time.UTC)
+
+	compare := func(tbl string, got []int64, want []int64) {
+		if len(got) != len(want) {
+			t.Fatalf("%s: jumlah beda varian=%d legacy=%d", tbl, len(got), len(want))
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("%s: kode ke-%d beda varian=%d legacy=%d", tbl, i, got[i], want[i])
+			}
+		}
+	}
+
+	request := true
+	gotPG, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
+	if err != nil {
+		t.Fatalf("PG varian request: %v", err)
+	}
+	wantPG, err := legacyKodes(ctx, rawPG, `SELECT kode FROM pandora_dw.staging.inbox WHERE tgl_entri >= $1 AND tgl_entri <= $2 AND kode_reseller IS NOT NULL AND is_jawaban = 0 ORDER BY kode DESC LIMIT 6`, start, end)
+	if err != nil {
+		t.Fatalf("PG legacy request: %v", err)
+	}
+	compare("inbox/request PG", kodesOf(gotPG), wantPG)
+
+	gotMS, _, err := msIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
+	if err != nil {
+		t.Fatalf("MS varian request: %v", err)
+	}
+	wantMS, err := legacyKodesMS(ctx, rawMS, `SELECT TOP (6) kode FROM dbo.inbox WHERE tgl_entri >= @s AND tgl_entri <= @e AND kode_reseller IS NOT NULL AND is_jawaban = 0 ORDER BY kode DESC`, sql.Named("s", start), sql.Named("e", end))
+	if err != nil {
+		t.Fatalf("MS legacy request: %v", err)
+	}
+	compare("inbox/request MS", kodesOf(gotMS), wantMS)
+}
+
+func kodesOf(xs []domain.Inbox) []int64 {
+	out := make([]int64, len(xs))
+	for i, x := range xs {
+		out[i] = x.Kode
+	}
+	return out
+}
+
+func legacyKodes(ctx context.Context, db *pgxpool.Pool, q string, args ...any) ([]int64, error) {
+	rows, err := db.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ks []int64
+	for rows.Next() {
+		var k int64
+		if err := rows.Scan(&k); err != nil {
+			return nil, err
+		}
+		ks = append(ks, k)
+	}
+	return ks, rows.Err()
+}
+
+func legacyKodesMS(ctx context.Context, db *sql.DB, q string, args ...any) ([]int64, error) {
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ks []int64
+	for rows.Next() {
+		var k int64
+		if err := rows.Scan(&k); err != nil {
+			return nil, err
+		}
+		ks = append(ks, k)
+	}
+	return ks, rows.Err()
+}
+
 func TestReadOnlyUserSelect(t *testing.T) {
 	ready(t)
 	ctx := context.Background()
