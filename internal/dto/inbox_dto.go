@@ -1,4 +1,4 @@
-﻿package dto
+package dto
 
 type CreateInboxRequest struct {
 	Pesan         string  `json:"pesan"`

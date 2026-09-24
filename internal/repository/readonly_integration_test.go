@@ -1,4 +1,4 @@
-﻿//go:build integration
+//go:build integration
 
 package repository_test
 
@@ -23,8 +23,8 @@ var (
 	repoOnce sync.Once
 	initErr  error
 
-	pgIn, msIn    domain.InboxRepository
-	pgOut, msOut  domain.OutboxRepository
+	pgIn, msIn     domain.InboxRepository
+	pgOut, msOut   domain.OutboxRepository
 	pgUser, msUser domain.UserRepository
 
 	rawPG *pgxpool.Pool
@@ -72,7 +72,7 @@ func ready(t *testing.T) {
 	}
 }
 
-func pInt(v int) *int      { return &v }
+func pInt(v int) *int       { return &v }
 func pInt16(v int16) *int16 { return &v }
 
 func TestBisectionMatchesLegacy(t *testing.T) {

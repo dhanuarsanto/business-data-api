@@ -1,4 +1,4 @@
-﻿package http
+package http
 
 import (
 	"encoding/json"
@@ -109,7 +109,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		jawFromProviderPtr = &b
 	}
 
-filter := domain.InboxFilter{
+	filter := domain.InboxFilter{
 		StartDate:           startDatePtr,
 		EndDate:             endDatePtr,
 		PageSize:            pageSize,

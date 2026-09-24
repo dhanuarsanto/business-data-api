@@ -47,10 +47,10 @@ func TestValidateTokenRejectsWeakClaims(t *testing.T) {
 	}
 
 	futureIat := sign(jwt.MapClaims{
-		"iss":    "issuer-a",
-		"iat":    time.Now().Add(2 * time.Hour).Unix(),
-		"nbf":    time.Now().Unix(),
-		"exp":    time.Now().Add(3 * time.Hour).Unix(),
+		"iss": "issuer-a",
+		"iat": time.Now().Add(2 * time.Hour).Unix(),
+		"nbf": time.Now().Unix(),
+		"exp": time.Now().Add(3 * time.Hour).Unix(),
 	})
 	if _, err := ValidateToken(futureIat); err == nil {
 		t.Fatal("token dengan iat di masa depan harus ditolak")

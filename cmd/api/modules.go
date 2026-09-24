@@ -17,12 +17,12 @@ func BuildModules(dbRegistry *database.DBRegistry, cfg *config.Config, ipResolve
 	}
 
 	roleMatrix := map[string][]string{
-		"ManageUsers":        {"sa"},
+		"ManageUsers":          {"sa"},
 		"ReadResellerDropdown": {"sa", "op", "opout"},
-		"ReadInbox":          {"sa", "op", "opout"},
-		"WriteInbox":         {"sa"},
-		"ReadOutbox":         {"sa", "op", "opout"},
-		"WriteOutbox":        {"sa"},
+		"ReadInbox":            {"sa", "op", "opout"},
+		"WriteInbox":           {"sa"},
+		"ReadOutbox":           {"sa", "op", "opout"},
+		"WriteOutbox":          {"sa"},
 	}
 
 	userRepos := repository.NewUserRepositories(dbRegistry)

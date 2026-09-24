@@ -1,4 +1,4 @@
-﻿package http
+package http
 
 import (
 	"encoding/json"
@@ -102,7 +102,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		perintahProviderPtr = &b
 	}
 
-filter := domain.OutboxFilter{
+	filter := domain.OutboxFilter{
 		StartDate:        startDatePtr,
 		EndDate:          endDatePtr,
 		PageSize:         pageSize,

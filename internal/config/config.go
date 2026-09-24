@@ -44,7 +44,7 @@ func (c *Config) GetAllowedOrigins() []string {
 		if trimmed != "" {
 			cleaned = append(cleaned, trimmed)
 		}
-}
+	}
 	if len(cleaned) == 0 {
 		return []string{"http://localhost:3000", "http://localhost:5173"}
 	}

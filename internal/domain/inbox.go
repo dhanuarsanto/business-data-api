@@ -27,20 +27,20 @@ type Inbox struct {
 }
 
 type InboxFilter struct {
-	StartDate  *time.Time
-	EndDate    *time.Time
-	PageSize   int
-	LimitTotal *int
-	LowerBound int64
-	Terminal   *int
-	Reseller   *string
-	Pengirim   *string
-	Tipe       *string
-	Status     *int16
-	Pesan      string
+	StartDate           *time.Time
+	EndDate             *time.Time
+	PageSize            int
+	LimitTotal          *int
+	LowerBound          int64
+	Terminal            *int
+	Reseller            *string
+	Pengirim            *string
+	Tipe                *string
+	Status              *int16
+	Pesan               string
 	RequestFromReseller *bool
 	JawabanFromProvider *bool
-	Cursor     int64
+	Cursor              int64
 }
 
 type InboxRepository interface {

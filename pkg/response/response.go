@@ -21,9 +21,9 @@ type JSONResponse struct {
 }
 
 type CursorPaginationMeta struct {
-	HasNextPage bool   `json:"has_next_page"`
-	HasPrevPage bool   `json:"has_prev_page"`
-	NextCursor  int64  `json:"next_cursor,omitempty"`
+	HasNextPage bool  `json:"has_next_page"`
+	HasPrevPage bool  `json:"has_prev_page"`
+	NextCursor  int64 `json:"next_cursor,omitempty"`
 }
 
 func Success(w http.ResponseWriter, r *http.Request, data any) {
