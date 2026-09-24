@@ -46,6 +46,35 @@ func bisectCutPG(ctx context.Context, db *pgxpool.Pool, table string, end time.T
 	return lo, nil
 }
 
+func bisectCutStartPG(ctx context.Context, db *pgxpool.Pool, table string, start time.Time) (int64, error) {
+	var hi int64
+	if err := db.QueryRow(ctx, "SELECT MAX(kode) FROM "+table).Scan(&hi); err != nil {
+		return 0, err
+	}
+	if hi <= 0 {
+		return 0, nil
+	}
+	lo := int64(0)
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		var t time.Time
+		err := db.QueryRow(ctx, "SELECT tgl_entri FROM "+table+" WHERE kode <= $1 ORDER BY kode DESC LIMIT 1", mid).Scan(&t)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				hi = mid - 1
+				continue
+			}
+			return 0, err
+		}
+		if t.Before(start) {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	return lo, nil
+}
+
 type InboxRepositories struct {
 	PG domain.InboxRepository
 	MS domain.InboxRepository
@@ -61,7 +90,9 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		return nil, false, err
 	}
 
-	whereClause, args, argID := buildInboxFilterPG(filter)
+	f := filter
+	f.StartDate = nil
+	whereClause, args, argID := buildInboxFilterPG(f)
 
 	if filter.EndDate != nil {
 		cut, err := bisectCutPG(ctx, db, "inbox", *filter.EndDate)
@@ -70,6 +101,16 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
 		args = append(args, cut+bisectSlack)
+		argID++
+	}
+
+	if filter.StartDate != nil {
+		cut, err := bisectCutStartPG(ctx, db, "inbox", *filter.StartDate)
+		if err != nil {
+			return nil, false, err
+		}
+		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
+		args = append(args, cut)
 		argID++
 	}
 
@@ -270,16 +311,28 @@ func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filte
 	if err != nil {
 		return 0, err
 	}
-	whereClause, args, _ := buildInboxFilterPG(filter)
+	f := filter
+	f.StartDate = nil
+	whereClause, args, argID := buildInboxFilterPG(f)
 	if filter.EndDate != nil {
 		cut, err := bisectCutPG(ctx, db, "inbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(len(args)+1) + whereClause[len(" WHERE 1=1"):]
+		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
 		args = append(args, cut+bisectSlack)
+		argID++
 	}
-	query := `SELECT kode FROM inbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, len(args)+1)
+	if filter.StartDate != nil {
+		cut, err := bisectCutStartPG(ctx, db, "inbox", *filter.StartDate)
+		if err != nil {
+			return 0, err
+		}
+		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
+		args = append(args, cut)
+		argID++
+	}
+	query := `SELECT kode FROM inbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, argID)
 	args = append(args, *filter.LimitTotal-1)
 	var k int64
 	err = db.QueryRow(ctx, query, args...).Scan(&k)

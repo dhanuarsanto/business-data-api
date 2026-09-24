@@ -29,7 +29,9 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		return nil, false, err
 	}
 
-	whereClause, args, argID := buildOutboxFilterPG(filter)
+	f := filter
+	f.StartDate = nil
+	whereClause, args, argID := buildOutboxFilterPG(f)
 
 	if filter.EndDate != nil {
 		cut, err := bisectCutPG(ctx, db, "outbox", *filter.EndDate)
@@ -38,6 +40,16 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
 		args = append(args, cut+bisectSlack)
+		argID++
+	}
+
+	if filter.StartDate != nil {
+		cut, err := bisectCutStartPG(ctx, db, "outbox", *filter.StartDate)
+		if err != nil {
+			return nil, false, err
+		}
+		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
+		args = append(args, cut)
 		argID++
 	}
 
@@ -246,16 +258,28 @@ func (r *outboxPGRepository) LowerBound(ctx context.Context, tenant string, filt
 	if err != nil {
 		return 0, err
 	}
-	whereClause, args, _ := buildOutboxFilterPG(filter)
+	f := filter
+	f.StartDate = nil
+	whereClause, args, argID := buildOutboxFilterPG(f)
 	if filter.EndDate != nil {
 		cut, err := bisectCutPG(ctx, db, "outbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(len(args)+1) + whereClause[len(" WHERE 1=1"):]
+		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
 		args = append(args, cut+bisectSlack)
+		argID++
 	}
-	query := `SELECT kode FROM outbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, len(args)+1)
+	if filter.StartDate != nil {
+		cut, err := bisectCutStartPG(ctx, db, "outbox", *filter.StartDate)
+		if err != nil {
+			return 0, err
+		}
+		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
+		args = append(args, cut)
+		argID++
+	}
+	query := `SELECT kode FROM outbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, argID)
 	args = append(args, *filter.LimitTotal-1)
 	var k int64
 	err = db.QueryRow(ctx, query, args...).Scan(&k)

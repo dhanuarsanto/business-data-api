@@ -44,7 +44,7 @@ Semua DDL sudah DIEKSEKUSI manual di database. Jangan membuat ulang tanpa alasan
 ## Perilaku yang bergantung pada index ini
 
 1. **Pagination default = `ORDER BY kode DESC`** (terbaru dulu). Kosongkan seluruh `tgl_entri` dukungan bisection & index terarah.
-2. **Bisection** (`kode_cut`) memanfaatkan `idx_*_kode_tgl (kode DESC INCLUDE tgl_entri)` + slack 50k.
+2. **Bisection** (`kode_cut`) memanfaatkan `idx_*_kode_tgl (kode DESC INCLUDE tgl_entri)` + slack 50k. Sewaktu `StartDate` diset, batas bawah juga dibisect (`kode > cutStart`) sehingga filter tanggal `tgl_entri >= start` tidak lagi dipakai query utama — hasil identik secara logika, tapi planner selalu lewat index kode (cepat deterministik, tanpa Bitmap/Seq scan).
 3. **Partial jawaban/perintah** duduk untuk filter triase (`requestFromReseller` / `replyToReseller` + `is_jawaban=0` / `is_perintah=0`); versi `tgl_entri DESC` digunakan saat filter tanggal + triase.
 4. Sort kolom di luar `kode DESC` **belum** didukung (butuh keputusan & index per kolom — lihat catatan).
 
