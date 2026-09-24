@@ -58,7 +58,11 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 		httpSwagger.URL("/docs/swagger.yaml"),
 	))
 
-	keyManager := api_middleware.NewKeyManager("api_keys.json")
+	keyPath := cfg.APIKeysPath
+	if keyPath == "" {
+		keyPath = "api_keys.json"
+	}
+	keyManager := api_middleware.NewKeyManager(keyPath)
 
 	var limiters []*api_middleware.RateLimiter
 	globalLimiter := api_middleware.NewRateLimiter(50.0, 100, resolver)
@@ -77,18 +81,23 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 		response.Error(w, req, http.StatusMethodNotAllowed, "Method HTTP tidak diizinkan pada endpoint ini")
 	})
 
-	protected := protectedApiKey.With(
+	public := protectedApiKey.With(
 		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
 	)
 
-	protected.Get("/health", func(w http.ResponseWriter, req *http.Request) {
+	protected := protectedApiKey.With(
+		api_middleware.RequireToken(),
+		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
+	)
+
+	public.Get("/health", func(w http.ResponseWriter, req *http.Request) {
 		response.Success(w, req, map[string]string{
 			"status": "API berjalan dengan normal!",
 		})
 	})
 
 	for _, m := range modules {
-		m.RegisterRoutes(protected.(*chi.Mux), cfg, roleMatrix)
+		m.RegisterRoutes(public, protected, cfg, roleMatrix)
 		if limiterProvider, ok := m.(interface {
 			RateLimiters() []*api_middleware.RateLimiter
 		}); ok {

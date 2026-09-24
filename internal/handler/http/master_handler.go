@@ -40,9 +40,8 @@ func NewMasterHandler(usecase *usecase.MasterUsecase) *MasterHandler {
 	return &MasterHandler{usecase: usecase}
 }
 
-func (h *MasterHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string) {
-	r.Route("/api/v1/{tenant}/master", func(master chi.Router) {
-		master.Use(api_middleware.RequireToken())
+func (h *MasterHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+	protected.Route("/api/v1/{tenant}/master", func(master chi.Router) {
 		master.Use(api_middleware.RequireRole(roleMatrix["ReadResellerDropdown"]...))
 		master.Get("/reseller-dropdown", h.ListResellerForDropdown)
 	})

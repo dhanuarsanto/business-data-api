@@ -6,7 +6,6 @@ import (
 	"net/netip"
 	"strings"
 
-	"go.internal/business-data-api/pkg/jwt"
 	"go.internal/business-data-api/pkg/response"
 )
 
@@ -73,19 +72,6 @@ func NetworkRoleGuard(globalLocalOnly bool, roleMatrix map[string]bool, resolver
 			}
 
 			claims, ok := r.Context().Value(claimsKey).(map[string]any)
-			if !ok {
-				authHeader := r.Header.Get("Authorization")
-				if authHeader != "" {
-					parts := strings.Split(authHeader, " ")
-					if len(parts) == 2 && parts[0] == "Bearer" {
-						if parsedClaims, err := jwt.ValidateToken(parts[1]); err == nil {
-							claims = parsedClaims
-							ok = true
-						}
-					}
-				}
-			}
-
 			if !ok {
 				next.ServeHTTP(w, r)
 				return

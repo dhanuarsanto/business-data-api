@@ -23,6 +23,10 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
+	if len(cfg.JWTSecret) < 32 {
+		slog.Error("JWT_SECRET terlalu pendek — wajib minimal 32 byte demi keamanan token")
+		os.Exit(1)
+	}
 	logger.SetupLogger(cfg.AppEnv)
 	response.Init(cfg.AppEnv)
 	jwt.InitJWT(cfg.JWTSecret, cfg.JWTTokenDuration, cfg.JWTIssuer)
@@ -74,6 +78,10 @@ func main() {
 		os.Exit(1)
 	}
 	if len(trustedProxies) == 0 {
+		if cfg.AppEnv == "production" && cfg.GlobalLocalOnly && !cfg.AllowDirectClients {
+			slog.Error("Konfigurasi tidak aman: GLOBAL_LOCAL_ONLY=true tetapi jalur klien belum dideklarasikan. Isi TRUSTED_PROXIES (IP/CIDR proxy/nginx/LB) bila API di belakang reverse-proxy, atau set ALLOW_DIRECT_CLIENTS=true bila klien terhubung langsung ke API.")
+			os.Exit(1)
+		}
 		slog.Warn("TRUSTED_PROXIES kosong — rate limit memakai RemoteAddr. Set IP/CIDR proxy (nginx/IIS/LB) bila API di belakang reverse-proxy")
 	}
 	ipResolver := api_middleware.NewTrustedProxyResolver(trustedProxies)

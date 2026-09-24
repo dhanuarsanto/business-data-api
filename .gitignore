@@ -37,6 +37,9 @@ $RECYCLE.BIN/
 .air
 tmp/
 
+# 8. API Keys (rahasia — generate via cmd/keygen)
+api_keys.json
+
 # 6. IDE / Editor
 .idea/
 *.swp

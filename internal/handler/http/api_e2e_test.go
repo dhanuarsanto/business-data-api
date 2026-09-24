@@ -1,4 +1,4 @@
-package test
+package http_test
 
 import (
 	"io"
@@ -109,6 +109,9 @@ func TestAPIEndToEnd(t *testing.T) {
 	}
 
 	inboxPath := "/api/v1/maxtop/inbox"
+	if resp, _ := do(http.MethodGet, inboxPath, "key_e2e", "", nil); resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("GET inbox tanpa token harus 401, dapat %d", resp.StatusCode)
+	}
 	if resp, _ := do(http.MethodGet, inboxPath, "key_e2e", token, nil); resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("GET inbox tenant tak terdaftar harus 404, dapat %d", resp.StatusCode)
 	}

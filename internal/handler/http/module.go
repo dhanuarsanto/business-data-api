@@ -6,5 +6,5 @@ import (
 )
 
 type Module interface {
-	RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string)
+	RegisterRoutes(public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string)
 }

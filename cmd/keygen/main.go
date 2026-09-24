@@ -27,14 +27,18 @@ func main() {
 	rand.Read(bytes)
 	newKey := "key_" + hex.EncodeToString(bytes)
 
-	fileData, _ := os.ReadFile("api_keys.json")
+	filePath := os.Getenv("API_KEYS_PATH")
+	if filePath == "" {
+		filePath = "api_keys.json"
+	}
+	fileData, _ := os.ReadFile(filePath)
 	keys := make(map[string]string)
 	json.Unmarshal(fileData, &keys)
 
 	keys[newKey] = developerName
 
 	newData, _ := json.MarshalIndent(keys, "", "  ")
-	os.WriteFile("api_keys.json", newData, 0644)
+	os.WriteFile(filePath, newData, 0644)
 
 	fmt.Printf("API Key berhasil dibuat untuk: %s\n", developerName)
 	fmt.Printf("API Key: %s\n", newKey)

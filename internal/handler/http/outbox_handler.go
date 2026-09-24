@@ -33,11 +33,20 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 200 {
+		pageSize = 200
+	}
 	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
 
 	var limitTotalPtr *int
 	if val := queryParams.Get("limit"); val != "" {
 		if v, err := strconv.Atoi(val); err == nil && v > 0 {
+			if v > 10000 {
+				v = 10000
+			}
 			limitTotalPtr = &v
 		}
 	}
@@ -201,9 +210,8 @@ func NewOutboxHandler(usecase *usecase.OutboxUsecase) *OutboxHandler {
 	return &OutboxHandler{usecase: usecase}
 }
 
-func (h *OutboxHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string) {
-	r.Route("/api/v1/{tenant}/outbox", func(outbox chi.Router) {
-		outbox.Use(api_middleware.RequireToken())
+func (h *OutboxHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+	protected.Route("/api/v1/{tenant}/outbox", func(outbox chi.Router) {
 		outbox.Group(func(read chi.Router) {
 			read.Use(api_middleware.RequireRole(roleMatrix["ReadOutbox"]...))
 			read.Get("/", h.GetOutbox)

@@ -123,13 +123,12 @@ func NewAuthHandler(authUsecase *usecase.AuthUsecase, networkMatrix map[string]b
 	return &AuthHandler{authUsecase: authUsecase, networkMatrix: networkMatrix, ipResolver: ipResolver, cookieSecure: cookieSecure}
 }
 
-func (h *AuthHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string) {
+func (h *AuthHandler) RegisterRoutes(public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
 	h.authLimiter = api_middleware.NewRateLimiter(0.2, 5, h.ipResolver)
 
-	r.With(h.authLimiter.Middleware()).Post("/api/v1/{tenant}/auth/login", h.Login)
+	public.With(h.authLimiter.Middleware()).Post("/api/v1/{tenant}/auth/login", h.Login)
 
-	r.Route("/api/v1/{tenant}/auth/users", func(users chi.Router) {
-		users.Use(api_middleware.RequireToken())
+	protected.Route("/api/v1/{tenant}/auth/users", func(users chi.Router) {
 		users.Use(api_middleware.RequireRole(roleMatrix["ManageUsers"]...))
 		users.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
 		users.Post("/", h.CreateUser)

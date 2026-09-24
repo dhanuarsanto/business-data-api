@@ -33,11 +33,20 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 
 	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 200 {
+		pageSize = 200
+	}
 	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
 
 	var limitTotalPtr *int
 	if val := queryParams.Get("limit"); val != "" {
 		if v, err := strconv.Atoi(val); err == nil && v > 0 {
+			if v > 10000 {
+				v = 10000
+			}
 			limitTotalPtr = &v
 		}
 	}
@@ -220,9 +229,8 @@ func NewInboxHandler(usecase *usecase.InboxUsecase) *InboxHandler {
 	return &InboxHandler{usecase: usecase}
 }
 
-func (h *InboxHandler) RegisterRoutes(r *chi.Mux, cfg *config.Config, roleMatrix map[string][]string) {
-	r.Route("/api/v1/{tenant}/inbox", func(inbox chi.Router) {
-		inbox.Use(api_middleware.RequireToken())
+func (h *InboxHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+	protected.Route("/api/v1/{tenant}/inbox", func(inbox chi.Router) {
 		inbox.Group(func(read chi.Router) {
 			read.Use(api_middleware.RequireRole(roleMatrix["ReadInbox"]...))
 			read.Get("/", h.GetInbox)

@@ -18,8 +18,10 @@ type Config struct {
 	Port                 int    `env:"PORT" envDefault:"8080"`
 	AllowedOrigins       string `env:"ALLOWED_ORIGINS" envDefault:"http://localhost:3000,http://localhost:5173"`
 	TrustedProxies       string `env:"TRUSTED_PROXIES" envDefault:""`
+	AllowDirectClients   bool   `env:"ALLOW_DIRECT_CLIENTS" envDefault:"false"`
 	MaxBodyBytes         int64  `env:"MAX_BODY_BYTES" envDefault:"1048576"`
 	CookieSecure         bool   `env:"COOKIE_SECURE" envDefault:"true"`
+	APIKeysPath          string `env:"API_KEYS_PATH" envDefault:"api_keys.json"`
 
 	PostgresMaxtopURL string `env:"POSTGRES_MAXTOP_URL,required"`
 	MSSQLMaxtopURL    string `env:"MSSQL_MAXTOP_URL,required"`
