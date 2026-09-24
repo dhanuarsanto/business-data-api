@@ -98,7 +98,12 @@ func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 	}
 }
 
-func NewRateLimiter(ratePerSec float64, capacity int, resolver *TrustedProxyResolver) *RateLimiter {
+const defaultCleanupInterval = 3 * time.Minute
+
+func NewRateLimiter(ratePerSec float64, capacity int, resolver *TrustedProxyResolver, cleanupInterval time.Duration) *RateLimiter {
+	if cleanupInterval <= 0 {
+		cleanupInterval = defaultCleanupInterval
+	}
 	rl := &RateLimiter{
 		visitors: make(map[string]*clientVisitor),
 		rate:     ratePerSec,
@@ -106,6 +111,6 @@ func NewRateLimiter(ratePerSec float64, capacity int, resolver *TrustedProxyReso
 		resolver: resolver,
 		done:     make(chan struct{}),
 	}
-	go rl.runCleanup(3 * time.Minute)
+	go rl.runCleanup(cleanupInterval)
 	return rl
 }

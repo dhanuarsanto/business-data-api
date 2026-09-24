@@ -10,19 +10,29 @@ import (
 	"go.internal/business-data-api/internal/usecase"
 )
 
+const (
+	tenantMaxtop  = "maxtop"
+	tenantPandora = "pandora"
+	tenantToplink = "toplink"
+
+	roleSA    = "sa"
+	roleOP    = "op"
+	roleOpOut = "opout"
+)
+
 func BuildModules(dbRegistry *database.DBRegistry, cfg *config.Config, ipResolver *api_middleware.TrustedProxyResolver) ([]http_handler.Module, map[string]bool, map[string][]string) {
 	networkMatrix := map[string]bool{
-		"*":  true,
-		"sa": false,
+		"*":    true,
+		roleSA: false,
 	}
 
 	roleMatrix := map[string][]string{
-		"ManageUsers":          {"sa"},
-		"ReadResellerDropdown": {"sa", "op", "opout"},
-		"ReadInbox":            {"sa", "op", "opout"},
-		"WriteInbox":           {"sa"},
-		"ReadOutbox":           {"sa", "op", "opout"},
-		"WriteOutbox":          {"sa"},
+		"ManageUsers":          {roleSA},
+		"ReadResellerDropdown": {roleSA, roleOP, roleOpOut},
+		"ReadInbox":            {roleSA, roleOP, roleOpOut},
+		"WriteInbox":           {roleSA},
+		"ReadOutbox":           {roleSA, roleOP, roleOpOut},
+		"WriteOutbox":          {roleSA},
 	}
 
 	userRepos := repository.NewUserRepositories(dbRegistry)

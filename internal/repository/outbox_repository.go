@@ -34,17 +34,17 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 	whereClause, args, argID := buildOutboxFilterPG(f)
 
 	if filter.EndDate != nil {
-		cut, err := bisectCutPG(ctx, db, "outbox", *filter.EndDate)
+		cut, err := cutEndPG(ctx, db, "outbox", *filter.EndDate)
 		if err != nil {
 			return nil, false, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
-		args = append(args, cut+bisectSlack)
+		args = append(args, cut+cutSlack)
 		argID++
 	}
 
 	if filter.StartDate != nil {
-		cut, err := bisectCutStartPG(ctx, db, "outbox", *filter.StartDate)
+		cut, err := cutStartPG(ctx, db, "outbox", *filter.StartDate)
 		if err != nil {
 			return nil, false, err
 		}
@@ -262,16 +262,16 @@ func (r *outboxPGRepository) LowerBound(ctx context.Context, tenant string, filt
 	f.StartDate = nil
 	whereClause, args, argID := buildOutboxFilterPG(f)
 	if filter.EndDate != nil {
-		cut, err := bisectCutPG(ctx, db, "outbox", *filter.EndDate)
+		cut, err := cutEndPG(ctx, db, "outbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
-		args = append(args, cut+bisectSlack)
+		args = append(args, cut+cutSlack)
 		argID++
 	}
 	if filter.StartDate != nil {
-		cut, err := bisectCutStartPG(ctx, db, "outbox", *filter.StartDate)
+		cut, err := cutStartPG(ctx, db, "outbox", *filter.StartDate)
 		if err != nil {
 			return 0, err
 		}
@@ -299,12 +299,12 @@ func (r *outboxMSRepository) LowerBound(ctx context.Context, tenant string, filt
 	}
 	whereClause, namedArgs := buildOutboxFilterMS(filter)
 	if filter.EndDate != nil {
-		cut, err := bisectCutMS(ctx, db, "outbox", *filter.EndDate)
+		cut, err := cutEndMS(ctx, db, "outbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= @lowerCut" + whereClause[len(" WHERE 1=1"):]
-		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+bisectSlack))
+		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
 	}
 	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))
 	query := `SELECT kode FROM outbox` + whereClause + ` ORDER BY kode DESC OFFSET @lowerOffset ROWS FETCH NEXT 1 ROWS ONLY`

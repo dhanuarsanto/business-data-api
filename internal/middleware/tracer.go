@@ -11,7 +11,7 @@ import (
 	"go.internal/business-data-api/pkg/logger"
 )
 
-func SecurityTracer() func(http.Handler) http.Handler {
+func SecurityTracer(resolver *TrustedProxyResolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -21,10 +21,17 @@ func SecurityTracer() func(http.Handler) http.Handler {
 			rand.Read(b)
 			traceID := fmt.Sprintf("TRC-%x", b)
 
+			ip := r.RemoteAddr
+			if resolver != nil {
+				if addr := resolver.clientAddr(r); addr.IsValid() {
+					ip = addr.String()
+				}
+			}
+
 			tCtx := &logger.TraceContext{
 				TraceID:   traceID,
 				Developer: "Tidak Diketahui",
-				IP:        r.RemoteAddr,
+				IP:        ip,
 				Path:      r.URL.Path,
 			}
 			ctx := logger.SetTraceContext(r.Context(), tCtx)

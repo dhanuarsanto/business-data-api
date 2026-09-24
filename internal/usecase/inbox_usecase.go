@@ -11,9 +11,9 @@ import (
 
 func pickInboxRepo(source string, pg, ms domain.InboxRepository) (domain.InboxRepository, error) {
 	switch source {
-	case "postgres":
+	case domain.SourcePostgres:
 		return pg, nil
-	case "mssql":
+	case domain.SourceMSSQL:
 		return ms, nil
 	default:
 		return nil, errors.New("sumber database tidak valid")
@@ -26,14 +26,16 @@ type InboxUsecase struct {
 }
 
 func (u *InboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, bool, error) {
-	if filter.PageSize <= 0 || filter.PageSize > 500 {
-		filter.PageSize = 10
+	if filter.PageSize <= 0 {
+		filter.PageSize = domain.DefaultPageSize
+	} else if filter.PageSize > domain.MaxPageSize {
+		filter.PageSize = domain.MaxPageSize
 	}
 	if filter.LimitTotal != nil {
 		if *filter.LimitTotal <= 0 {
 			filter.LimitTotal = nil
-		} else if *filter.LimitTotal > 100000 {
-			v := 100000
+		} else if *filter.LimitTotal > domain.MaxLimitTotal {
+			v := domain.MaxLimitTotal
 			filter.LimitTotal = &v
 		}
 	}

@@ -7,6 +7,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const MinSecretLength = 32
+
+const tokenLeeway = 30 * time.Second
+
 var secretKey []byte
 var tokenDuration time.Duration = 24 * time.Hour
 var issuer string
@@ -48,7 +52,7 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 			return nil, errors.New("metode signature tidak valid")
 		}
 		return secretKey, nil
-	}, jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(30*time.Second))
+	}, jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(tokenLeeway))
 
 	if err != nil {
 		return nil, err
@@ -58,7 +62,11 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	if !ok || !token.Valid {
 		return nil, errors.New("token tidak valid")
 	}
-	if claimIss, exists := claims["iss"]; exists && issuer != "" {
+	if issuer != "" {
+		claimIss, exists := claims["iss"]
+		if !exists {
+			return nil, errors.New("penerbit token tidak sesuai")
+		}
 		if iss, isStr := claimIss.(string); !isStr || iss != issuer {
 			return nil, errors.New("penerbit token tidak sesuai")
 		}

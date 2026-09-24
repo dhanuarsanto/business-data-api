@@ -21,7 +21,7 @@ func logMSSQLQuery(ctx context.Context, query string, start time.Time) {
 	ms := time.Since(start).Milliseconds()
 	tCtx := logger.GetTraceContext(ctx)
 
-	if ms > 500 {
+	if time.Since(start) > slowQueryThreshold {
 		slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "mssql", "sql", query, "duration_ms", ms)
 	} else {
 		slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "mssql", "sql", query, "duration_ms", ms)
@@ -46,10 +46,26 @@ func init() {
 	sql.Register("mssql-logged", sqlmw.Driver(&mssql.Driver{}, new(mssqlLogger)))
 }
 
-func NewMSSQLDB(ctx context.Context, connString string) (*sql.DB, error) {
+type MSSQLPoolOptions struct {
+	MaxOpenConns    int
+	MaxIdleConns    int
+	MaxConnLifetime time.Duration
+}
+
+func NewMSSQLDB(ctx context.Context, connString string, opts MSSQLPoolOptions) (*sql.DB, error) {
 	db, err := sql.Open("mssql-logged", connString)
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuka koneksi MSSQL: %w", err)
+	}
+
+	if opts.MaxOpenConns > 0 {
+		db.SetMaxOpenConns(opts.MaxOpenConns)
+	}
+	if opts.MaxIdleConns > 0 {
+		db.SetMaxIdleConns(opts.MaxIdleConns)
+	}
+	if opts.MaxConnLifetime > 0 {
+		db.SetConnMaxLifetime(opts.MaxConnLifetime)
 	}
 
 	if err := db.Ping(); err != nil {

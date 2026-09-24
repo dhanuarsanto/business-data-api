@@ -27,25 +27,25 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 
 	queryParams := r.URL.Query()
 
 	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
 	if pageSize <= 0 {
-		pageSize = 20
+		pageSize = domain.DefaultPageSize
 	}
-	if pageSize > 200 {
-		pageSize = 200
+	if pageSize > domain.MaxPageSize {
+		pageSize = domain.MaxPageSize
 	}
 	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
 
 	var limitTotalPtr *int
 	if val := queryParams.Get("limit"); val != "" {
 		if v, err := strconv.Atoi(val); err == nil && v > 0 {
-			if v > 10000 {
-				v = 10000
+			if v > domain.MaxLimitTotal {
+				v = domain.MaxLimitTotal
 			}
 			limitTotalPtr = &v
 		}
@@ -144,7 +144,7 @@ func (h *OutboxHandler) CreateOutbox(w http.ResponseWriter, r *http.Request) {
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 
 	var payload dto.CreateOutboxRequest
@@ -190,7 +190,7 @@ func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
 
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 
 	var payload dto.UpdateOutboxRequest

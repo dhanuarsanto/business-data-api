@@ -36,12 +36,12 @@ func initRepos() {
 		cfg := config.LoadConfig()
 		ctx := context.Background()
 
-		pg, err := db.NewPostgresPool(ctx, cfg.PostgresMaxtopURL)
+		pg, err := db.NewPostgresPool(ctx, cfg.PostgresMaxtopURL, db.PostgresPoolOptions{})
 		if err != nil {
 			initErr = err
 			return
 		}
-		ms, err := db.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL)
+		ms, err := db.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL, db.MSSQLPoolOptions{})
 		if err != nil {
 			initErr = err
 			return

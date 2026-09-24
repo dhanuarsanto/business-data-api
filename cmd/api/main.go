@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"go.internal/business-data-api/internal/config"
 	"go.internal/business-data-api/pkg/database"
@@ -23,7 +22,7 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
-	if len(cfg.JWTSecret) < 32 {
+	if len(cfg.JWTSecret) < jwt.MinSecretLength {
 		slog.Error("JWT_SECRET terlalu pendek — wajib minimal 32 byte demi keamanan token")
 		os.Exit(1)
 	}
@@ -36,41 +35,41 @@ func main() {
 	dbRegistry := database.NewDBRegistry()
 	ctx := context.Background()
 
-	pgMaxtop, err := database.NewPostgresPool(ctx, cfg.PostgresMaxtopURL)
+	pgMaxtop, err := database.NewPostgresPool(ctx, cfg.PostgresMaxtopURL, pgPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi Postgres Maxtop", "error", err)
 		os.Exit(1)
 	}
-	msMaxtop, err := database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL)
+	msMaxtop, err := database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL, msPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi MSSQL Maxtop", "error", err)
 		os.Exit(1)
 	}
-	dbRegistry.Register("maxtop", pgMaxtop, msMaxtop)
+	dbRegistry.Register(tenantMaxtop, pgMaxtop, msMaxtop)
 
-	pgPandora, err := database.NewPostgresPool(ctx, cfg.PostgresPandoraURL)
+	pgPandora, err := database.NewPostgresPool(ctx, cfg.PostgresPandoraURL, pgPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi Postgres Pandora", "error", err)
 		os.Exit(1)
 	}
-	msPandora, err := database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL)
+	msPandora, err := database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL, msPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi MSSQL Pandora", "error", err)
 		os.Exit(1)
 	}
-	dbRegistry.Register("pandora", pgPandora, msPandora)
+	dbRegistry.Register(tenantPandora, pgPandora, msPandora)
 
-	pgToplink, err := database.NewPostgresPool(ctx, cfg.PostgresToplinkURL)
+	pgToplink, err := database.NewPostgresPool(ctx, cfg.PostgresToplinkURL, pgPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi Postgres Toplink", "error", err)
 		os.Exit(1)
 	}
-	msToplink, err := database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL)
+	msToplink, err := database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL, msPoolOptions(cfg))
 	if err != nil {
 		slog.Error("Gagal koneksi MSSQL Toplink", "error", err)
 		os.Exit(1)
 	}
-	dbRegistry.Register("toplink", pgToplink, msToplink)
+	dbRegistry.Register(tenantToplink, pgToplink, msToplink)
 
 	trustedProxies, err := cfg.ParseTrustedProxies()
 	if err != nil {
@@ -92,10 +91,10 @@ func main() {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           r,
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
+		ReadTimeout:       cfg.ServerReadTimeout,
+		WriteTimeout:      cfg.ServerWriteTimeout,
+		IdleTimeout:       cfg.ServerIdleTimeout,
 	}
 
 	go func() {
@@ -110,7 +109,7 @@ func main() {
 	<-quit
 
 	slog.Info("Sinyal berhenti diterima, mematikan server...")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
@@ -124,4 +123,22 @@ func main() {
 
 	dbRegistry.CloseAll()
 	slog.Info("Server berhasil dimatikan dengan aman")
+}
+
+func pgPoolOptions(cfg *config.Config) database.PostgresPoolOptions {
+	return database.PostgresPoolOptions{
+		MaxConns:          cfg.PostgresMaxConns,
+		MinConns:          cfg.PostgresMinConns,
+		MaxConnIdleTime:   cfg.PostgresMaxConnIdleTime,
+		MaxConnLifetime:   cfg.PostgresMaxConnLifetime,
+		HealthCheckPeriod: cfg.PostgresHealthCheckPeriod,
+	}
+}
+
+func msPoolOptions(cfg *config.Config) database.MSSQLPoolOptions {
+	return database.MSSQLPoolOptions{
+		MaxOpenConns:    cfg.MSSQLMaxOpenConns,
+		MaxIdleConns:    cfg.MSSQLMaxIdleConns,
+		MaxConnLifetime: cfg.MSSQLMaxConnLifetime,
+	}
 }

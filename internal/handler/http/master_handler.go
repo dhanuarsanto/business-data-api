@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"go.internal/business-data-api/internal/config"
+	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/usecase"
 	"go.internal/business-data-api/pkg/logger"
 	"go.internal/business-data-api/pkg/response"
@@ -21,7 +22,7 @@ func (h *MasterHandler) ListResellerForDropdown(w http.ResponseWriter, r *http.R
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 
 	data, err := h.usecase.ListResellerForDropdown(r.Context(), tenant, dbSource)

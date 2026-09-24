@@ -113,9 +113,9 @@ func TestInboxUsecaseLimitClamp(t *testing.T) {
 	for _, tc := range []struct {
 		in, want int
 	}{
-		{0, 10},
-		{-5, 10},
-		{501, 10},
+		{0, domain.DefaultPageSize},
+		{-5, domain.DefaultPageSize},
+		{domain.MaxPageSize + 1, domain.MaxPageSize},
 		{50, 50},
 	} {
 		repo := &recordingInboxRepo{}
@@ -157,8 +157,8 @@ func TestInboxUsecaseLimitTotalCap(t *testing.T) {
 	if _, _, err := u2.GetInbox(ctx, "t", "postgres", domain.InboxFilter{PageSize: 10, LimitTotal: &miliar}); err != nil {
 		t.Fatalf("limit miliaran error: %v", err)
 	}
-	if repoB.filter.LimitTotal == nil || *repoB.filter.LimitTotal != 100000 {
-		t.Fatalf("limit miliaran harus di-clamp ke 100000, dapat %v", repoB.filter.LimitTotal)
+	if repoB.filter.LimitTotal == nil || *repoB.filter.LimitTotal != domain.MaxLimitTotal {
+		t.Fatalf("limit miliaran harus di-clamp ke %d, dapat %v", domain.MaxLimitTotal, repoB.filter.LimitTotal)
 	}
 }
 
@@ -191,8 +191,8 @@ func TestOutboxUsecaseLimitClamp(t *testing.T) {
 	for _, tc := range []struct {
 		in, want int
 	}{
-		{0, 10},
-		{501, 10},
+		{0, domain.DefaultPageSize},
+		{domain.MaxPageSize + 1, domain.MaxPageSize},
 		{25, 25},
 	} {
 		repo := &recordingOutboxRepo{}

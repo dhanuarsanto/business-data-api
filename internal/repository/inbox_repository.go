@@ -15,64 +15,24 @@ import (
 	"go.internal/business-data-api/pkg/database"
 )
 
-const bisectSlack = 50000
+const cutSlack = 50000
 
-func bisectCutPG(ctx context.Context, db *pgxpool.Pool, table string, end time.Time) (int64, error) {
-	var hi int64
-	if err := db.QueryRow(ctx, "SELECT MAX(kode) FROM "+table).Scan(&hi); err != nil {
-		return 0, err
-	}
-	if hi <= 0 {
+func cutEndPG(ctx context.Context, db *pgxpool.Pool, table string, end time.Time) (int64, error) {
+	var kode int64
+	err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri <= $1 ORDER BY kode DESC LIMIT 1", end).Scan(&kode)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, nil
 	}
-	lo := int64(0)
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		var t time.Time
-		err := db.QueryRow(ctx, "SELECT tgl_entri FROM "+table+" WHERE kode <= $1 ORDER BY kode DESC LIMIT 1", mid).Scan(&t)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				hi = mid - 1
-				continue
-			}
-			return 0, err
-		}
-		if !t.After(end) {
-			lo = mid
-		} else {
-			hi = mid - 1
-		}
-	}
-	return lo, nil
+	return kode, err
 }
 
-func bisectCutStartPG(ctx context.Context, db *pgxpool.Pool, table string, start time.Time) (int64, error) {
-	var hi int64
-	if err := db.QueryRow(ctx, "SELECT MAX(kode) FROM "+table).Scan(&hi); err != nil {
-		return 0, err
-	}
-	if hi <= 0 {
+func cutStartPG(ctx context.Context, db *pgxpool.Pool, table string, start time.Time) (int64, error) {
+	var kode int64
+	err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri < $1 ORDER BY kode DESC LIMIT 1", start).Scan(&kode)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, nil
 	}
-	lo := int64(0)
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		var t time.Time
-		err := db.QueryRow(ctx, "SELECT tgl_entri FROM "+table+" WHERE kode <= $1 ORDER BY kode DESC LIMIT 1", mid).Scan(&t)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				hi = mid - 1
-				continue
-			}
-			return 0, err
-		}
-		if t.Before(start) {
-			lo = mid
-		} else {
-			hi = mid - 1
-		}
-	}
-	return lo, nil
+	return kode, err
 }
 
 type InboxRepositories struct {
@@ -95,17 +55,17 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 	whereClause, args, argID := buildInboxFilterPG(f)
 
 	if filter.EndDate != nil {
-		cut, err := bisectCutPG(ctx, db, "inbox", *filter.EndDate)
+		cut, err := cutEndPG(ctx, db, "inbox", *filter.EndDate)
 		if err != nil {
 			return nil, false, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
-		args = append(args, cut+bisectSlack)
+		args = append(args, cut+cutSlack)
 		argID++
 	}
 
 	if filter.StartDate != nil {
-		cut, err := bisectCutStartPG(ctx, db, "inbox", *filter.StartDate)
+		cut, err := cutStartPG(ctx, db, "inbox", *filter.StartDate)
 		if err != nil {
 			return nil, false, err
 		}
@@ -315,16 +275,16 @@ func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filte
 	f.StartDate = nil
 	whereClause, args, argID := buildInboxFilterPG(f)
 	if filter.EndDate != nil {
-		cut, err := bisectCutPG(ctx, db, "inbox", *filter.EndDate)
+		cut, err := cutEndPG(ctx, db, "inbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
-		args = append(args, cut+bisectSlack)
+		args = append(args, cut+cutSlack)
 		argID++
 	}
 	if filter.StartDate != nil {
-		cut, err := bisectCutStartPG(ctx, db, "inbox", *filter.StartDate)
+		cut, err := cutStartPG(ctx, db, "inbox", *filter.StartDate)
 		if err != nil {
 			return 0, err
 		}
@@ -345,33 +305,13 @@ func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filte
 	return k, nil
 }
 
-func bisectCutMS(ctx context.Context, db *sql.DB, table string, end time.Time) (int64, error) {
-	var hi int64
-	if err := db.QueryRowContext(ctx, "SELECT MAX(kode) FROM "+table).Scan(&hi); err != nil {
-		return 0, err
-	}
-	if hi <= 0 {
+func cutEndMS(ctx context.Context, db *sql.DB, table string, end time.Time) (int64, error) {
+	var kode int64
+	err := db.QueryRowContext(ctx, "SELECT TOP (1) kode FROM "+table+" WHERE tgl_entri <= ? ORDER BY kode DESC", end).Scan(&kode)
+	if err == sql.ErrNoRows {
 		return 0, nil
 	}
-	lo := int64(0)
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		var t time.Time
-		err := db.QueryRowContext(ctx, "SELECT TOP (1) tgl_entri FROM "+table+" WHERE kode <= ? ORDER BY kode DESC", mid).Scan(&t)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				hi = mid - 1
-				continue
-			}
-			return 0, err
-		}
-		if !t.After(end) {
-			lo = mid
-		} else {
-			hi = mid - 1
-		}
-	}
-	return lo, nil
+	return kode, err
 }
 
 func (r *inboxMSRepository) LowerBound(ctx context.Context, tenant string, filter domain.InboxFilter) (int64, error) {
@@ -381,12 +321,12 @@ func (r *inboxMSRepository) LowerBound(ctx context.Context, tenant string, filte
 	}
 	whereClause, namedArgs := buildInboxFilterMS(filter)
 	if filter.EndDate != nil {
-		cut, err := bisectCutMS(ctx, db, "inbox", *filter.EndDate)
+		cut, err := cutEndMS(ctx, db, "inbox", *filter.EndDate)
 		if err != nil {
 			return 0, err
 		}
 		whereClause = " WHERE 1=1 AND kode <= @lowerCut" + whereClause[len(" WHERE 1=1"):]
-		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+bisectSlack))
+		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
 	}
 	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))
 	query := `SELECT kode FROM inbox` + whereClause + ` ORDER BY kode DESC OFFSET @lowerOffset ROWS FETCH NEXT 1 ROWS ONLY`

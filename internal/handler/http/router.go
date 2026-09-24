@@ -43,11 +43,11 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-API-KEY", "X-DB-Source"},
 		ExposedHeaders:   []string{"Link", "Set-Cookie"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge:           cfg.CORSMaxAge,
 	}))
 
 	r.Use(api_middleware.PanicRecoverer())
-	r.Use(api_middleware.SecurityTracer())
+	r.Use(api_middleware.SecurityTracer(resolver))
 	r.Use(api_middleware.RequestBodyLimit(cfg.MaxBodyBytes))
 
 	r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
@@ -65,7 +65,7 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 	keyManager := api_middleware.NewKeyManager(keyPath)
 
 	var limiters []*api_middleware.RateLimiter
-	globalLimiter := api_middleware.NewRateLimiter(50.0, 100, resolver)
+	globalLimiter := api_middleware.NewRateLimiter(cfg.RateLimitGlobalRate, cfg.RateLimitGlobalCapacity, resolver, cfg.RateLimitCleanupInterval)
 	limiters = append(limiters, globalLimiter)
 
 	protectedApiKey := r.With(

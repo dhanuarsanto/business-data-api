@@ -10,9 +10,9 @@ import (
 
 func pickResellerRepo(source string, pg, ms domain.ResellerRepository) (domain.ResellerRepository, error) {
 	switch source {
-	case "postgres":
+	case domain.SourcePostgres:
 		return pg, nil
-	case "mssql":
+	case domain.SourceMSSQL:
 		return ms, nil
 	default:
 		return nil, errors.New("sumber database tidak valid")

@@ -35,6 +35,24 @@ func TestValidateTokenIssuer(t *testing.T) {
 	}
 }
 
+func TestValidateTokenRejectsMissingIssuer(t *testing.T) {
+	InitJWT("secret-uji", 1*time.Hour, "issuer-a")
+
+	tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  1,
+		"username": "budi",
+		"rules":    "sa",
+		"tenant":   "maxtop",
+		"exp":      time.Now().Add(time.Hour).Unix(),
+	}).SignedString(secretKey)
+	if err != nil {
+		t.Fatalf("sign token gagal: %v", err)
+	}
+	if _, err := ValidateToken(tok); err == nil {
+		t.Fatal("token tanpa issuer harus ditolak saat JWT_ISSUER diset")
+	}
+}
+
 func TestValidateTokenRejectsWeakClaims(t *testing.T) {
 	InitJWT("secret-uji", 1*time.Hour, "issuer-a")
 

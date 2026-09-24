@@ -32,6 +32,30 @@ type Config struct {
 	PostgresToplinkURL string `env:"POSTGRES_TOPLINK_URL,required"`
 	MSSQLToplinkURL    string `env:"MSSQL_TOPLINK_URL,required"`
 
+	PostgresMaxConns          int           `env:"POSTGRES_MAX_CONNS" envDefault:"10"`
+	PostgresMinConns          int           `env:"POSTGRES_MIN_CONNS" envDefault:"0"`
+	PostgresMaxConnIdleTime   time.Duration `env:"POSTGRES_MAX_CONN_IDLE_TIME" envDefault:"5m"`
+	PostgresMaxConnLifetime   time.Duration `env:"POSTGRES_MAX_CONN_LIFETIME" envDefault:"30m"`
+	PostgresHealthCheckPeriod time.Duration `env:"POSTGRES_HEALTH_CHECK_PERIOD" envDefault:"1m"`
+
+	MSSQLMaxOpenConns    int           `env:"MSSQL_MAX_OPEN_CONNS" envDefault:"10"`
+	MSSQLMaxIdleConns    int           `env:"MSSQL_MAX_IDLE_CONNS" envDefault:"5"`
+	MSSQLMaxConnLifetime time.Duration `env:"MSSQL_MAX_CONN_LIFETIME" envDefault:"30m"`
+
+	RateLimitGlobalRate      float64       `env:"RATE_LIMIT_GLOBAL_RATE" envDefault:"50"`
+	RateLimitGlobalCapacity  int           `env:"RATE_LIMIT_GLOBAL_CAPACITY" envDefault:"100"`
+	RateLimitLoginRate       float64       `env:"RATE_LIMIT_LOGIN_RATE" envDefault:"0.2"`
+	RateLimitLoginCapacity   int           `env:"RATE_LIMIT_LOGIN_CAPACITY" envDefault:"5"`
+	RateLimitCleanupInterval time.Duration `env:"RATE_LIMIT_CLEANUP_INTERVAL" envDefault:"3m"`
+
+	ServerReadHeaderTimeout time.Duration `env:"SERVER_READ_HEADER_TIMEOUT" envDefault:"10s"`
+	ServerReadTimeout       time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"10s"`
+	ServerWriteTimeout      time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"60s"`
+	ServerIdleTimeout       time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"`
+	ServerShutdownTimeout   time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" envDefault:"10s"`
+
+	CORSMaxAge int `env:"CORS_MAX_AGE" envDefault:"300"`
+
 	JWTSecret        string        `env:"JWT_SECRET,required"`
 	JWTIssuer        string        `env:"JWT_ISSUER" envDefault:"business-data-api"`
 	JWTTokenDuration time.Duration `env:"JWT_TOKEN_DURATION" envDefault:"24h"`

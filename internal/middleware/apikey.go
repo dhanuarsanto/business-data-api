@@ -20,6 +20,8 @@ type KeyManager struct {
 	once sync.Once
 }
 
+const keyReloadInterval = 60 * time.Second
+
 func NewKeyManager(path string) *KeyManager {
 	km := &KeyManager{
 		keys: make(map[string]string),
@@ -29,7 +31,7 @@ func NewKeyManager(path string) *KeyManager {
 	if err := km.reload(); err != nil {
 		slog.Warn("Gagal memuat api_keys.json saat startup", "path", path, "error", err)
 	}
-	go km.runReload(60 * time.Second)
+	go km.runReload(keyReloadInterval)
 	return km
 }
 

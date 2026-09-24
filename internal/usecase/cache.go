@@ -18,6 +18,30 @@ var boundCache sync.Map
 
 const boundTTL = 30 * time.Second
 
+const boundSweepInterval = 30 * time.Second
+
+var (
+	sweepOnce sync.Once
+)
+
+func startBoundCacheSweep() {
+	sweepOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(boundSweepInterval)
+			defer ticker.Stop()
+			for range ticker.C {
+				cut := time.Now().Add(-boundTTL)
+				boundCache.Range(func(k, v any) bool {
+					if e, ok := v.(boundEntry); ok && e.at.Before(cut) {
+						boundCache.Delete(k)
+					}
+					return true
+				})
+			}
+		}()
+	})
+}
+
 func cacheGet(key string) (int64, bool) {
 	if v, ok := boundCache.Load(key); ok {
 		e := v.(boundEntry)
@@ -30,6 +54,7 @@ func cacheGet(key string) (int64, bool) {
 }
 
 func cacheSet(key string, val int64) {
+	startBoundCacheSweep()
 	boundCache.Store(key, boundEntry{val: val, at: time.Now()})
 }
 

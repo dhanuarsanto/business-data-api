@@ -23,6 +23,7 @@ type AuthHandler struct {
 	networkMatrix map[string]bool
 	ipResolver    *api_middleware.TrustedProxyResolver
 	cookieSecure  bool
+	sessionMaxAge int
 	authLimiter   *api_middleware.RateLimiter
 }
 
@@ -31,7 +32,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 	var payload dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -60,7 +61,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Name:     "access_token",
 		Value:    token,
 		Path:     "/",
-		MaxAge:   86400,
+		MaxAge:   h.sessionMaxAge,
 		HttpOnly: true,
 		Secure:   h.cookieSecure,
 		SameSite: http.SameSiteStrictMode,
@@ -77,7 +78,7 @@ func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 	var payload dto.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -100,7 +101,7 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
-		dbSource = "postgres"
+		dbSource = domain.SourcePostgres
 	}
 	username := chi.URLParam(r, "username")
 	var payload dto.UpdateUserRequest
@@ -124,7 +125,8 @@ func NewAuthHandler(authUsecase *usecase.AuthUsecase, networkMatrix map[string]b
 }
 
 func (h *AuthHandler) RegisterRoutes(public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
-	h.authLimiter = api_middleware.NewRateLimiter(0.2, 5, h.ipResolver)
+	h.sessionMaxAge = int(cfg.JWTTokenDuration.Seconds())
+	h.authLimiter = api_middleware.NewRateLimiter(cfg.RateLimitLoginRate, cfg.RateLimitLoginCapacity, h.ipResolver, cfg.RateLimitCleanupInterval)
 
 	public.With(h.authLimiter.Middleware()).Post("/api/v1/{tenant}/auth/login", h.Login)
 

@@ -12,9 +12,9 @@ var ErrInvalidInput = errors.New("input tidak valid")
 
 func pickUserRepo(source string, pg, ms domain.UserRepository) (domain.UserRepository, error) {
 	switch source {
-	case "postgres":
+	case domain.SourcePostgres:
 		return pg, nil
-	case "mssql":
+	case domain.SourceMSSQL:
 		return ms, nil
 	default:
 		return nil, errors.New("sumber database tidak valid")

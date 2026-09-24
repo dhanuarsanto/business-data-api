@@ -23,7 +23,7 @@ func (l *SlogLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 
 		tCtx := logger.GetTraceContext(ctx)
 
-		if ms > 500 {
+		if execTime > slowQueryThreshold {
 			slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
 		} else {
 			slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
@@ -31,10 +31,34 @@ func (l *SlogLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 	}
 }
 
-func NewPostgresPool(ctx context.Context, connString string) (*pgxpool.Pool, error) {
+type PostgresPoolOptions struct {
+	MaxConns          int
+	MinConns          int
+	MaxConnIdleTime   time.Duration
+	MaxConnLifetime   time.Duration
+	HealthCheckPeriod time.Duration
+}
+
+func NewPostgresPool(ctx context.Context, connString string, opts PostgresPoolOptions) (*pgxpool.Pool, error) {
 	poolConfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("gagal mem-parsing URL Postgres: %w", err)
+	}
+
+	if opts.MaxConns > 0 {
+		poolConfig.MaxConns = int32(opts.MaxConns)
+	}
+	if opts.MinConns > 0 {
+		poolConfig.MinConns = int32(opts.MinConns)
+	}
+	if opts.MaxConnIdleTime > 0 {
+		poolConfig.MaxConnIdleTime = opts.MaxConnIdleTime
+	}
+	if opts.MaxConnLifetime > 0 {
+		poolConfig.MaxConnLifetime = opts.MaxConnLifetime
+	}
+	if opts.HealthCheckPeriod > 0 {
+		poolConfig.HealthCheckPeriod = opts.HealthCheckPeriod
 	}
 
 	poolConfig.ConnConfig.Tracer = &tracelog.TraceLog{

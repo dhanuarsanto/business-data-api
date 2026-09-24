@@ -95,7 +95,7 @@ func TestRequireTokenTenantMatch(t *testing.T) {
 }
 
 func TestRateLimiterFirstRequests(t *testing.T) {
-	rl := NewRateLimiter(0, 2, nil)
+	rl := NewRateLimiter(0, 2, nil, time.Minute)
 
 	if !rl.allow("1.1.1.1") {
 		t.Fatal("request pertama harus lolos (kapasitas penuh)")
@@ -109,14 +109,14 @@ func TestRateLimiterFirstRequests(t *testing.T) {
 }
 
 func TestRateLimiterStop(t *testing.T) {
-	rl := NewRateLimiter(10, 5, nil)
+	rl := NewRateLimiter(10, 5, nil, time.Minute)
 	rl.Stop()
 	rl.Stop()
 }
 
 func TestRateLimiterIgnoresSpoofedHeaders(t *testing.T) {
 	resolver := NewTrustedProxyResolver(nil)
-	rl := NewRateLimiter(0, 1, resolver)
+	rl := NewRateLimiter(0, 1, resolver, time.Minute)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.RemoteAddr = "203.0.113.9:1234"
@@ -196,7 +196,7 @@ func TestSecurityTracer(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := SecurityTracer()(inner)
+	handler := SecurityTracer(NewTrustedProxyResolver(nil))(inner)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	handler.ServeHTTP(rec, req)

@@ -39,6 +39,14 @@ func TestAPIEndToEnd(t *testing.T) {
 		PostgresWriteEnabled: false,
 		MaxBodyBytes:         1048576,
 		CookieSecure:         false,
+		JWTTokenDuration:     1 * time.Hour,
+
+		RateLimitGlobalRate:      50,
+		RateLimitGlobalCapacity:  100,
+		RateLimitLoginRate:       0.2,
+		RateLimitLoginCapacity:   5,
+		RateLimitCleanupInterval: 1 * time.Minute,
+		CORSMaxAge:               300,
 	}
 	prefixes, err := cfg.ParseTrustedProxies()
 	if err != nil {
