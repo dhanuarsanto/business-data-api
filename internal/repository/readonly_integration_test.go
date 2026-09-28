@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.internal/business-data-api/internal/config"
 	"go.internal/business-data-api/internal/domain"
+	"go.internal/business-data-api/internal/dto"
 	"go.internal/business-data-api/internal/repository"
 	"go.internal/business-data-api/internal/usecase"
 	db "go.internal/business-data-api/pkg/database"
@@ -358,7 +359,7 @@ func TestFlagVariantsMatchLegacy(t *testing.T) {
 	compare("inbox/request MS", kodesOf(gotMS), wantMS)
 }
 
-func kodesOf(xs []domain.Inbox) []int64 {
+func kodesOf(xs []dto.InboxItem) []int64 {
 	out := make([]int64, len(xs))
 	for i, x := range xs {
 		out[i] = x.Kode

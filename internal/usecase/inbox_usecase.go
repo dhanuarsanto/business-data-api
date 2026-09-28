@@ -25,7 +25,7 @@ type InboxUsecase struct {
 	repoMS domain.InboxRepository
 }
 
-func (u *InboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]domain.Inbox, bool, error) {
+func (u *InboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
 	if filter.PageSize <= 0 {
 		filter.PageSize = domain.DefaultPageSize
 	} else if filter.PageSize > domain.MaxPageSize {

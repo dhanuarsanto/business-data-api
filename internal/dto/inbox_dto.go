@@ -1,5 +1,19 @@
 package dto
 
+import "time"
+
+type InboxItem struct {
+	Kode          int64      `json:"kode"`
+	TglEntri      time.Time  `json:"tgl_entri"`
+	Pengirim      string     `json:"pengirim"`
+	KodeReseller  *string    `json:"kode_reseller,omitempty"`
+	Pesan         string     `json:"pesan"`
+	Status        int16      `json:"status"`
+	TglStatus     *time.Time `json:"tgl_status,omitempty"`
+	KodeTerminal  *int       `json:"kode_terminal,omitempty"`
+	ServiceCenter *string    `json:"service_center,omitempty"`
+}
+
 type CreateInboxRequest struct {
 	Pesan         string  `json:"pesan"`
 	Pengirim      string  `json:"pengirim"`

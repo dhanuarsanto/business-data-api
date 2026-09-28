@@ -1,5 +1,17 @@
 package dto
 
+import "time"
+
+type OutboxItem struct {
+	Kode         int64      `json:"kode"`
+	TglEntri     time.Time  `json:"tgl_entri"`
+	Penerima     string     `json:"penerima"`
+	KodeReseller *string    `json:"kode_reseller,omitempty"`
+	Pesan        string     `json:"pesan"`
+	Status       int16      `json:"status"`
+	TglStatus    *time.Time `json:"tgl_status,omitempty"`
+}
+
 type CreateOutboxRequest struct {
 	Penerima      string  `json:"penerima"`
 	TipePenerima  string  `json:"tipe_penerima"`

@@ -23,7 +23,7 @@ type outboxPGRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]domain.Outbox, bool, error) {
+func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
 	db, err := r.dbRegistry.Postgres(tenant)
 	if err != nil {
 		return nil, false, err
@@ -65,7 +65,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		argID++
 	}
 
-	cols := `kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim`
+	cols := `kode, tgl_entri, penerima, kode_reseller, pesan, status, tgl_status`
 
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqArgs := buildPageQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
@@ -75,11 +75,11 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 	}
 	defer rows.Close()
 
-	var outboxes []domain.Outbox
+	var outboxes []dto.OutboxItem
 
 	for rows.Next() {
-		var o domain.Outbox
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.TipePenerima, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeInbox, &o.KodeTransaksi, &o.KodeReseller, &o.BebasBiaya, &o.IsPerintah, &o.KodeModul, &o.Prioritas, &o.ModulProses, &o.Pengirim, &o.KodeTerminal, &o.CtrKirim); err != nil {
+		var o dto.OutboxItem
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus); err != nil {
 			return nil, false, err
 		}
 		outboxes = append(outboxes, o)
@@ -143,7 +143,7 @@ type outboxMSRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]domain.Outbox, bool, error) {
+func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
 	db, err := r.dbRegistry.MSSQL(tenant)
 	if err != nil {
 		return nil, false, err
@@ -161,7 +161,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := `kode, tgl_entri, penerima, tipe_penerima, pesan, status, tgl_status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim`
+	cols := `kode, tgl_entri, penerima, kode_reseller, pesan, status, tgl_status`
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqNamed := buildPageQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -171,11 +171,11 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 	}
 	defer rows.Close()
 
-	var outboxes []domain.Outbox
+	var outboxes []dto.OutboxItem
 
 	for rows.Next() {
-		var o domain.Outbox
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.TipePenerima, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeInbox, &o.KodeTransaksi, &o.KodeReseller, &o.BebasBiaya, &o.IsPerintah, &o.KodeModul, &o.Prioritas, &o.ModulProses, &o.Pengirim, &o.KodeTerminal, &o.CtrKirim); err != nil {
+		var o dto.OutboxItem
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus); err != nil {
 			return nil, false, err
 		}
 		outboxes = append(outboxes, o)

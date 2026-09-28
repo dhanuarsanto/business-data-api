@@ -45,7 +45,7 @@ type OutboxFilter struct {
 }
 
 type OutboxRepository interface {
-	Get(ctx context.Context, tenant string, filter OutboxFilter) ([]Outbox, bool, error)
+	Get(ctx context.Context, tenant string, filter OutboxFilter) ([]dto.OutboxItem, bool, error)
 	LowerBound(ctx context.Context, tenant string, filter OutboxFilter) (int64, error)
 	Insert(ctx context.Context, tenant string, data Outbox) error
 	Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error

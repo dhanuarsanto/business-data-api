@@ -25,7 +25,7 @@ type OutboxUsecase struct {
 	repoMS domain.OutboxRepository
 }
 
-func (u *OutboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]domain.Outbox, bool, error) {
+func (u *OutboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
 	if filter.PageSize <= 0 {
 		filter.PageSize = domain.DefaultPageSize
 	} else if filter.PageSize > domain.MaxPageSize {

@@ -94,6 +94,11 @@ components:
 
     Inbox:
       type: object
+      description: >-
+        Baris inbox pada hasil GET /inbox. Kolom bertipe NOT NULL
+        (kode, tgl_entri, pengirim, pesan, status) selalu dikembalikan.
+        Kolom nullable (kode_reseller, tgl_status, kode_terminal, service_center)
+        DILEWATI dari JSON saat nilainya NULL.
       properties:
         kode:
           type: integer
@@ -103,59 +108,36 @@ components:
           type: string
           format: date-time
           example: "2026-09-06T10:00:00Z"
-        tgl_status:
-          type: string
-          format: date-time
-          nullable: true
-          example: "2026-09-06T10:05:00Z"
         pengirim:
           type: string
           example: "08123456789"
-        tipe_pengirim:
-          type: string
-          example: "SMS"
-        penerima:
+        kode_reseller:
           type: string
           nullable: true
-          example: "08987654321"
+          description: Dihilangkan dari respons saat NULL.
+          example: "R001"
         pesan:
           type: string
           example: "SALDO"
         status:
           type: integer
           example: 0
+        tgl_status:
+          type: string
+          format: date-time
+          nullable: true
+          description: Dihilangkan dari respons saat NULL.
+          example: "2026-09-06T10:05:00Z"
         kode_terminal:
           type: integer
           nullable: true
+          description: Dihilangkan dari respons saat NULL.
           example: 1
-        kode_reseller:
-          type: string
-          nullable: true
-          example: "R001"
-        kode_transaksi:
-          type: integer
-          nullable: true
-          example: 54321
-        is_jawaban:
-          type: integer
-          example: 0
         service_center:
           type: string
           nullable: true
+          description: Dihilangkan dari respons saat NULL.
           example: "SC01"
-        is_cs:
-          type: integer
-          nullable: true
-          example: 0
-        kode_jawaban_cs:
-          type: integer
-          format: int64
-          nullable: true
-          example: 1234
-        hash:
-          type: string
-          nullable: true
-          example: "a1b2c3d4"
 
     CreateInboxRequest:
       type: object
@@ -236,6 +218,11 @@ components:
 
     Outbox:
       type: object
+      description: >-
+        Baris outbox pada hasil GET /outbox. Kolom bertipe NOT NULL
+        (kode, tgl_entri, penerima, pesan, status) selalu dikembalikan.
+        Kolom nullable (kode_reseller, tgl_status) DILEWATI dari JSON
+        saat nilainya NULL.
       properties:
         kode:
           type: integer
@@ -248,9 +235,11 @@ components:
         penerima:
           type: string
           example: "08123456789"
-        tipe_penerima:
+        kode_reseller:
           type: string
-          example: "SMS"
+          nullable: true
+          description: Dihilangkan dari respons saat NULL.
+          example: "R001"
         pesan:
           type: string
           example: "Saldo Anda: Rp100.000"
@@ -261,41 +250,8 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: Dihilangkan dari respons saat NULL.
           example: "2026-09-06T10:05:00Z"
-        kode_inbox:
-          type: integer
-          format: int64
-          nullable: true
-        kode_transaksi:
-          type: integer
-          nullable: true
-        kode_reseller:
-          type: string
-          nullable: true
-        bebas_biaya:
-          type: integer
-          example: 0
-        is_perintah:
-          type: integer
-          nullable: true
-        kode_modul:
-          type: integer
-          nullable: true
-        prioritas:
-          type: integer
-          nullable: true
-        modul_proses:
-          type: string
-          nullable: true
-        pengirim:
-          type: string
-          nullable: true
-        kode_terminal:
-          type: integer
-          nullable: true
-        ctr_kirim:
-          type: integer
-          nullable: true
 
     CreateOutboxRequest:
       type: object

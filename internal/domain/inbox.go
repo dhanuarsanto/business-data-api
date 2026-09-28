@@ -44,7 +44,7 @@ type InboxFilter struct {
 }
 
 type InboxRepository interface {
-	Get(ctx context.Context, tenant string, filter InboxFilter) ([]Inbox, bool, error)
+	Get(ctx context.Context, tenant string, filter InboxFilter) ([]dto.InboxItem, bool, error)
 	LowerBound(ctx context.Context, tenant string, filter InboxFilter) (int64, error)
 	Insert(ctx context.Context, tenant string, data Inbox) error
 	Update(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error

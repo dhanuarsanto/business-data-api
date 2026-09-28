@@ -89,7 +89,7 @@ type recordingInboxRepo struct {
 	filter domain.InboxFilter
 }
 
-func (r *recordingInboxRepo) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]domain.Inbox, bool, error) {
+func (r *recordingInboxRepo) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
 	r.called = true
 	r.filter = filter
 	return nil, false, nil
@@ -167,7 +167,7 @@ type recordingOutboxRepo struct {
 	filter domain.OutboxFilter
 }
 
-func (r *recordingOutboxRepo) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]domain.Outbox, bool, error) {
+func (r *recordingOutboxRepo) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
 	r.called = true
 	r.filter = filter
 	return nil, false, nil

@@ -44,7 +44,7 @@ type inboxPGRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]domain.Inbox, bool, error) {
+func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
 	db, err := r.dbRegistry.Postgres(tenant)
 	if err != nil {
 		return nil, false, err
@@ -86,9 +86,10 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		argID++
 	}
 
-	cols := `kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash`
+	cols := `kode, tgl_entri, pengirim, kode_reseller, pesan, status, tgl_status, kode_terminal, service_center`
 
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
+
 	query, pqArgs := buildPageQueryPG(cols, "inbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
 	rows, err := db.Query(ctx, query, pqArgs...)
 	if err != nil {
@@ -96,11 +97,11 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 	}
 	defer rows.Close()
 
-	var inboxes []domain.Inbox
+	var inboxes []dto.InboxItem
 
 	for rows.Next() {
-		var i domain.Inbox
-		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.TglStatus, &i.Pengirim, &i.TipePengirim, &i.Penerima, &i.Pesan, &i.Status, &i.KodeTerminal, &i.KodeReseller, &i.KodeTransaksi, &i.IsJawaban, &i.ServiceCenter, &i.IsCs, &i.KodeJawabanCs, &i.Hash); err != nil {
+		var i dto.InboxItem
+		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter); err != nil {
 			return nil, false, err
 		}
 		inboxes = append(inboxes, i)
@@ -161,7 +162,7 @@ type inboxMSRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]domain.Inbox, bool, error) {
+func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
 	db, err := r.dbRegistry.MSSQL(tenant)
 	if err != nil {
 		return nil, false, err
@@ -179,7 +180,7 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := `kode, tgl_entri, tgl_status, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash`
+	cols := `kode, tgl_entri, pengirim, kode_reseller, pesan, status, tgl_status, kode_terminal, service_center`
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 	query, pqNamed := buildPageQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -189,11 +190,11 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 	}
 	defer rows.Close()
 
-	var inboxes []domain.Inbox
+	var inboxes []dto.InboxItem
 
 	for rows.Next() {
-		var i domain.Inbox
-		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.TglStatus, &i.Pengirim, &i.TipePengirim, &i.Penerima, &i.Pesan, &i.Status, &i.KodeTerminal, &i.KodeReseller, &i.KodeTransaksi, &i.IsJawaban, &i.ServiceCenter, &i.IsCs, &i.KodeJawabanCs, &i.Hash); err != nil {
+		var i dto.InboxItem
+		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter); err != nil {
 			return nil, false, err
 		}
 		inboxes = append(inboxes, i)
