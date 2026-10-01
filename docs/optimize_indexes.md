@@ -46,7 +46,8 @@ Semua DDL sudah DIEKSEKUSI manual di database. Jangan membuat ulang tanpa alasan
 1. **Pagination default = `ORDER BY kode DESC`** (terbaru dulu). Kosongkan seluruh `tgl_entri` dukungan bisection & index terarah.
 2. **Bisection** (`kode_cut`) memanfaatkan `idx_*_kode_tgl (kode DESC INCLUDE tgl_entri)` + slack 50k. Sewaktu `StartDate` diset, batas bawah juga dibisect (`kode > cutStart`) sehingga filter tanggal `tgl_entri >= start` tidak lagi dipakai query utama — hasil identik secara logika, tapi planner selalu lewat index kode (cepat deterministik, tanpa Bitmap/Seq scan).
 3. **Partial jawaban/perintah** duduk untuk filter triase (`requestFromReseller` / `replyToReseller` + `is_jawaban=0` / `is_perintah=0`); versi `tgl_entri DESC` digunakan saat filter tanggal + triase.
-4. Sort kolom di luar `kode DESC` **belum** didukung (butuh keputusan & index per kolom — lihat catatan).
+4. Pada jalur tgl-leading, subquery tetap memilih baris dengan `ORDER BY tgl_entri DESC, kode DESC`, tetapi query luar tetap mengurutkan `i.kode DESC`. Urutan luar wajib `kode DESC` karena cursor halaman berikutnya diambil dari kode baris terakhir lalu dipakai sebagai batas `kode < cursor`; kalau urut ikut `tgl_entri`, baris terakhir bisa ber-kode besar dan baris yang sudah terkirim muncul lagi di halaman berikutnya. Index tgl-leading di tabel tetap berguna karena melayani pemilihan n baris terbaru di dalam subquery.
+5. Sort kolom di luar `kode` dan `tgl_entri` **belum** didukung (butuh keputusan & index per kolom — lihat catatan).
 
 ## MSSQL — index yang HARUS dibuat manual (untuk pola varian tgl+flag)
 
@@ -84,3 +85,12 @@ Setelah dibuat, jalankan update statistik: `UPDATE STATISTICS dbo.inbox; UPDATE 
 - Jangan drop oleh index yang ditandai "dipakai bisection" tanpa menyesuaikan logika repo.
 - `ANALYZE` sebaiknya dijalankan setelah mass-change data agar perencana segar.
 - Fitur sort non-trivial di FE masih *open* — bila dibutuhkan, inventaris index per kolom sort (keyset) diputuskan dulu, bukan otomatis buat.
+
+## Kebijakan hak tulis atas database
+
+- Kode aplikasi **boleh** melakukan `INSERT`/`UPDATE` — itu memang tugasnya, dan endpoint-nya dilindungi `PostgresWriteGuard` yang dikendalikan `POSTGRES_WRITE_ENABLED` (default `false`).
+- Siapa pun yang mengerjakan perubahan kode dan tes **hanya boleh membaca**. Tidak pernah menjalankan `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, `GRANT`, `REVOKE`, migrasi, seed, backfill, atau pembuatan index.
+- **Semua index adalah tanggung jawab manusia pemilik database.** Blok SQL di bagian MSSQL di atas adalah referensi, bukan sesuatu yang dieksekusi otomatis. Pengurutan di dalam kode murni Go; tidak ada index yang dibuat atau diubah oleh kode maupun tes.
+- Tes di repo ini tidak boleh menulis ke database. Aturan itu dijaga secara statis oleh `internal/repository/db_readonly_guard_test.go`: seluruh `*_test.go` dipindai dan gagal bila memuat SQL tulis, DDL, pemanggilan `Exec`/`Begin`, string koneksi nyata, pemanggilan tulis repository, atau berkas `.sql`. Pengecualian hanya lewat daftar putih yang wajib menyertakan alasan, dan entri yang sudah tidak relevan akan menggagalkan tes.
+- Penutupan koneksi (`Close`, `CloseAll`) aman: itu hanya melepas handle sisi klien milik proses ini dan tidak mengubah data, skema, atau sesi aplikasi lain.
+- Test integrasi adalah satu-satunya tes yang menyentuh server, dijaga `INTEGRATION_DB=1`, dan hanya menjalankan pembacaan. Jalankan dari akar repo setelah memuat `.env` ke lingkungan proses.

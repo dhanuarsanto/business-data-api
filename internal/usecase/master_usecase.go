@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
@@ -15,7 +14,7 @@ func pickResellerRepo(source string, pg, ms domain.ResellerRepository) (domain.R
 	case domain.SourceMSSQL:
 		return ms, nil
 	default:
-		return nil, errors.New("sumber database tidak valid")
+		return nil, domain.ErrSourceNotValid
 	}
 }
 

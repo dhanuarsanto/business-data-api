@@ -30,15 +30,19 @@ func startBoundCacheSweep() {
 			ticker := time.NewTicker(boundSweepInterval)
 			defer ticker.Stop()
 			for range ticker.C {
-				cut := time.Now().Add(-boundTTL)
-				boundCache.Range(func(k, v any) bool {
-					if e, ok := v.(boundEntry); ok && e.at.Before(cut) {
-						boundCache.Delete(k)
-					}
-					return true
-				})
+				sweepBoundCache()
 			}
 		}()
+	})
+}
+
+func sweepBoundCache() {
+	cut := time.Now().Add(-boundTTL)
+	boundCache.Range(func(k, v any) bool {
+		if e, ok := v.(boundEntry); ok && e.at.Before(cut) {
+			boundCache.Delete(k)
+		}
+		return true
 	})
 }
 

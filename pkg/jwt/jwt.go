@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -11,21 +12,42 @@ const MinSecretLength = 32
 
 const tokenLeeway = 30 * time.Second
 
-var secretKey []byte
-var tokenDuration time.Duration = 24 * time.Hour
-var issuer string
+var errNotInitialized = errors.New("JWT secret belum diinisialisasi")
 
-func InitJWT(secret string, duration time.Duration, jwtIssuer string) {
-	secretKey = []byte(secret)
-	if duration > 0 {
-		tokenDuration = duration
-	}
-	issuer = jwtIssuer
+type manager struct {
+	secretKey     []byte
+	tokenDuration time.Duration
+	issuer        string
 }
 
-func GenerateToken(userID int, username string, rules string, tenant string) (string, error) {
-	if len(secretKey) == 0 {
-		return "", errors.New("JWT secret belum diinisialisasi")
+var active atomic.Pointer[manager]
+
+func newManager(secret string, duration time.Duration, jwtIssuer string) *manager {
+	if duration <= 0 {
+		duration = 24 * time.Hour
+	}
+	return &manager{
+		secretKey:     []byte(secret),
+		tokenDuration: duration,
+		issuer:        jwtIssuer,
+	}
+}
+
+func InitJWT(secret string, duration time.Duration, jwtIssuer string) {
+	active.Store(newManager(secret, duration, jwtIssuer))
+}
+
+func current() (*manager, error) {
+	m := active.Load()
+	if m == nil || len(m.secretKey) == 0 {
+		return nil, errNotInitialized
+	}
+	return m, nil
+}
+
+func (m *manager) generateToken(userID int, username string, rules string, tenant string) (string, error) {
+	if len(m.secretKey) == 0 {
+		return "", errNotInitialized
 	}
 	now := time.Now()
 	claims := jwt.MapClaims{
@@ -33,25 +55,25 @@ func GenerateToken(userID int, username string, rules string, tenant string) (st
 		"username": username,
 		"rules":    rules,
 		"tenant":   tenant,
-		"iss":      issuer,
+		"iss":      m.issuer,
 		"iat":      now.Unix(),
 		"nbf":      now.Unix(),
-		"exp":      now.Add(tokenDuration).Unix(),
+		"exp":      now.Add(m.tokenDuration).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secretKey)
+	return token.SignedString(m.secretKey)
 }
 
-func ValidateToken(tokenString string) (jwt.MapClaims, error) {
-	if len(secretKey) == 0 {
-		return nil, errors.New("JWT secret belum diinisialisasi")
+func (m *manager) validateToken(tokenString string) (jwt.MapClaims, error) {
+	if len(m.secretKey) == 0 {
+		return nil, errNotInitialized
 	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("metode signature tidak valid")
 		}
-		return secretKey, nil
+		return m.secretKey, nil
 	}, jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(tokenLeeway))
 
 	if err != nil {
@@ -62,14 +84,30 @@ func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	if !ok || !token.Valid {
 		return nil, errors.New("token tidak valid")
 	}
-	if issuer != "" {
+	if m.issuer != "" {
 		claimIss, exists := claims["iss"]
 		if !exists {
 			return nil, errors.New("penerbit token tidak sesuai")
 		}
-		if iss, isStr := claimIss.(string); !isStr || iss != issuer {
+		if iss, isStr := claimIss.(string); !isStr || iss != m.issuer {
 			return nil, errors.New("penerbit token tidak sesuai")
 		}
 	}
 	return claims, nil
+}
+
+func GenerateToken(userID int, username string, rules string, tenant string) (string, error) {
+	m, err := current()
+	if err != nil {
+		return "", err
+	}
+	return m.generateToken(userID, username, rules, tenant)
+}
+
+func ValidateToken(tokenString string) (jwt.MapClaims, error) {
+	m, err := current()
+	if err != nil {
+		return nil, err
+	}
+	return m.validateToken(tokenString)
 }

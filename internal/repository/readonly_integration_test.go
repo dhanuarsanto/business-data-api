@@ -30,6 +30,7 @@ var (
 
 	rawPG *pgxpool.Pool
 	rawMS *sql.DB
+	dbReg *db.DBRegistry
 )
 
 func initRepos() {
@@ -53,6 +54,7 @@ func initRepos() {
 
 		rawPG = pg
 		rawMS = ms
+		dbReg = reg
 
 		ir := repository.NewInboxRepositories(reg)
 		orr := repository.NewOutboxRepositories(reg)
@@ -61,6 +63,12 @@ func initRepos() {
 		pgOut, msOut = orr.PG, orr.MS
 		pgUser, msUser = ur.PG, ur.MS
 	})
+}
+
+func newRegistry(t *testing.T) *db.DBRegistry {
+	t.Helper()
+	ready(t)
+	return dbReg
 }
 
 func ready(t *testing.T) {
@@ -411,6 +419,151 @@ func TestReadOnlyUserSelect(t *testing.T) {
 			if !strings.Contains(strings.ToLower(err.Error()), "no rows") {
 				t.Fatalf("%s: SELECT users gagal diluar no-row: %v", name, err)
 			}
+		}
+	}
+}
+
+func TestReadOnlyLowerBoundSemuaSumber(t *testing.T) {
+	ready(t)
+	ctx := context.Background()
+	limit := 3
+
+	inFilter := domain.InboxFilter{PageSize: 5, LimitTotal: &limit}
+	outFilter := domain.OutboxFilter{PageSize: 5, LimitTotal: &limit}
+
+	for name, repo := range map[string]domain.InboxRepository{"pg": pgIn, "ms": msIn} {
+		got, err := repo.LowerBound(ctx, "maxtop", inFilter)
+		if err != nil {
+			t.Fatalf("%s inbox LowerBound tanpa tanggal: %v", name, err)
+		}
+		if got < 0 {
+			t.Fatalf("%s inbox LowerBound negatif: %d", name, got)
+		}
+
+		akhir := time.Now().AddDate(-1, 0, 0)
+		denganBatas := inFilter
+		denganBatas.EndDate = &akhir
+		if _, err := repo.LowerBound(ctx, "maxtop", denganBatas); err != nil {
+			t.Fatalf("%s inbox LowerBound dengan batas tanggal: %v", name, err)
+		}
+
+		// Rentang waktu yang tak berisi data sama sekali harus aman: cutEnd
+		// mengembalikan 0 tanpa error, bukan ErrNoRows.
+		nol := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
+		rentangKosong := inFilter
+		rentangKosong.EndDate = &nol
+		if _, err := repo.LowerBound(ctx, "maxtop", rentangKosong); err != nil {
+			t.Fatalf("%s inbox LowerBound rentang kosong: %v", name, err)
+		}
+		if _, _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 5, EndDate: &nol, StartDate: &nol}); err != nil {
+			t.Fatalf("%s inbox Get rentang kosong: %v", name, err)
+		}
+
+		if _, err := repo.LowerBound(ctx, "tenant-tak-terdaftar", inFilter); err == nil {
+			t.Fatalf("%s: tenant tak terdaftar harus ditolak", name)
+		}
+	}
+
+	for name, repo := range map[string]domain.OutboxRepository{"pg": pgOut, "ms": msOut} {
+		got, err := repo.LowerBound(ctx, "maxtop", outFilter)
+		if err != nil {
+			t.Fatalf("%s outbox LowerBound tanpa tanggal: %v", name, err)
+		}
+		if got < 0 {
+			t.Fatalf("%s outbox LowerBound negatif: %d", name, got)
+		}
+
+		akhir := time.Now().AddDate(-1, 0, 0)
+		denganBatas := outFilter
+		denganBatas.EndDate = &akhir
+		if _, err := repo.LowerBound(ctx, "maxtop", denganBatas); err != nil {
+			t.Fatalf("%s outbox LowerBound dengan batas tanggal: %v", name, err)
+		}
+
+		nol := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
+		rentangKosong := outFilter
+		rentangKosong.EndDate = &nol
+		if _, err := repo.LowerBound(ctx, "maxtop", rentangKosong); err != nil {
+			t.Fatalf("%s outbox LowerBound rentang kosong: %v", name, err)
+		}
+		if _, _, err := repo.Get(ctx, "maxtop", domain.OutboxFilter{PageSize: 5, EndDate: &nol, StartDate: &nol}); err != nil {
+			t.Fatalf("%s outbox Get rentang kosong: %v", name, err)
+		}
+
+		if _, err := repo.LowerBound(ctx, "tenant-tak-terdaftar", outFilter); err == nil {
+			t.Fatalf("%s: tenant tak terdaftar harus ditolak", name)
+		}
+	}
+}
+
+func TestReadOnlyResellerDropdown(t *testing.T) {
+	ready(t)
+	ctx := context.Background()
+
+	rr := repository.NewResellerRepositories(newRegistry(t))
+	for name, repo := range map[string]domain.ResellerRepository{"pg": rr.PG, "ms": rr.MS} {
+		list, err := repo.ListForDropdown(ctx, "maxtop")
+		if err != nil {
+			t.Fatalf("%s reseller dropdown: %v", name, err)
+		}
+		for i, r := range list {
+			if r.Kode == "" {
+				t.Fatalf("%s: kode reseller kosong di indeks %d", name, i)
+			}
+		}
+		if _, err := repo.ListForDropdown(ctx, "tenant-tak-terdaftar"); err == nil {
+			t.Fatalf("%s: tenant tak terdaftar harus ditolak", name)
+		}
+	}
+}
+
+// Penulisan tidak pernah sampai ke database: seluruh panggilan memakai tenant
+// yang tak terdaftar, jadi registry menolak lebih dulu sebelum ada query.
+func TestTenantTakTerdaftarDitolakSebelumMenyentuhDatabase(t *testing.T) {
+	ready(t)
+	ctx := context.Background()
+	const tenant = "tenant-tak-terdaftar-999"
+	limit := 3
+
+	for name, repo := range map[string]domain.InboxRepository{"pg": pgIn, "ms": msIn} {
+		if _, _, err := repo.Get(ctx, tenant, domain.InboxFilter{PageSize: 5}); err == nil {
+			t.Fatalf("%s inbox Get: tenant tak dikenal harus ditolak", name)
+		}
+		if _, err := repo.LowerBound(ctx, tenant, domain.InboxFilter{PageSize: 5, LimitTotal: &limit}); err == nil {
+			t.Fatalf("%s inbox LowerBound: tenant tak dikenal harus ditolak", name)
+		}
+		if err := repo.Insert(ctx, tenant, domain.Inbox{Pengirim: "08", Pesan: "x"}); err == nil {
+			t.Fatalf("%s inbox Insert: tenant tak dikenal harus ditolak", name)
+		}
+		if err := repo.Update(ctx, tenant, 1, dto.UpdateInboxRequest{}); err == nil {
+			t.Fatalf("%s inbox Update: tenant tak dikenal harus ditolak", name)
+		}
+	}
+
+	for name, repo := range map[string]domain.OutboxRepository{"pg": pgOut, "ms": msOut} {
+		if _, _, err := repo.Get(ctx, tenant, domain.OutboxFilter{PageSize: 5}); err == nil {
+			t.Fatalf("%s outbox Get: tenant tak dikenal harus ditolak", name)
+		}
+		if _, err := repo.LowerBound(ctx, tenant, domain.OutboxFilter{PageSize: 5, LimitTotal: &limit}); err == nil {
+			t.Fatalf("%s outbox LowerBound: tenant tak dikenal harus ditolak", name)
+		}
+		if err := repo.Insert(ctx, tenant, domain.Outbox{Penerima: "08", Pesan: "x"}); err == nil {
+			t.Fatalf("%s outbox Insert: tenant tak dikenal harus ditolak", name)
+		}
+		if err := repo.Update(ctx, tenant, 1, dto.UpdateOutboxRequest{}); err == nil {
+			t.Fatalf("%s outbox Update: tenant tak dikenal harus ditolak", name)
+		}
+	}
+
+	for name, repo := range map[string]domain.UserRepository{"pg": pgUser, "ms": msUser} {
+		if _, err := repo.GetByUsername(ctx, tenant, "apa-saja"); err == nil {
+			t.Fatalf("%s user GetByUsername: tenant tak dikenal harus ditolak", name)
+		}
+		if err := repo.Insert(ctx, tenant, domain.User{Username: "u", Password: "p", Rules: "r"}); err == nil {
+			t.Fatalf("%s user Insert: tenant tak dikenal harus ditolak", name)
+		}
+		if kosong := ""; repo.Update(ctx, tenant, "u", &kosong, &kosong) == nil {
+			t.Fatalf("%s user Update: tenant tak dikenal harus ditolak", name)
 		}
 	}
 }

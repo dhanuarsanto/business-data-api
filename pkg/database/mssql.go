@@ -69,6 +69,7 @@ func NewMSSQLDB(ctx context.Context, connString string, opts MSSQLPoolOptions) (
 	}
 
 	if err := db.Ping(); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("MSSQL tidak dapat di-ping: %w", err)
 	}
 

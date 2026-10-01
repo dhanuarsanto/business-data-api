@@ -17,7 +17,7 @@ func pickUserRepo(source string, pg, ms domain.UserRepository) (domain.UserRepos
 	case domain.SourceMSSQL:
 		return ms, nil
 	default:
-		return nil, errors.New("sumber database tidak valid")
+		return nil, domain.ErrSourceNotValid
 	}
 }
 

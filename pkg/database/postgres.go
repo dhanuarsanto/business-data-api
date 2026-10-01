@@ -6,10 +6,22 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.internal/business-data-api/pkg/logger"
 )
+
+// PGConn adalah himpunan operasi Postgres yang dipakai lapisan repository.
+type PGConn interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Close()
+}
+
+var _ PGConn = (*pgxpool.Pool)(nil)
 
 type SlogLogger struct{}
 
@@ -72,6 +84,7 @@ func NewPostgresPool(ctx context.Context, connString string, opts PostgresPoolOp
 	}
 
 	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("Postgres tidak dapat di-ping: %w", err)
 	}
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
 	"go.internal/business-data-api/pkg/database"
@@ -17,7 +16,7 @@ import (
 
 const cutSlack = 50000
 
-func cutEndPG(ctx context.Context, db *pgxpool.Pool, table string, end time.Time) (int64, error) {
+func cutEndPG(ctx context.Context, db database.PGConn, table string, end time.Time) (int64, error) {
 	var kode int64
 	err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri <= $1 ORDER BY kode DESC LIMIT 1", end).Scan(&kode)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -26,7 +25,7 @@ func cutEndPG(ctx context.Context, db *pgxpool.Pool, table string, end time.Time
 	return kode, err
 }
 
-func cutStartPG(ctx context.Context, db *pgxpool.Pool, table string, start time.Time) (int64, error) {
+func cutStartPG(ctx context.Context, db database.PGConn, table string, start time.Time) (int64, error) {
 	var kode int64
 	err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri < $1 ORDER BY kode DESC LIMIT 1", start).Scan(&kode)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -59,7 +58,7 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		if err != nil {
 			return nil, false, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
 		argID++
 	}
@@ -86,7 +85,7 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		argID++
 	}
 
-	cols := `kode, tgl_entri, pengirim, kode_reseller, pesan, status, tgl_status, kode_terminal, service_center`
+	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 
@@ -180,7 +179,7 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := `kode, tgl_entri, pengirim, kode_reseller, pesan, status, tgl_status, kode_terminal, service_center`
+	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center"}
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 	query, pqNamed := buildPageQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -280,7 +279,7 @@ func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filte
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
 		argID++
 	}
@@ -308,8 +307,8 @@ func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filte
 
 func cutEndMS(ctx context.Context, db *sql.DB, table string, end time.Time) (int64, error) {
 	var kode int64
-	err := db.QueryRowContext(ctx, "SELECT TOP (1) kode FROM "+table+" WHERE tgl_entri <= ? ORDER BY kode DESC", end).Scan(&kode)
-	if err == sql.ErrNoRows {
+	err := db.QueryRowContext(ctx, "SELECT TOP (1) kode FROM "+table+" WHERE tgl_entri <= @p1 ORDER BY kode DESC", end).Scan(&kode)
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
 	return kode, err
@@ -326,7 +325,7 @@ func (r *inboxMSRepository) LowerBound(ctx context.Context, tenant string, filte
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= @lowerCut" + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= @lowerCut")
 		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
 	}
 	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))

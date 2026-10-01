@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.internal/business-data-api/internal/config"
@@ -31,38 +30,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryParams := r.URL.Query()
-
-	pageSize, _ := strconv.Atoi(queryParams.Get("pageSize"))
-	if pageSize <= 0 {
-		pageSize = domain.DefaultPageSize
-	}
-	if pageSize > domain.MaxPageSize {
-		pageSize = domain.MaxPageSize
-	}
-	cursor, _ := strconv.ParseInt(queryParams.Get("cursor"), 10, 64)
-
-	var limitTotalPtr *int
-	if val := queryParams.Get("limit"); val != "" {
-		if v, err := strconv.Atoi(val); err == nil && v > 0 {
-			if v > domain.MaxLimitTotal {
-				v = domain.MaxLimitTotal
-			}
-			limitTotalPtr = &v
-		}
-	}
-
-	var startDatePtr, endDatePtr *time.Time
-	if val := queryParams.Get("startDate"); val != "" {
-		if t, err := time.Parse("2006-01-02", val); err == nil {
-			startDatePtr = &t
-		}
-	}
-	if val := queryParams.Get("endDate"); val != "" {
-		if t, err := time.Parse("2006-01-02", val); err == nil {
-			t = t.AddDate(0, 0, 1).Add(-time.Second)
-			endDatePtr = &t
-		}
-	}
+	page := parsePageParams(queryParams)
 
 	var resellerPtr *string
 	if val := queryParams.Get("reseller"); val != "" {
@@ -103,10 +71,10 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := domain.OutboxFilter{
-		StartDate:        startDatePtr,
-		EndDate:          endDatePtr,
-		PageSize:         pageSize,
-		LimitTotal:       limitTotalPtr,
+		StartDate:        page.StartDate,
+		EndDate:          page.EndDate,
+		PageSize:         page.PageSize,
+		LimitTotal:       page.LimitTotal,
 		Reseller:         resellerPtr,
 		Penerima:         penerimaPtr,
 		Tipe:             tipePtr,
@@ -114,7 +82,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Pesan:            strings.TrimSpace(queryParams.Get("pesan")),
 		ReplyToReseller:  replyToResellerPtr,
 		PerintahProvider: perintahProviderPtr,
-		Cursor:           cursor,
+		Cursor:           page.Cursor,
 	}
 
 	data, hasNextPage, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
@@ -133,7 +101,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		"items":    data,
 		"meta": response.CursorPaginationMeta{
 			HasNextPage: hasNextPage,
-			HasPrevPage: filter.Cursor > 0,
+			HasPrevPage: page.Cursor > 0,
 			NextCursor:  nextCursor,
 		},
 	})

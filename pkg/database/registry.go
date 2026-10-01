@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrTenantNotFound = errors.New("tenant tidak ditemukan")
 
 type TenantDB struct {
-	Postgres *pgxpool.Pool
+	Postgres PGConn
 	MSSQL    *sql.DB
 }
 
@@ -27,7 +25,7 @@ func NewDBRegistry() *DBRegistry {
 	}
 }
 
-func (r *DBRegistry) Register(tenantName string, pg *pgxpool.Pool, ms *sql.DB) {
+func (r *DBRegistry) Register(tenantName string, pg PGConn, ms *sql.DB) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.tenants[tenantName] = &TenantDB{
@@ -36,7 +34,7 @@ func (r *DBRegistry) Register(tenantName string, pg *pgxpool.Pool, ms *sql.DB) {
 	}
 }
 
-func (r *DBRegistry) Postgres(tenantName string) (*pgxpool.Pool, error) {
+func (r *DBRegistry) Postgres(tenantName string) (PGConn, error) {
 	r.mu.RLock()
 	tenant, exists := r.tenants[tenantName]
 	r.mu.RUnlock()

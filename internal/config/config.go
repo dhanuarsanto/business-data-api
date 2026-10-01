@@ -1,9 +1,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/netip"
+	"os"
 	"strings"
 	"time"
 
@@ -100,11 +102,14 @@ func (c *Config) ParseTrustedProxies() ([]netip.Prefix, error) {
 }
 
 func LoadConfig() *Config {
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		slog.Warn("Gagal memuat berkas .env, lanjut memakai variabel lingkungan", "error", err)
+	}
 
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("Gagal mem-parsing konfigurasi: %v", err)
+		slog.Error("Gagal mem-parsing konfigurasi", "error", err)
+		os.Exit(1)
 	}
 
 	return &cfg

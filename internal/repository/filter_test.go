@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -8,146 +10,343 @@ import (
 	"go.internal/business-data-api/internal/domain"
 )
 
-func TestBuildInboxFilterPG(t *testing.T) {
-	where, args, argCount := buildInboxFilterPG(domain.InboxFilter{})
-	if where != " WHERE 1=1" || len(args) != 0 || argCount != 1 {
-		t.Fatalf("filter kosong salah: %q args=%d argCount=%d", where, len(args), argCount)
-	}
+func ptr[T any](v T) *T { return &v }
 
-	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	status := int16(3)
-	where, args, argCount = buildInboxFilterPG(domain.InboxFilter{
-		StartDate: &start,
-		Status:    &status,
-		Pesan:     "halo",
-	})
-	must := []string{
-		" AND tgl_entri >= $1",
-		" AND status = $2",
-		" AND pesan ILIKE $3",
-	}
-	for _, s := range must {
-		if !strings.Contains(where, s) {
-			t.Fatalf("clause hilang %q -> %q", s, where)
-		}
-	}
-	if argCount != 4 || len(args) != 3 {
-		t.Fatalf("argCount=%d len(args)=%d", argCount, len(args))
-	}
-	if args[2] != "%halo%" {
-		t.Fatalf("arg pesan salah: %v", args)
-	}
-}
-
-func TestBuildInboxFilterPGTextLike(t *testing.T) {
+func TestBuildInboxFilterPGSemuaFilterBernomorBerurutan(t *testing.T) {
+	awal := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	akhir := time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC)
+	terminal := 7
 	reseller := "R1"
-	pengirim := "0812"
-	where, args, _ := buildInboxFilterPG(domain.InboxFilter{
-		Reseller: &reseller,
-		Pengirim: &pengirim,
+	pengirim := "Budi"
+	tipe := "S"
+	status := int16(2)
+	ya := true
+
+	where, args, next := buildInboxFilterPG(domain.InboxFilter{
+		StartDate: &awal, EndDate: &akhir, Terminal: &terminal, Reseller: &reseller,
+		Pengirim: &pengirim, Tipe: &tipe, Status: &status, Pesan: "halo",
+		RequestFromReseller: &ya,
 	})
-	must := []string{
-		" AND kode_reseller = $1",
-		" AND pengirim ILIKE $2",
+
+	want := whereBase +
+		" AND tgl_entri >= $1" +
+		" AND tgl_entri <= $2" +
+		" AND kode_terminal = $3" +
+		" AND kode_reseller = $4" +
+		" AND pengirim ILIKE $5" +
+		" AND tipe_pengirim = $6" +
+		" AND status = $7" +
+		" AND pesan ILIKE $8" +
+		" AND kode_reseller IS NOT NULL AND is_jawaban = 0"
+	if where != want {
+		t.Fatalf("WHERE tak sesuai:\napatasi : %q\nharus  : %q", where, want)
 	}
-	for _, s := range must {
-		if !strings.Contains(where, s) {
-			t.Fatalf("clause hilang %q -> %q", s, where)
-		}
+	if next != 9 {
+		t.Fatalf("argumen berikutnya harus 9, dapat %d", next)
 	}
-	if args[0] != "R1" || args[1] != "%0812%" {
-		t.Fatalf("arg harus equality untuk reseller, ILIKE %%..%% untuk pengirim: %v", args)
+	if len(args) != 8 {
+		t.Fatalf("harus ada 8 argumen, dapat %d", len(args))
+	}
+	if args[0] != awal || args[1] != akhir || args[2] != terminal || args[3] != reseller {
+		t.Fatalf("argumen tak diteruskan urut: %v", args)
+	}
+	if args[4] != "%Budi%" || args[7] != "%halo%" {
+		t.Fatalf("pencarian sebagian harus dibungkus wildcard: %v", args)
 	}
 }
 
-func TestBuildInboxFilterMS(t *testing.T) {
-	where, args := buildInboxFilterMS(domain.InboxFilter{})
-	if where != " WHERE 1=1" || len(args) != 0 {
-		t.Fatalf("filter kosong salah: %q args=%d", where, len(args))
+func TestBuildInboxFilterPGJawabanDariProviderMenang(t *testing.T) {
+	for _, pasangan := range [][2]bool{{false, true}, {true, false}, {false, false}, {true, true}} {
+		request, jawaban := pasangan[0], pasangan[1]
+		t.Run(fmt.Sprintf("request=%v jawaban=%v", request, jawaban), func(t *testing.T) {
+			where, _, _ := buildInboxFilterPG(domain.InboxFilter{
+				RequestFromReseller: &request, JawabanFromProvider: &jawaban,
+			})
+
+			switch {
+			case jawaban && !strings.Contains(where, "is_jawaban = 1"):
+				t.Fatalf("jawaban dari provider harus menang: %q", where)
+			case !jawaban && request && !strings.Contains(where, "kode_reseller IS NOT NULL AND is_jawaban = 0"):
+				t.Fatalf("request dari reseller harus dipakai: %q", where)
+			case !jawaban && !request && strings.Count(where, whereBase) != 1:
+				t.Fatalf("tanpa flag aktif WHERE tak boleh berubah: %q", where)
+			}
+		})
+	}
+}
+
+func TestBuildInboxFilterPGCumaSatuFilterDanKosong(t *testing.T) {
+	where, args, next := buildInboxFilterPG(domain.InboxFilter{Pesan: "satu"})
+	if where != whereBase+" AND pesan ILIKE $1" || next != 2 || len(args) != 1 {
+		t.Fatalf("filter tunggal tak sesuai: %q %v %d", where, args, next)
 	}
 
-	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	pengirim := "0812"
-	where, args = buildInboxFilterMS(domain.InboxFilter{StartDate: &start, Pengirim: &pengirim})
-	if !strings.Contains(where, " AND tgl_entri >= @startDate") || !strings.Contains(where, "AND pengirim LIKE '%' + @pengirim + '%'") {
-		t.Fatalf("clause MS hilang: %q", where)
+	empty, args, next := buildInboxFilterPG(domain.InboxFilter{})
+	if empty != whereBase || next != 1 || len(args) != 0 {
+		t.Fatalf("filter kosong harus tetap WHERE 1=1: %q %v %d", empty, args, next)
+	}
+}
+
+func TestBuildInboxFilterMSSemuaFilterBernamaUnik(t *testing.T) {
+	awal := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	akhir := time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC)
+	terminal := 7
+	reseller := "R1"
+	pengirim := "Budi"
+	tipe := "S"
+	status := int16(2)
+	ya := true
+
+	where, args := buildInboxFilterMS(domain.InboxFilter{
+		StartDate: &awal, EndDate: &akhir, Terminal: &terminal, Reseller: &reseller,
+		Pengirim: &pengirim, Tipe: &tipe, Status: &status, Pesan: "halo",
+		RequestFromReseller: &ya,
+	})
+
+	want := whereBase +
+		" AND tgl_entri >= @startDate" +
+		" AND tgl_entri <= @endDate" +
+		" AND kode_terminal = @terminal" +
+		" AND kode_reseller = @reseller" +
+		" AND pengirim LIKE '%' + @pengirim + '%'" +
+		" AND tipe_pengirim = @tipe" +
+		" AND status = @status" +
+		" AND pesan LIKE '%' + @pesan + '%'" +
+		" AND kode_reseller IS NOT NULL AND is_jawaban = 0"
+	if where != want {
+		t.Fatalf("WHERE tak sesuai:\napatasi : %q\nharus  : %q", where, want)
+	}
+
+	terlihat := map[string]bool{}
+	for _, arg := range args {
+		named, ok := arg.(sql.NamedArg)
+		if !ok {
+			t.Fatalf("argumen MS harus bernama, dapat %T", arg)
+		}
+		if terlihat[named.Name] {
+			t.Fatalf("nama argumen ganda: %s", named.Name)
+		}
+		terlihat[named.Name] = true
+	}
+	for _, nama := range []string{"startDate", "endDate", "terminal", "reseller", "pengirim", "tipe", "status", "pesan"} {
+		if !terlihat[nama] {
+			t.Fatalf("nama argumen %q tak ada, dapat %v", nama, terlihat)
+		}
+	}
+}
+
+func TestBuildInboxFilterMSJawabanDariProviderMenang(t *testing.T) {
+	request, jawaban := true, true
+	where, args := buildInboxFilterMS(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
+	if !strings.Contains(where, "is_jawaban = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
+		t.Fatalf("jawaban dari provider harus menang: %q", where)
+	}
+	if len(args) != 0 {
+		t.Fatalf("flag boolean tak menambah argumen, dapat %d", len(args))
+	}
+
+	dimatikan := false
+	where, _ = buildInboxFilterMS(domain.InboxFilter{JawabanFromProvider: &dimatikan, RequestFromReseller: &request})
+	if !strings.Contains(where, "kode_reseller IS NOT NULL AND is_jawaban = 0") {
+		t.Fatalf("jawaban dimatikan harus jatuh ke request: %q", where)
+	}
+
+	kedua := false
+	where, _ = buildInboxFilterMS(domain.InboxFilter{JawabanFromProvider: &kedua, RequestFromReseller: &kedua})
+	if where != whereBase {
+		t.Fatalf("semua flag mati harus polos, dapat %q", where)
+	}
+}
+
+func TestBuildOutboxFilterPGSemuaFilterBernomorBerurutan(t *testing.T) {
+	awal := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	akhir := time.Date(2026, 2, 28, 23, 59, 59, 0, time.UTC)
+	reseller := "R2"
+	penerima := "Siti"
+	tipe := "P"
+	status := int16(3)
+	ya := true
+
+	where, args, next := buildOutboxFilterPG(domain.OutboxFilter{
+		StartDate: &awal, EndDate: &akhir, Reseller: &reseller, Penerima: &penerima,
+		Tipe: &tipe, Status: &status, Pesan: "balasan", ReplyToReseller: &ya,
+	})
+
+	want := whereBase +
+		" AND tgl_entri >= $1" +
+		" AND tgl_entri <= $2" +
+		" AND kode_reseller = $3" +
+		" AND penerima ILIKE $4" +
+		" AND tipe_penerima = $5" +
+		" AND status = $6" +
+		" AND pesan ILIKE $7" +
+		" AND kode_reseller IS NOT NULL AND is_perintah = 0"
+	if where != want {
+		t.Fatalf("WHERE tak sesuai:\napatasi : %q\nharus  : %q", where, want)
+	}
+	if next != 8 || len(args) != 7 {
+		t.Fatalf("penomoran argumen tak sesuai: next=%d len=%d", next, len(args))
+	}
+	if args[3] != "%Siti%" || args[6] != "%balasan%" {
+		t.Fatalf("pencarian sebagian harus dibungkus wildcard: %v", args)
+	}
+}
+
+func TestBuildOutboxFilterPGPerintahProviderMenang(t *testing.T) {
+	ya, tidak := true, false
+	where, args, next := buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &ya, ReplyToReseller: &tidak})
+	if !strings.Contains(where, "is_perintah = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
+		t.Fatalf("perintah provider harus menang: %q", where)
+	}
+	if len(args) != 0 || next != 1 {
+		t.Fatalf("flag tak boleh menambah argumen: %v %d", args, next)
+	}
+
+	kosong, args, next := buildOutboxFilterPG(domain.OutboxFilter{})
+	if kosong != whereBase || len(args) != 0 || next != 1 {
+		t.Fatalf("filter kosong harus tetap WHERE 1=1: %q %v %d", kosong, args, next)
+	}
+}
+
+func TestBuildOutboxFilterMSSemuaFilterBernamaUnik(t *testing.T) {
+	awal := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	akhir := time.Date(2026, 2, 28, 23, 59, 59, 0, time.UTC)
+	reseller := "R2"
+	penerima := "Siti"
+	tipe := "P"
+	status := int16(3)
+	ya := true
+
+	where, args := buildOutboxFilterMS(domain.OutboxFilter{
+		StartDate: &awal, EndDate: &akhir, Reseller: &reseller, Penerima: &penerima,
+		Tipe: &tipe, Status: &status, Pesan: "balasan", ReplyToReseller: &ya,
+	})
+
+	want := whereBase +
+		" AND tgl_entri >= @startDate" +
+		" AND tgl_entri <= @endDate" +
+		" AND kode_reseller = @reseller" +
+		" AND penerima LIKE '%' + @penerima + '%'" +
+		" AND tipe_penerima = @tipe" +
+		" AND status = @status" +
+		" AND pesan LIKE '%' + @pesan + '%'" +
+		" AND kode_reseller IS NOT NULL AND is_perintah = 0"
+	if where != want {
+		t.Fatalf("WHERE tak sesuai:\napatasi : %q\nharus  : %q", where, want)
+	}
+
+	terlihat := map[string]bool{}
+	for _, arg := range args {
+		named, ok := arg.(sql.NamedArg)
+		if !ok {
+			t.Fatalf("argumen MS harus bernama, dapat %T", arg)
+		}
+		if terlihat[named.Name] {
+			t.Fatalf("nama argumen ganda: %s", named.Name)
+		}
+		terlihat[named.Name] = true
+	}
+	for _, nama := range []string{"startDate", "endDate", "reseller", "penerima", "tipe", "status", "pesan"} {
+		if !terlihat[nama] {
+			t.Fatalf("nama argumen %q tak ada, dapat %v", nama, terlihat)
+		}
+	}
+}
+
+func TestBuildOutboxFilterMSPerintahProviderMenangDanKosong(t *testing.T) {
+	ya, tidak := true, false
+	where, args := buildOutboxFilterMS(domain.OutboxFilter{PerintahProvider: &ya, ReplyToReseller: &tidak})
+	if !strings.Contains(where, "is_perintah = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
+		t.Fatalf("perintah provider harus menang: %q", where)
+	}
+	if len(args) != 0 {
+		t.Fatalf("flag tak menambah argumen, dapat %d", len(args))
+	}
+
+	kosong, args := buildOutboxFilterMS(domain.OutboxFilter{})
+	if kosong != whereBase || len(args) != 0 {
+		t.Fatalf("filter kosong harus tetap WHERE 1=1: %q %v", kosong, args)
+	}
+}
+
+func TestBuildPageQueryMSJalurDefaultMemakaiTopDanTanpaAlias(t *testing.T) {
+	cols := []string{"kode", "tgl_entri"}
+	q, args := buildPageQueryMS(cols, "outbox", whereBase, nil, false, 51)
+
+	if !strings.Contains(q, "SELECT TOP (@p_limit) kode, tgl_entri FROM outbox WHERE 1=1 ORDER BY kode DESC") {
+		t.Fatalf("query default salah: %q", q)
+	}
+	if strings.Contains(q, "JOIN (") {
+		t.Fatalf("jalur default tak boleh memakai subquery: %q", q)
+	}
+	if len(args) != 1 || args[0] != sql.Named("p_limit", 51) {
+		t.Fatalf("argumen limit salah: %v", args)
+	}
+}
+
+func TestBuildPageQueryMSJalurTglMempertahankanArgumenSyarat(t *testing.T) {
+	cols := []string{"kode", "tgl_entri"}
+	where := whereBase + " AND kode_reseller = @reseller"
+	sebelum := []any{sql.Named("reseller", "R1")}
+
+	q, args := buildPageQueryMS(cols, "outbox", where, sebelum, true, 26)
+
+	subquery := `SELECT TOP (@p_limit) kode FROM outbox` + where + ` ORDER BY tgl_entri DESC, kode DESC`
+	want := "JOIN (" + subquery + ") s ON i.kode=s.kode ORDER BY i.kode DESC"
+	if !strings.Contains(q, want) {
+		t.Fatalf("subquery tak sesuai:\ndapat : %q\nharus mengandung : %q", q, want)
+	}
+	if !strings.Contains(q, "SELECT i.kode, i.tgl_entri FROM outbox i ") {
+		t.Fatalf("outer query harus memakai alias i: %q", q)
 	}
 	if len(args) != 2 {
-		t.Fatalf("named args harus 2, dapat %d", len(args))
+		t.Fatalf("argumen syarat harus dipertahankan, dapat %d", len(args))
+	}
+	if args[0] != sql.Named("reseller", "R1") || args[1] != sql.Named("p_limit", 26) {
+		t.Fatalf("urutan argumen tak sesuai: %v", args)
 	}
 }
 
-func TestBuildInboxFilterCheckboxPriority(t *testing.T) {
-	jawaban := true
-	request := true
+func TestBuildPageQueryPGMempertahankanArgumenSyaratPadaKeduaJalur(t *testing.T) {
+	cols := []string{"kode"}
+	where := whereBase + " AND status = $1"
+	sebelum := []any{int16(2)}
 
-	where, _, _ := buildInboxFilterPG(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
-	if !strings.Contains(where, "AND is_jawaban = 1") {
-		t.Fatalf("jawaban true harus menambah is_jawaban: %q", where)
+	q, args := buildPageQueryPG(cols, "inbox", where, sebelum, 2, false, 11)
+	if !strings.Contains(q, "SELECT kode FROM inbox"+where+" ORDER BY kode DESC LIMIT $2") {
+		t.Fatalf("jalur default tak sesuai: %q", q)
 	}
-	if strings.Contains(where, "kode_reseller IS NOT NULL") {
-		t.Fatalf("jawaban true harus menahan requestFromReseller: %q", where)
+	if len(args) != 2 || args[0] != int16(2) || args[1] != 11 {
+		t.Fatalf("jalur default: argumen tak sesuai: %v", args)
 	}
 
-	jawaban = false
-	where, _, _ = buildInboxFilterPG(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
-	if !strings.Contains(where, "kode_reseller IS NOT NULL") || !strings.Contains(where, "is_jawaban = 0") {
-		t.Fatalf("jawaban false harus menjalankan request request asli is_jawaban=0: %q", where)
+	q, args = buildPageQueryPG(cols, "inbox", where, sebelum, 2, true, 11)
+	subquery := "SELECT kode FROM inbox" + where + " ORDER BY tgl_entri DESC, kode DESC LIMIT $2"
+	if !strings.Contains(q, "SELECT i.kode FROM inbox i JOIN ("+subquery+") s ON i.kode=s.kode ORDER BY i.kode DESC LIMIT $3") {
+		t.Fatalf("jalur tgl_leading tak sesuai: %q", q)
 	}
-	if strings.Contains(where, "is_jawaban = 1") {
-		t.Fatalf("jawaban false tidak boleh menambah is_jawaban: %q", where)
+	if len(args) != 3 || args[0] != int16(2) || args[1] != 11 || args[2] != 11 {
+		t.Fatalf("jalur tgl_leading: argumen tak sesuai: %v", args)
 	}
 }
 
-func TestBuildOutboxFilterCheckboxPriority(t *testing.T) {
-	perintah := true
-	reply := true
-
-	where, _, _ := buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &perintah, ReplyToReseller: &reply})
-	if !strings.Contains(where, "AND is_perintah = 1") {
-		t.Fatalf("perintah true harus menambah is_perintah: %q", where)
+func TestQualifyColsDanPrependBoundPadaMasukanKosong(t *testing.T) {
+	if got := qualifyCols(nil, "i"); got != "" {
+		t.Fatalf("daftar kolom kosong harus kosong, dapat %q", got)
 	}
-	if strings.Contains(where, "kode_reseller IS NOT NULL") {
-		t.Fatalf("perintah true harus menahan replyToReseller: %q", where)
+	if got := qualifyCols([]string{}, "i"); got != "" {
+		t.Fatalf("daftar kolom kosong harus kosong, dapat %q", got)
 	}
-
-	perintah = false
-	where, _, _ = buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &perintah, ReplyToReseller: &reply})
-	if !strings.Contains(where, "kode_reseller IS NOT NULL") || !strings.Contains(where, "is_perintah = 0") {
-		t.Fatalf("perintah false harus menjalankan reply request is_perintah=0: %q", where)
-	}
-	if strings.Contains(where, "is_perintah = 1") {
-		t.Fatalf("perintah false tidak boleh menambah is_perintah: %q", where)
+	if got := prependBound(whereBase, ""); got != whereBase {
+		t.Fatalf("syarat kosong tak boleh mengubah WHERE, dapat %q", got)
 	}
 }
 
-func TestBuildOutboxFilterPG(t *testing.T) {
-	where, _, argCount := buildOutboxFilterPG(domain.OutboxFilter{})
-	if where != " WHERE 1=1" || argCount != 1 {
-		t.Fatalf("filter kosong salah: %q argCount=%d", where, argCount)
+func TestPtrMembantuMenyusunFilterUji(t *testing.T) {
+	if *ptr(5) != 5 || *ptr("teks") != "teks" {
+		t.Fatal("ptr harus mengembalikan alamat nilai yang sama")
 	}
-
-	penerima := "0812"
-	reseller := "R1"
-	where, args, argCount := buildOutboxFilterPG(domain.OutboxFilter{Penerima: &penerima, Reseller: &reseller})
-	if !strings.Contains(where, " AND kode_reseller = $1") || !strings.Contains(where, " AND penerima ILIKE $2") {
-		t.Fatalf("clause hilang: %q", where)
-	}
-	if argCount != 3 || len(args) != 2 {
-		t.Fatalf("argCount=%d len(args)=%d", argCount, len(args))
-	}
-	if args[0] != "R1" || args[1] != "%0812%" {
-		t.Fatalf("arg harus equality untuk reseller, ILIKE %%..%% untuk penerima: %v", args)
-	}
-}
-
-func TestBuildOutboxFilterMS(t *testing.T) {
-	penerima := "0812"
-	where, args := buildOutboxFilterMS(domain.OutboxFilter{Penerima: &penerima})
-	if !strings.Contains(where, "AND penerima LIKE '%' + @penerima + '%'") {
-		t.Fatalf("clause hilang: %q", where)
-	}
-	if len(args) != 1 {
-		t.Fatalf("named args harus 1, dapat %d", len(args))
+	if ptr(time.Now()) == nil {
+		t.Fatal("ptr waktu harus tak nil")
 	}
 }

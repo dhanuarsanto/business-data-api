@@ -62,6 +62,14 @@ func Error(w http.ResponseWriter, r *http.Request, statusCode int, message strin
 			message = "Resource tidak ditemukan"
 		case statusCode == http.StatusBadRequest:
 			message = "Permintaan tidak valid"
+		case statusCode == http.StatusMethodNotAllowed:
+			message = "Method HTTP tidak diizinkan pada endpoint ini"
+		case statusCode == http.StatusRequestEntityTooLarge:
+			message = "Ukuran body permintaan melebihi batas"
+		case statusCode == http.StatusTooManyRequests:
+			message = "Batas request terlampaui. Silakan coba sesaat lagi."
+		default:
+			message = "Permintaan tidak dapat diproses"
 		}
 	}
 

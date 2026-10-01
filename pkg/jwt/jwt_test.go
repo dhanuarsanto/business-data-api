@@ -7,6 +7,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func testSecretKey(t *testing.T) []byte {
+	t.Helper()
+	m, err := current()
+	if err != nil {
+		t.Fatalf("JWT harus diinisialisasi sebelum test: %v", err)
+	}
+	return m.secretKey
+}
+
 func TestValidateTokenIssuer(t *testing.T) {
 	InitJWT("secret-uji", 1*time.Hour, "issuer-a")
 
@@ -26,7 +35,7 @@ func TestValidateTokenIssuer(t *testing.T) {
 		"iss":      "issuer-penipu",
 		"exp":      time.Now().Add(time.Hour).Unix(),
 	})
-	badStr, err := bad.SignedString(secretKey)
+	badStr, err := bad.SignedString(testSecretKey(t))
 	if err != nil {
 		t.Fatalf("sign token gagal: %v", err)
 	}
@@ -44,7 +53,7 @@ func TestValidateTokenRejectsMissingIssuer(t *testing.T) {
 		"rules":    "sa",
 		"tenant":   "maxtop",
 		"exp":      time.Now().Add(time.Hour).Unix(),
-	}).SignedString(secretKey)
+	}).SignedString(testSecretKey(t))
 	if err != nil {
 		t.Fatalf("sign token gagal: %v", err)
 	}
@@ -57,7 +66,7 @@ func TestValidateTokenRejectsWeakClaims(t *testing.T) {
 	InitJWT("secret-uji", 1*time.Hour, "issuer-a")
 
 	sign := func(claims jwt.MapClaims) string {
-		tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secretKey)
+		tok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(testSecretKey(t))
 		if err != nil {
 			t.Fatalf("sign token gagal: %v", err)
 		}

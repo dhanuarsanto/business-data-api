@@ -38,7 +38,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		if err != nil {
 			return nil, false, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
 		argID++
 	}
@@ -65,7 +65,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		argID++
 	}
 
-	cols := `kode, tgl_entri, penerima, kode_reseller, pesan, status, tgl_status`
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqArgs := buildPageQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
@@ -161,7 +161,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := `kode, tgl_entri, penerima, kode_reseller, pesan, status, tgl_status`
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status"}
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqNamed := buildPageQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -266,7 +266,7 @@ func (r *outboxPGRepository) LowerBound(ctx context.Context, tenant string, filt
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= $" + strconv.Itoa(argID) + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
 		argID++
 	}
@@ -303,7 +303,7 @@ func (r *outboxMSRepository) LowerBound(ctx context.Context, tenant string, filt
 		if err != nil {
 			return 0, err
 		}
-		whereClause = " WHERE 1=1 AND kode <= @lowerCut" + whereClause[len(" WHERE 1=1"):]
+		whereClause = prependBound(whereClause, " AND kode <= @lowerCut")
 		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
 	}
 	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))

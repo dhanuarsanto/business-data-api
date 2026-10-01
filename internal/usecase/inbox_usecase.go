@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.internal/business-data-api/internal/domain"
@@ -16,7 +15,7 @@ func pickInboxRepo(source string, pg, ms domain.InboxRepository) (domain.InboxRe
 	case domain.SourceMSSQL:
 		return ms, nil
 	default:
-		return nil, errors.New("sumber database tidak valid")
+		return nil, domain.ErrSourceNotValid
 	}
 }
 

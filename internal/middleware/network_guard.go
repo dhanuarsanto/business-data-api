@@ -27,30 +27,48 @@ func (t *TrustedProxyResolver) trust(remote netip.Addr) bool {
 }
 
 func (t *TrustedProxyResolver) clientAddr(r *http.Request) netip.Addr {
-	remoteStr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		remoteStr = r.RemoteAddr
-	}
-	remote, err := netip.ParseAddr(strings.TrimSpace(remoteStr))
-	if err != nil || !remote.IsValid() {
+	remote := parseRemoteAddr(r.RemoteAddr)
+	if !remote.IsValid() {
 		return netip.Addr{}
 	}
-	remote = remote.Unmap()
 
-	if t.trust(remote) {
-		if ipStr := r.Header.Get("X-Real-IP"); ipStr != "" {
-			if ip, err := netip.ParseAddr(strings.TrimSpace(ipStr)); err == nil {
-				return ip.Unmap()
+	if !t.trust(remote) {
+		return remote
+	}
+
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		chain := strings.Split(fwd, ",")
+		for i := len(chain) - 1; i >= 0; i-- {
+			ip := parseRemoteAddr(chain[i])
+			if !ip.IsValid() {
+				break
 			}
-		}
-		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-			first := strings.TrimSpace(strings.Split(fwd, ",")[0])
-			if ip, err := netip.ParseAddr(first); err == nil {
-				return ip.Unmap()
+			if !t.trust(ip) {
+				return ip
 			}
 		}
 	}
+
+	if real := parseRemoteAddr(r.Header.Get("X-Real-IP")); real.IsValid() {
+		return real
+	}
+
 	return remote
+}
+
+func parseRemoteAddr(raw string) netip.Addr {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return netip.Addr{}
+	}
+	if addr, _, err := net.SplitHostPort(raw); err == nil {
+		raw = addr
+	}
+	ip, err := netip.ParseAddr(strings.TrimSpace(raw))
+	if err != nil {
+		return netip.Addr{}
+	}
+	return ip.Unmap()
 }
 
 func (t *TrustedProxyResolver) IsLocal(r *http.Request) bool {
