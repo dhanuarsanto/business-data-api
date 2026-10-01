@@ -3,9 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
-	"time"
 
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
@@ -16,11 +14,8 @@ type stubWriteInboxRepo struct {
 	errWrite error
 }
 
-func (s *stubWriteInboxRepo) Get(context.Context, string, domain.InboxFilter) ([]dto.InboxItem, bool, error) {
-	return nil, false, s.errGet
-}
-func (s *stubWriteInboxRepo) LowerBound(context.Context, string, domain.InboxFilter) (int64, error) {
-	return 0, nil
+func (s *stubWriteInboxRepo) Get(context.Context, string, domain.InboxFilter) ([]dto.InboxItem, error) {
+	return nil, s.errGet
 }
 func (s *stubWriteInboxRepo) Insert(context.Context, string, domain.Inbox) error {
 	return s.errWrite
@@ -32,16 +27,10 @@ func (s *stubWriteInboxRepo) Update(context.Context, string, int64, dto.UpdateIn
 type stubWriteOutboxRepo struct {
 	errGet   error
 	errWrite error
-	errLB    error
-	lbCalls  int
 }
 
-func (s *stubWriteOutboxRepo) Get(context.Context, string, domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
-	return nil, false, s.errGet
-}
-func (s *stubWriteOutboxRepo) LowerBound(context.Context, string, domain.OutboxFilter) (int64, error) {
-	s.lbCalls++
-	return 4242, s.errLB
+func (s *stubWriteOutboxRepo) Get(context.Context, string, domain.OutboxFilter) ([]dto.OutboxItem, error) {
+	return nil, s.errGet
 }
 func (s *stubWriteOutboxRepo) Insert(context.Context, string, domain.Outbox) error {
 	return s.errWrite
@@ -162,33 +151,35 @@ func TestCreateUserDanUpdateUserMeneruskanErrorRepo(t *testing.T) {
 	}
 }
 
-func TestGetInboxMenormalkanPageSizeDanLimitTotal(t *testing.T) {
+func TestGetInboxMenormalkanLimit(t *testing.T) {
 	repo := &recordingInboxRepo{}
 	u := NewInboxUsecase(repo, repo)
 	ctx := context.Background()
 
-	if _, _, err := u.GetInbox(ctx, "tenant-ps", domain.SourcePostgres, domain.InboxFilter{PageSize: 0}); err != nil {
-		t.Fatalf("pageSize nol harus jadi default: %v", err)
-	}
-	if _, _, err := u.GetInbox(ctx, "tenant-ps", domain.SourcePostgres, domain.InboxFilter{PageSize: -5}); err != nil {
-		t.Fatalf("pageSize negatif harus jadi default: %v", err)
-	}
-	if _, _, err := u.GetInbox(ctx, "tenant-ps", domain.SourcePostgres, domain.InboxFilter{PageSize: domain.MaxPageSize + 500}); err != nil {
-		t.Fatalf("pageSize berlebihan harus dipangkas: %v", err)
-	}
-
-	berlebih := domain.MaxLimitTotal + 1000
-	if _, _, err := u.GetInbox(ctx, "tenant-limit", domain.SourcePostgres, domain.InboxFilter{PageSize: 5, LimitTotal: &berlebih}); err != nil {
-		t.Fatalf("limit berlebihan harus dipangkas: %v", err)
+	for _, tc := range []struct {
+		masuk int
+		want  int
+	}{
+		{0, domain.DefaultLimit},
+		{-5, domain.DefaultLimit},
+		{domain.MaxLimit + 500, domain.MaxLimit},
+		{500000, domain.MaxLimit},
+		{5, 5},
+	} {
+		if _, err := u.GetInbox(ctx, "tenant-ps", domain.SourcePostgres, domain.InboxFilter{Limit: tc.masuk}); err != nil {
+			t.Fatalf("limit %d tidak boleh error: %v", tc.masuk, err)
+		}
+		if repo.filter.Limit != tc.want {
+			t.Fatalf("limit %d harus jadi %d, dapat %d", tc.masuk, tc.want, repo.filter.Limit)
+		}
 	}
 }
-
 func TestGetInboxMeneruskanErrorRepoGet(t *testing.T) {
 	boom := errors.New("query gagal")
 	repo := &stubWriteInboxRepo{errGet: boom}
 	u := NewInboxUsecase(repo, repo)
 
-	if _, _, err := u.GetInbox(context.Background(), "t", domain.SourcePostgres, domain.InboxFilter{PageSize: 5}); !errors.Is(err, boom) {
+	if _, err := u.GetInbox(context.Background(), "t", domain.SourcePostgres, domain.InboxFilter{Limit: 5}); !errors.Is(err, boom) {
 		t.Fatalf("error Get harus diteruskan, dapat %v", err)
 	}
 }
@@ -213,21 +204,27 @@ func TestCreateUpdateInboxMeneruskanErrorRepoDanMenolakSumberSalah(t *testing.T)
 	}
 }
 
-func TestGetOutboxMenormalkanPageSizeDanLimitTotal(t *testing.T) {
+func TestGetOutboxMenormalkanLimit(t *testing.T) {
 	repo := &recordingOutboxRepo{}
 	u := NewOutboxUsecase(repo, repo)
 	ctx := context.Background()
 
-	if _, _, err := u.GetOutbox(ctx, "tenant-ps", domain.SourcePostgres, domain.OutboxFilter{PageSize: 0}); err != nil {
-		t.Fatalf("pageSize nol harus jadi default: %v", err)
-	}
-	if _, _, err := u.GetOutbox(ctx, "tenant-ps", domain.SourcePostgres, domain.OutboxFilter{PageSize: domain.MaxPageSize + 99}); err != nil {
-		t.Fatalf("pageSize berlebihan harus dipangkas: %v", err)
-	}
-
-	berlebih := domain.MaxLimitTotal + 1
-	if _, _, err := u.GetOutbox(ctx, "tenant-limit", domain.SourcePostgres, domain.OutboxFilter{PageSize: 5, LimitTotal: &berlebih}); err != nil {
-		t.Fatalf("limit berlebihan harus dipangkas: %v", err)
+	for _, tc := range []struct {
+		masuk int
+		want  int
+	}{
+		{0, domain.DefaultLimit},
+		{-9, domain.DefaultLimit},
+		{domain.MaxLimit + 99, domain.MaxLimit},
+		{500000, domain.MaxLimit},
+		{5, 5},
+	} {
+		if _, err := u.GetOutbox(ctx, "tenant-ps", domain.SourcePostgres, domain.OutboxFilter{Limit: tc.masuk}); err != nil {
+			t.Fatalf("limit %d tidak boleh error: %v", tc.masuk, err)
+		}
+		if repo.filter.Limit != tc.want {
+			t.Fatalf("limit %d harus jadi %d, dapat %d", tc.masuk, tc.want, repo.filter.Limit)
+		}
 	}
 }
 
@@ -236,37 +233,8 @@ func TestGetOutboxMeneruskanErrorRepoGet(t *testing.T) {
 	repo := &stubWriteOutboxRepo{errGet: boom}
 	u := NewOutboxUsecase(repo, repo)
 
-	if _, _, err := u.GetOutbox(context.Background(), "t", domain.SourcePostgres, domain.OutboxFilter{PageSize: 5}); !errors.Is(err, boom) {
+	if _, err := u.GetOutbox(context.Background(), "t", domain.SourcePostgres, domain.OutboxFilter{Limit: 5}); !errors.Is(err, boom) {
 		t.Fatalf("error Get harus diteruskan, dapat %v", err)
-	}
-}
-
-func TestGetOutboxLowerBoundGagalDanBerhasilDipakai(t *testing.T) {
-	tenant := "tenant-lb-" + t.Name()
-	limit := 10
-	filter := domain.OutboxFilter{PageSize: 5, LimitTotal: &limit}
-
-	gagal := errors.New("batas bawah gagal")
-	u := NewOutboxUsecase(&stubWriteOutboxRepo{errLB: gagal}, &stubWriteOutboxRepo{})
-	if _, _, err := u.GetOutbox(context.Background(), tenant, domain.SourcePostgres, filter); !errors.Is(err, gagal) {
-		t.Fatalf("error LowerBound harus diteruskan, dapat %v", err)
-	}
-
-	repo := &stubWriteOutboxRepo{}
-	u2 := NewOutboxUsecase(repo, repo)
-	data, _, err := u2.GetOutbox(context.Background(), tenant, domain.SourcePostgres, filter)
-	if err != nil {
-		t.Fatalf("LowerBound sukses tak boleh error: %v", err)
-	}
-	if len(data) != 0 {
-		t.Fatalf("stub mengembalikan kosong, dapat %d baris", len(data))
-	}
-	// Panggilan kedua harus memakai cache, bukan memanggil repo lagi.
-	if _, _, err := u2.GetOutbox(context.Background(), tenant, domain.SourcePostgres, filter); err != nil {
-		t.Fatalf("panggilan kedua gagal: %v", err)
-	}
-	if repo.lbCalls != 1 {
-		t.Fatalf("LowerBound harus dipanggil sekali lalu di-cache, dapat %d", repo.lbCalls)
 	}
 }
 
@@ -298,108 +266,5 @@ func TestPickInboxDanOutboxRepoMenolakSemuaSumberLain(t *testing.T) {
 		if _, err := pickOutboxRepo(salah, nil, nil); !errors.Is(err, domain.ErrSourceNotValid) {
 			t.Fatalf("pickOutboxRepo %q: %v", salah, err)
 		}
-	}
-}
-
-func TestStartBoundCacheSweepHanyaDijalankanSekali(t *testing.T) {
-	startBoundCacheSweep()
-	startBoundCacheSweep()
-	// Goroutine penyapu dijalankan sekali saja; tunggu agar pasti ter-schedule
-	// sebelum proses uji selesai, supaya pencatat cakupan tidak berlomba.
-	time.Sleep(50 * time.Millisecond)
-}
-
-func TestSweepBoundCacheMembuangEntriKadaluarsaSaja(t *testing.T) {
-	kunci := func(nama string) string { return "sweep-uji|" + nama + "|" + t.Name() }
-
-	segar := kunci("segar")
-	kadaluarsa := kunci("kadaluarsa")
-	bukanEntri := kunci("bukan-entri")
-	salahTipe := kunci("salah-tipe")
-
-	boundCache.Store(segar, boundEntry{val: 1, at: time.Now()})
-	boundCache.Store(kadaluarsa, boundEntry{val: 2, at: time.Now().Add(-2 * boundTTL)})
-	boundCache.Store(bukanEntri, "bukan boundEntry")
-	boundCache.Store(salahTipe, 42)
-	t.Cleanup(func() {
-		for _, k := range []string{segar, kadaluarsa, bukanEntri, salahTipe} {
-			boundCache.Delete(k)
-		}
-	})
-
-	sweepBoundCache()
-
-	if _, ok := boundCache.Load(kadaluarsa); ok {
-		t.Fatal("entri kadaluarsa harus dihapus")
-	}
-	if _, ok := boundCache.Load(segar); !ok {
-		t.Fatal("entri segar harus dipertahankan")
-	}
-	if _, ok := boundCache.Load(bukanEntri); !ok {
-		t.Fatal("nilai yang bukan boundEntry tak boleh dihapus")
-	}
-	if _, ok := boundCache.Load(salahTipe); !ok {
-		t.Fatal("nilai bertipe lain tak boleh dihapus")
-	}
-}
-
-func TestCacheInvalidatePrefixHanyaMenghapusAwalanCocok(t *testing.T) {
-	cacheSet("inbox|postgres|tenant-a|1|satu", 1)
-	cacheSet("inbox|postgres|tenant-a|1|dua", 2)
-	cacheSet("inbox|mssql|tenant-a|1|satu", 3)
-	cacheSet("outbox|postgres|tenant-a|1|satu", 4)
-
-	cacheInvalidatePrefix("inbox|postgres|tenant-a")
-
-	if _, ada := cacheGet("inbox|postgres|tenant-a|1|satu"); ada {
-		t.Fatal("kunci dengan awalan cocok harus terhapus")
-	}
-	if _, ada := cacheGet("inbox|postgres|tenant-a|1|dua"); ada {
-		t.Fatal("seluruh kunci dengan awalan cocok harus terhapus")
-	}
-	if _, ada := cacheGet("inbox|mssql|tenant-a|1|satu"); !ada {
-		t.Fatal("kunci sumber lain harus utuh")
-	}
-	if _, ada := cacheGet("outbox|postgres|tenant-a|1|satu"); !ada {
-		t.Fatal("kunci modul lain harus utuh")
-	}
-}
-
-func TestFilterCacheKeyMemisahkanModulSumberDanTenant(t *testing.T) {
-	a := filterCacheKey("inbox", "postgres", "t", 1, "id")
-	b := filterCacheKey("inbox", "postgres", "t", 1, "id")
-	if a != b {
-		t.Fatalf("kunci harus deterministik: %q vs %q", a, b)
-	}
-	for _, lain := range []string{
-		filterCacheKey("outbox", "postgres", "t", 1, "id"),
-		filterCacheKey("inbox", "mssql", "t", 1, "id"),
-		filterCacheKey("inbox", "postgres", "u", 1, "id"),
-		filterCacheKey("inbox", "postgres", "t", 2, "id"),
-		filterCacheKey("inbox", "postgres", "t", 1, "lain"),
-	} {
-		if lain == a {
-			t.Fatalf("kunci tak boleh bentrok dengan %q", a)
-		}
-	}
-	if !strings.Contains(a, "inbox|postgres|t|1|id") {
-		t.Fatalf("kunci harus memuat semua dimensi: %q", a)
-	}
-}
-
-func TestFpMencetakNilaiBerbagaiTipe(t *testing.T) {
-	if fp[int16](nil) != "0" {
-		t.Fatalf("nil harus jadi 0, dapat %q", fp[int16](nil))
-	}
-	if fp(&[]string{"a"}) != "[a]" {
-		t.Fatalf("slice harus tercetak, dapat %q", fp(&[]string{"a"}))
-	}
-	angka := 3.5
-	if fp(&angka) != "3.5" {
-		t.Fatalf("float harus tercetak, dapat %q", fp(&angka))
-	}
-	benar := true
-	if fp(&benar) != "true" {
-		t.Fatalf("bool harus tercetak, dapat %q", fp(&benar))
 	}
 }

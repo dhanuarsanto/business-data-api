@@ -43,10 +43,10 @@ type inboxPGRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
+func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
 	db, err := r.dbRegistry.Postgres(tenant)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	f := filter
@@ -56,7 +56,7 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 	if filter.EndDate != nil {
 		cut, err := cutEndPG(ctx, db, "inbox", *filter.EndDate)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
@@ -66,22 +66,10 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 	if filter.StartDate != nil {
 		cut, err := cutStartPG(ctx, db, "inbox", *filter.StartDate)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
 		args = append(args, cut)
-		argID++
-	}
-
-	if filter.LowerBound > 0 {
-		whereClause += fmt.Sprintf(` AND kode >= $%d`, argID)
-		args = append(args, filter.LowerBound)
-		argID++
-	}
-
-	if filter.Cursor > 0 {
-		whereClause += fmt.Sprintf(` AND kode < $%d`, argID)
-		args = append(args, filter.Cursor)
 		argID++
 	}
 
@@ -89,10 +77,10 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 
-	query, pqArgs := buildPageQueryPG(cols, "inbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
+	query, pqArgs := buildListQueryPG(cols, "inbox", whereClause, args, argID, useTglLeading, filter.Limit)
 	rows, err := db.Query(ctx, query, pqArgs...)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -101,23 +89,17 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 	for rows.Next() {
 		var i dto.InboxItem
 		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter, &i.KodeTransaksi); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		inboxes = append(inboxes, i)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	hasNextPage := len(inboxes) > filter.PageSize
-	if hasNextPage {
-		inboxes = inboxes[:filter.PageSize]
-	}
-
-	return inboxes, hasNextPage, nil
+	return inboxes, nil
 }
-
 func (r *inboxPGRepository) Insert(ctx context.Context, tenant string, data domain.Inbox) error {
 	db, err := r.dbRegistry.Postgres(tenant)
 	if err != nil {
@@ -161,31 +143,21 @@ type inboxMSRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
+func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
 	db, err := r.dbRegistry.MSSQL(tenant)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	whereClause, namedArgs := buildInboxFilterMS(filter)
 
-	if filter.LowerBound > 0 {
-		whereClause += ` AND kode >= @lowerBound`
-		namedArgs = append(namedArgs, sql.Named("lowerBound", filter.LowerBound))
-	}
-
-	if filter.Cursor > 0 {
-		whereClause += ` AND kode < @cursor`
-		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
-	}
-
 	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
-	query, pqNamed := buildPageQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
+	query, pqNamed := buildListQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.Limit)
 
 	rows, err := db.QueryContext(ctx, query, pqNamed...)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -194,23 +166,17 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 	for rows.Next() {
 		var i dto.InboxItem
 		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter, &i.KodeTransaksi); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		inboxes = append(inboxes, i)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	hasNextPage := len(inboxes) > filter.PageSize
-	if hasNextPage {
-		inboxes = inboxes[:filter.PageSize]
-	}
-
-	return inboxes, hasNextPage, nil
+	return inboxes, nil
 }
-
 func (r *inboxMSRepository) Insert(ctx context.Context, tenant string, data domain.Inbox) error {
 	db, err := r.dbRegistry.MSSQL(tenant)
 	if err != nil {
@@ -264,81 +230,6 @@ func (r *inboxMSRepository) Update(ctx context.Context, tenant string, kode int6
 		sql.Named("kode", kode),
 	)
 	return err
-}
-
-func (r *inboxPGRepository) LowerBound(ctx context.Context, tenant string, filter domain.InboxFilter) (int64, error) {
-	db, err := r.dbRegistry.Postgres(tenant)
-	if err != nil {
-		return 0, err
-	}
-	f := filter
-	f.StartDate = nil
-	whereClause, args, argID := buildInboxFilterPG(f)
-	if filter.EndDate != nil {
-		cut, err := cutEndPG(ctx, db, "inbox", *filter.EndDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
-		args = append(args, cut+cutSlack)
-		argID++
-	}
-	if filter.StartDate != nil {
-		cut, err := cutStartPG(ctx, db, "inbox", *filter.StartDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
-		args = append(args, cut)
-		argID++
-	}
-	query := `SELECT kode FROM inbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, argID)
-	args = append(args, *filter.LimitTotal-1)
-	var k int64
-	err = db.QueryRow(ctx, query, args...).Scan(&k)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	return k, nil
-}
-
-func cutEndMS(ctx context.Context, db *sql.DB, table string, end time.Time) (int64, error) {
-	var kode int64
-	err := db.QueryRowContext(ctx, "SELECT TOP (1) kode FROM "+table+" WHERE tgl_entri <= @p1 ORDER BY kode DESC", end).Scan(&kode)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, nil
-	}
-	return kode, err
-}
-
-func (r *inboxMSRepository) LowerBound(ctx context.Context, tenant string, filter domain.InboxFilter) (int64, error) {
-	db, err := r.dbRegistry.MSSQL(tenant)
-	if err != nil {
-		return 0, err
-	}
-	whereClause, namedArgs := buildInboxFilterMS(filter)
-	if filter.EndDate != nil {
-		cut, err := cutEndMS(ctx, db, "inbox", *filter.EndDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause = prependBound(whereClause, " AND kode <= @lowerCut")
-		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
-	}
-	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))
-	query := `SELECT kode FROM inbox` + whereClause + ` ORDER BY kode DESC OFFSET @lowerOffset ROWS FETCH NEXT 1 ROWS ONLY`
-	var k int64
-	err = db.QueryRowContext(ctx, query, namedArgs...).Scan(&k)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, nil
-		}
-		return 0, err
-	}
-	return k, nil
 }
 
 func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {

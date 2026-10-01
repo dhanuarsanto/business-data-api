@@ -87,23 +87,23 @@ func TestLogin(t *testing.T) {
 type recordingInboxRepo struct {
 	called bool
 	filter domain.InboxFilter
+	tenant string
 }
 
-func (r *recordingInboxRepo) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, bool, error) {
+func (r *recordingInboxRepo) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
 	r.called = true
 	r.filter = filter
-	return nil, false, nil
-}
-
-func (r *recordingInboxRepo) LowerBound(ctx context.Context, tenant string, filter domain.InboxFilter) (int64, error) {
-	return 0, nil
+	r.tenant = tenant
+	return nil, nil
 }
 
 func (r *recordingInboxRepo) Insert(ctx context.Context, tenant string, data domain.Inbox) error {
+	r.tenant = tenant
 	return nil
 }
 
 func (r *recordingInboxRepo) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error {
+	r.tenant = tenant
 	return nil
 }
 
@@ -113,24 +113,25 @@ func TestInboxUsecaseLimitClamp(t *testing.T) {
 	for _, tc := range []struct {
 		in, want int
 	}{
-		{0, domain.DefaultPageSize},
-		{-5, domain.DefaultPageSize},
-		{domain.MaxPageSize + 1, domain.MaxPageSize},
+		{0, domain.DefaultLimit},
+		{-5, domain.DefaultLimit},
+		{domain.MaxLimit + 1, domain.MaxLimit},
+		{500000, domain.MaxLimit},
 		{50, 50},
 	} {
 		repo := &recordingInboxRepo{}
 		u := NewInboxUsecase(repo, repo)
-		if _, _, err := u.GetInbox(ctx, "t", "postgres", domain.InboxFilter{PageSize: tc.in}); err != nil {
+		if _, err := u.GetInbox(ctx, "t", "postgres", domain.InboxFilter{Limit: tc.in}); err != nil {
 			t.Fatalf("limit %d error: %v", tc.in, err)
 		}
-		if !repo.called || repo.filter.PageSize != tc.want {
-			t.Fatalf("limit %d harus di-clamp jadi %d, dapat %d", tc.in, tc.want, repo.filter.PageSize)
+		if !repo.called || repo.filter.Limit != tc.want {
+			t.Fatalf("limit %d harus di-clamp jadi %d, dapat %d", tc.in, tc.want, repo.filter.Limit)
 		}
 	}
 
 	repo := &recordingInboxRepo{}
 	u := NewInboxUsecase(repo, repo)
-	if _, _, err := u.GetInbox(ctx, "t", "mongo", domain.InboxFilter{PageSize: 10}); err == nil {
+	if _, err := u.GetInbox(ctx, "t", "mongo", domain.InboxFilter{Limit: 10}); err == nil {
 		t.Fatal("dbSource tak dikenal harus tolak")
 	}
 	if repo.called {
@@ -138,50 +139,26 @@ func TestInboxUsecaseLimitClamp(t *testing.T) {
 	}
 }
 
-func TestInboxUsecaseLimitTotalCap(t *testing.T) {
-	ctx := context.Background()
-
-	limit := 5
-	repoA := &recordingInboxRepo{}
-	u := NewInboxUsecase(repoA, repoA)
-	if _, _, err := u.GetInbox(ctx, "t", "postgres", domain.InboxFilter{PageSize: 10, LimitTotal: &limit}); err != nil {
-		t.Fatalf("limit diset error: %v", err)
-	}
-	if !repoA.called {
-		t.Fatal("repo harus dipanggil saat limit diset")
-	}
-
-	miliar := 1000000000
-	repoB := &recordingInboxRepo{}
-	u2 := NewInboxUsecase(repoB, repoB)
-	if _, _, err := u2.GetInbox(ctx, "t", "postgres", domain.InboxFilter{PageSize: 10, LimitTotal: &miliar}); err != nil {
-		t.Fatalf("limit miliaran error: %v", err)
-	}
-	if repoB.filter.LimitTotal == nil || *repoB.filter.LimitTotal != domain.MaxLimitTotal {
-		t.Fatalf("limit miliaran harus di-clamp ke %d, dapat %v", domain.MaxLimitTotal, repoB.filter.LimitTotal)
-	}
-}
-
 type recordingOutboxRepo struct {
 	called bool
 	filter domain.OutboxFilter
+	tenant string
 }
 
-func (r *recordingOutboxRepo) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
+func (r *recordingOutboxRepo) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
 	r.called = true
 	r.filter = filter
-	return nil, false, nil
-}
-
-func (r *recordingOutboxRepo) LowerBound(ctx context.Context, tenant string, filter domain.OutboxFilter) (int64, error) {
-	return 0, nil
+	r.tenant = tenant
+	return nil, nil
 }
 
 func (r *recordingOutboxRepo) Insert(ctx context.Context, tenant string, data domain.Outbox) error {
+	r.tenant = tenant
 	return nil
 }
 
 func (r *recordingOutboxRepo) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error {
+	r.tenant = tenant
 	return nil
 }
 
@@ -191,23 +168,24 @@ func TestOutboxUsecaseLimitClamp(t *testing.T) {
 	for _, tc := range []struct {
 		in, want int
 	}{
-		{0, domain.DefaultPageSize},
-		{domain.MaxPageSize + 1, domain.MaxPageSize},
+		{0, domain.DefaultLimit},
+		{domain.MaxLimit + 1, domain.MaxLimit},
+		{500000, domain.MaxLimit},
 		{25, 25},
 	} {
 		repo := &recordingOutboxRepo{}
 		u := NewOutboxUsecase(repo, repo)
-		if _, _, err := u.GetOutbox(ctx, "t", "mssql", domain.OutboxFilter{PageSize: tc.in}); err != nil {
+		if _, err := u.GetOutbox(ctx, "t", "mssql", domain.OutboxFilter{Limit: tc.in}); err != nil {
 			t.Fatalf("limit %d error: %v", tc.in, err)
 		}
-		if !repo.called || repo.filter.PageSize != tc.want {
-			t.Fatalf("limit %d harus di-clamp jadi %d, dapat %d", tc.in, tc.want, repo.filter.PageSize)
+		if !repo.called || repo.filter.Limit != tc.want {
+			t.Fatalf("limit %d harus di-clamp jadi %d, dapat %d", tc.in, tc.want, repo.filter.Limit)
 		}
 	}
 
 	repo := &recordingOutboxRepo{}
 	u := NewOutboxUsecase(repo, repo)
-	if _, _, err := u.GetOutbox(ctx, "t", "oracle", domain.OutboxFilter{PageSize: 10}); err == nil {
+	if _, err := u.GetOutbox(ctx, "t", "oracle", domain.OutboxFilter{Limit: 10}); err == nil {
 		t.Fatal("dbSource tak dikenal harus tolak")
 	}
 	if repo.called {

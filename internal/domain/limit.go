@@ -1,7 +1,6 @@
 package domain
 
 const (
-	MaxPageSize     = 200
-	DefaultPageSize = 20
-	MaxLimitTotal   = 10000
+	DefaultLimit = 10
+	MaxLimit     = 10000
 )

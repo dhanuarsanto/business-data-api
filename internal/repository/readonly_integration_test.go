@@ -120,7 +120,7 @@ func TestBisectionMatchesLegacy(t *testing.T) {
 	}
 
 	check("inbox", func() ([]int64, error) {
-		data, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 5, EndDate: &end})
+		data, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{Limit: 5, EndDate: &end})
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +132,7 @@ func TestBisectionMatchesLegacy(t *testing.T) {
 	})
 
 	check("outbox", func() ([]int64, error) {
-		data, _, err := pgOut.Get(ctx, "maxtop", domain.OutboxFilter{PageSize: 5, EndDate: &end})
+		data, err := pgOut.Get(ctx, "maxtop", domain.OutboxFilter{Limit: 5, EndDate: &end})
 		if err != nil {
 			return nil, err
 		}
@@ -144,15 +144,16 @@ func TestBisectionMatchesLegacy(t *testing.T) {
 	})
 }
 
-func TestPaginationWithFilters(t *testing.T) {
+func TestLimitDenganFilterSamaDenganReferensi(t *testing.T) {
 	ready(t)
 	ctx := context.Background()
 	end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	status := int16(20)
 	pesan := "trx"
+	const batas = 6
 
-	legacy := func(table string, limit int) ([]int64, error) {
-		rows, err := rawPG.Query(ctx, `SELECT kode FROM pandora_dw.staging.`+table+` WHERE tgl_entri <= $1 AND status = $2 AND pesan ILIKE $3 ORDER BY kode DESC LIMIT $4`, end, status, "%"+pesan+"%", limit)
+	legacy := func(table string) ([]int64, error) {
+		rows, err := rawPG.Query(ctx, `SELECT kode FROM pandora_dw.staging.`+table+` WHERE tgl_entri <= $1 AND status = $2 AND pesan ILIKE $3 ORDER BY kode DESC LIMIT $4`, end, status, "%"+pesan+"%", batas)
 		if err != nil {
 			return nil, err
 		}
@@ -168,121 +169,65 @@ func TestPaginationWithFilters(t *testing.T) {
 		return ks, rows.Err()
 	}
 
-	check := func(table string, get func(cursor int64) ([]int64, int64, error)) {
-		want, err := legacy(table, 6)
+	check := func(table string, got []int64, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: Get gagal: %v", table, err)
+		}
+		want, err := legacy(table)
 		if err != nil {
 			t.Fatalf("%s: referensi gagal: %v", table, err)
 		}
-
-		var got []int64
-		seen := map[int64]bool{}
-		cursor := int64(0)
-		for p := 0; p < 2; p++ {
-			ks, next, err := get(cursor)
-			if err != nil {
-				t.Fatalf("%s: halaman %d gagal: %v", table, p+1, err)
-			}
-			for _, k := range ks {
-				if seen[k] {
-					t.Fatalf("%s: kode duplikat antar halaman: %d", table, k)
-				}
-				seen[k] = true
-			}
-			got = append(got, ks...)
-			cursor = next
-		}
-
 		if len(got) != len(want) {
-			t.Fatalf("%s: jumlah baris beda: paginate=%d referensi=%d", table, len(got), len(want))
+			t.Fatalf("%s: jumlah baris beda: repo=%d referensi=%d", table, len(got), len(want))
 		}
 		for i := range want {
 			if got[i] != want[i] {
-				t.Fatalf("%s: kode ke-%d beda: paginate=%d referensi=%d", table, i, got[i], want[i])
+				t.Fatalf("%s: kode ke-%d beda: repo=%d referensi=%d", table, i, got[i], want[i])
 			}
 		}
 	}
 
-	check("inbox", func(cursor int64) ([]int64, int64, error) {
-		data, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 3, EndDate: &end, Status: &status, Pesan: pesan, Cursor: cursor})
-		if err != nil {
-			return nil, 0, err
-		}
-		ks := make([]int64, len(data))
-		for i, d := range data {
-			ks[i] = d.Kode
-		}
-		var next int64
-		if len(data) > 0 {
-			next = data[len(data)-1].Kode
-		}
-		return ks, next, nil
-	})
+	dataIn, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{Limit: batas, EndDate: &end, Status: &status, Pesan: pesan})
+	ksIn := make([]int64, len(dataIn))
+	for i, d := range dataIn {
+		ksIn[i] = d.Kode
+	}
+	check("inbox", ksIn, err)
 
-	check("outbox", func(cursor int64) ([]int64, int64, error) {
-		data, _, err := pgOut.Get(ctx, "maxtop", domain.OutboxFilter{PageSize: 3, EndDate: &end, Status: &status, Pesan: pesan, Cursor: cursor})
-		if err != nil {
-			return nil, 0, err
-		}
-		ks := make([]int64, len(data))
-		for i, d := range data {
-			ks[i] = d.Kode
-		}
-		var next int64
-		if len(data) > 0 {
-			next = data[len(data)-1].Kode
-		}
-		return ks, next, nil
-	})
+	dataOut, err := pgOut.Get(ctx, "maxtop", domain.OutboxFilter{Limit: batas, EndDate: &end, Status: &status, Pesan: pesan})
+	ksOut := make([]int64, len(dataOut))
+	for i, d := range dataOut {
+		ksOut[i] = d.Kode
+	}
+	check("outbox", ksOut, err)
 }
 
-func TestPaginationLimitTotal(t *testing.T) {
+func TestLimitDibatasiPenggunaDanDipangkasUsecase(t *testing.T) {
 	ready(t)
 	ctx := context.Background()
-	uIn := usecase.NewInboxUsecase(pgIn, msIn)
 	end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	limit := 4
+	uIn := usecase.NewInboxUsecase(pgIn, msIn)
 
-	seen := map[int64]bool{}
-	p1, hasNext1, err := uIn.GetInbox(ctx, "maxtop", "postgres", domain.InboxFilter{PageSize: 2, LimitTotal: &limit, EndDate: &end})
+	data, err := uIn.GetInbox(ctx, "maxtop", "postgres", domain.InboxFilter{Limit: 3, EndDate: &end})
 	if err != nil {
-		t.Fatalf("page1: %v", err)
+		t.Fatalf("limit 3 gagal: %v", err)
 	}
-	if len(p1) != 2 || !hasNext1 {
-		t.Fatalf("page1 harus 2 item & has_next=true, dapat %d/%v", len(p1), hasNext1)
+	if len(data) != 3 {
+		t.Fatalf("limit 3 harus mengembalikan tepat 3 baris, dapat %d", len(data))
 	}
-	var next1 int64
-	if len(p1) > 0 {
-		next1 = p1[len(p1)-1].Kode
-	}
-	for _, d := range p1 {
-		seen[d.Kode] = true
+	for i := 1; i < len(data); i++ {
+		if data[i].Kode >= data[i-1].Kode {
+			t.Fatalf("urutan kode harus menurun: %d lalu %d", data[i-1].Kode, data[i].Kode)
+		}
 	}
 
-	p2, hasNext2, err := uIn.GetInbox(ctx, "maxtop", "postgres", domain.InboxFilter{PageSize: 2, LimitTotal: &limit, EndDate: &end, Cursor: next1})
+	data, err = uIn.GetInbox(ctx, "maxtop", "postgres", domain.InboxFilter{Limit: domain.MaxLimit + 1, EndDate: &end})
 	if err != nil {
-		t.Fatalf("page2: %v", err)
+		t.Fatalf("limit melebihi batas tak boleh error: %v", err)
 	}
-	if len(p2) != 2 || hasNext2 {
-		t.Fatalf("page2 harus 2 item & has_next=false (limit tercapai), dapat %d/%v", len(p2), hasNext2)
-	}
-	for _, d := range p2 {
-		if seen[d.Kode] {
-			t.Fatalf("duplikat kode antar halaman: %d", d.Kode)
-		}
-		seen[d.Kode] = true
-	}
-	if len(seen) != limit {
-		t.Fatalf("total harus %d, dapat %d", limit, len(seen))
-	}
-
-	if next1 > 0 {
-		p3, hasNext3, err := uIn.GetInbox(ctx, "maxtop", "postgres", domain.InboxFilter{PageSize: 2, LimitTotal: &limit, EndDate: &end, Cursor: p2[len(p2)-1].Kode})
-		if err != nil {
-			t.Fatalf("page3: %v", err)
-		}
-		if len(p3) != 0 || hasNext3 {
-			t.Fatalf("setelah limit tercapai harus kosong & has_next=false, dapat %d/%v", len(p3), hasNext3)
-		}
+	if len(data) > domain.MaxLimit {
+		t.Fatalf("hasil harus dipangkas ke %d, dapat %d", domain.MaxLimit, len(data))
 	}
 }
 
@@ -310,7 +255,7 @@ func TestJawabanVariantMatchesLegacy(t *testing.T) {
 		return ks, rows.Err()
 	}
 
-	got, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, JawabanFromProvider: &jawaban})
+	got, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{Limit: 6, StartDate: &start, EndDate: &end, JawabanFromProvider: &jawaban})
 	if err != nil {
 		t.Fatalf("varian inbox: %v", err)
 	}
@@ -346,7 +291,7 @@ func TestFlagVariantsMatchLegacy(t *testing.T) {
 	}
 
 	request := true
-	gotPG, _, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
+	gotPG, err := pgIn.Get(ctx, "maxtop", domain.InboxFilter{Limit: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
 	if err != nil {
 		t.Fatalf("PG varian request: %v", err)
 	}
@@ -356,7 +301,7 @@ func TestFlagVariantsMatchLegacy(t *testing.T) {
 	}
 	compare("inbox/request PG", kodesOf(gotPG), wantPG)
 
-	gotMS, _, err := msIn.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
+	gotMS, err := msIn.Get(ctx, "maxtop", domain.InboxFilter{Limit: 6, StartDate: &start, EndDate: &end, RequestFromReseller: &request})
 	if err != nil {
 		t.Fatalf("MS varian request: %v", err)
 	}
@@ -423,74 +368,40 @@ func TestReadOnlyUserSelect(t *testing.T) {
 	}
 }
 
-func TestReadOnlyLowerBoundSemuaSumber(t *testing.T) {
+func TestReadOnlyGetSemuaSumber(t *testing.T) {
 	ready(t)
 	ctx := context.Background()
-	limit := 3
-
-	inFilter := domain.InboxFilter{PageSize: 5, LimitTotal: &limit}
-	outFilter := domain.OutboxFilter{PageSize: 5, LimitTotal: &limit}
+	akhir := time.Now().AddDate(-1, 0, 0)
+	nol := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for name, repo := range map[string]domain.InboxRepository{"pg": pgIn, "ms": msIn} {
-		got, err := repo.LowerBound(ctx, "maxtop", inFilter)
-		if err != nil {
-			t.Fatalf("%s inbox LowerBound tanpa tanggal: %v", name, err)
+		if _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{Limit: 5}); err != nil {
+			t.Fatalf("%s inbox Get tanpa filter: %v", name, err)
 		}
-		if got < 0 {
-			t.Fatalf("%s inbox LowerBound negatif: %d", name, got)
+		if _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{Limit: 5, EndDate: &akhir}); err != nil {
+			t.Fatalf("%s inbox Get dengan batas atas: %v", name, err)
 		}
-
-		akhir := time.Now().AddDate(-1, 0, 0)
-		denganBatas := inFilter
-		denganBatas.EndDate = &akhir
-		if _, err := repo.LowerBound(ctx, "maxtop", denganBatas); err != nil {
-			t.Fatalf("%s inbox LowerBound dengan batas tanggal: %v", name, err)
-		}
-
 		// Rentang waktu yang tak berisi data sama sekali harus aman: cutEnd
 		// mengembalikan 0 tanpa error, bukan ErrNoRows.
-		nol := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
-		rentangKosong := inFilter
-		rentangKosong.EndDate = &nol
-		if _, err := repo.LowerBound(ctx, "maxtop", rentangKosong); err != nil {
-			t.Fatalf("%s inbox LowerBound rentang kosong: %v", name, err)
-		}
-		if _, _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 5, EndDate: &nol, StartDate: &nol}); err != nil {
+		if _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{Limit: 5, EndDate: &nol, StartDate: &nol}); err != nil {
 			t.Fatalf("%s inbox Get rentang kosong: %v", name, err)
 		}
-
-		if _, err := repo.LowerBound(ctx, "tenant-tak-terdaftar", inFilter); err == nil {
+		if _, err := repo.Get(ctx, "tenant-tak-terdaftar", domain.InboxFilter{Limit: 5}); err == nil {
 			t.Fatalf("%s: tenant tak terdaftar harus ditolak", name)
 		}
 	}
 
 	for name, repo := range map[string]domain.OutboxRepository{"pg": pgOut, "ms": msOut} {
-		got, err := repo.LowerBound(ctx, "maxtop", outFilter)
-		if err != nil {
-			t.Fatalf("%s outbox LowerBound tanpa tanggal: %v", name, err)
+		if _, err := repo.Get(ctx, "maxtop", domain.OutboxFilter{Limit: 5}); err != nil {
+			t.Fatalf("%s outbox Get tanpa filter: %v", name, err)
 		}
-		if got < 0 {
-			t.Fatalf("%s outbox LowerBound negatif: %d", name, got)
+		if _, err := repo.Get(ctx, "maxtop", domain.OutboxFilter{Limit: 5, EndDate: &akhir}); err != nil {
+			t.Fatalf("%s outbox Get dengan batas atas: %v", name, err)
 		}
-
-		akhir := time.Now().AddDate(-1, 0, 0)
-		denganBatas := outFilter
-		denganBatas.EndDate = &akhir
-		if _, err := repo.LowerBound(ctx, "maxtop", denganBatas); err != nil {
-			t.Fatalf("%s outbox LowerBound dengan batas tanggal: %v", name, err)
-		}
-
-		nol := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
-		rentangKosong := outFilter
-		rentangKosong.EndDate = &nol
-		if _, err := repo.LowerBound(ctx, "maxtop", rentangKosong); err != nil {
-			t.Fatalf("%s outbox LowerBound rentang kosong: %v", name, err)
-		}
-		if _, _, err := repo.Get(ctx, "maxtop", domain.OutboxFilter{PageSize: 5, EndDate: &nol, StartDate: &nol}); err != nil {
+		if _, err := repo.Get(ctx, "maxtop", domain.OutboxFilter{Limit: 5, EndDate: &nol, StartDate: &nol}); err != nil {
 			t.Fatalf("%s outbox Get rentang kosong: %v", name, err)
 		}
-
-		if _, err := repo.LowerBound(ctx, "tenant-tak-terdaftar", outFilter); err == nil {
+		if _, err := repo.Get(ctx, "tenant-tak-terdaftar", domain.OutboxFilter{Limit: 5}); err == nil {
 			t.Fatalf("%s: tenant tak terdaftar harus ditolak", name)
 		}
 	}
@@ -523,14 +434,10 @@ func TestTenantTakTerdaftarDitolakSebelumMenyentuhDatabase(t *testing.T) {
 	ready(t)
 	ctx := context.Background()
 	const tenant = "tenant-tak-terdaftar-999"
-	limit := 3
 
 	for name, repo := range map[string]domain.InboxRepository{"pg": pgIn, "ms": msIn} {
-		if _, _, err := repo.Get(ctx, tenant, domain.InboxFilter{PageSize: 5}); err == nil {
+		if _, err := repo.Get(ctx, tenant, domain.InboxFilter{Limit: 5}); err == nil {
 			t.Fatalf("%s inbox Get: tenant tak dikenal harus ditolak", name)
-		}
-		if _, err := repo.LowerBound(ctx, tenant, domain.InboxFilter{PageSize: 5, LimitTotal: &limit}); err == nil {
-			t.Fatalf("%s inbox LowerBound: tenant tak dikenal harus ditolak", name)
 		}
 		if err := repo.Insert(ctx, tenant, domain.Inbox{Pengirim: "08", Pesan: "x"}); err == nil {
 			t.Fatalf("%s inbox Insert: tenant tak dikenal harus ditolak", name)
@@ -541,11 +448,8 @@ func TestTenantTakTerdaftarDitolakSebelumMenyentuhDatabase(t *testing.T) {
 	}
 
 	for name, repo := range map[string]domain.OutboxRepository{"pg": pgOut, "ms": msOut} {
-		if _, _, err := repo.Get(ctx, tenant, domain.OutboxFilter{PageSize: 5}); err == nil {
+		if _, err := repo.Get(ctx, tenant, domain.OutboxFilter{Limit: 5}); err == nil {
 			t.Fatalf("%s outbox Get: tenant tak dikenal harus ditolak", name)
-		}
-		if _, err := repo.LowerBound(ctx, tenant, domain.OutboxFilter{PageSize: 5, LimitTotal: &limit}); err == nil {
-			t.Fatalf("%s outbox LowerBound: tenant tak dikenal harus ditolak", name)
 		}
 		if err := repo.Insert(ctx, tenant, domain.Outbox{Penerima: "08", Pesan: "x"}); err == nil {
 			t.Fatalf("%s outbox Insert: tenant tak dikenal harus ditolak", name)
@@ -578,30 +482,21 @@ func TestReadOnlyInbox(t *testing.T) {
 		pengirim := "0812"
 		reseller := "PDR0001"
 		cases := []domain.InboxFilter{
-			{PageSize: 5},
-			{PageSize: 5, StartDate: &start, EndDate: &end},
-			{PageSize: 5, Status: pInt16(0), Pesan: "a", Pengirim: &pengirim},
-			{PageSize: 5, Reseller: &reseller},
+			{Limit: 5},
+			{Limit: 5, StartDate: &start, EndDate: &end},
+			{Limit: 5, Status: pInt16(0), Pesan: "a", Pengirim: &pengirim},
+			{Limit: 5, Reseller: &reseller},
 		}
 		for i, f := range cases {
-			data, _, err := repo.Get(ctx, "maxtop", f)
+			data, err := repo.Get(ctx, "maxtop", f)
 			if err != nil {
 				t.Fatalf("%s inbox case %d: %v", name, i, err)
 			}
-			if len(data) > f.PageSize {
-				t.Fatalf("%s inbox case %d: %d baris > limit %d", name, i, len(data), f.PageSize)
+			if len(data) > f.Limit {
+				t.Fatalf("%s inbox case %d: %d baris > limit %d", name, i, len(data), f.Limit)
 			}
 		}
 
-		first, _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 1})
-		if err != nil || len(first) == 0 {
-			t.Logf("%s: tabel inbox kosong, lewati case cursor", name)
-			continue
-		}
-		cursor := first[0].Kode
-		if _, _, err := repo.Get(ctx, "maxtop", domain.InboxFilter{PageSize: 5, Cursor: cursor}); err != nil {
-			t.Fatalf("%s inbox cursor: %v", name, err)
-		}
 	}
 }
 
@@ -615,18 +510,18 @@ func TestReadOnlyOutbox(t *testing.T) {
 		penerima := "0812"
 		reseller := "PDR0001"
 		cases := []domain.OutboxFilter{
-			{PageSize: 5},
-			{PageSize: 5, StartDate: &start, EndDate: &end},
-			{PageSize: 5, Status: pInt16(0), Pesan: "a", Penerima: &penerima},
-			{PageSize: 5, Reseller: &reseller},
+			{Limit: 5},
+			{Limit: 5, StartDate: &start, EndDate: &end},
+			{Limit: 5, Status: pInt16(0), Pesan: "a", Penerima: &penerima},
+			{Limit: 5, Reseller: &reseller},
 		}
 		for i, f := range cases {
-			data, _, err := repo.Get(ctx, "maxtop", f)
+			data, err := repo.Get(ctx, "maxtop", f)
 			if err != nil {
 				t.Fatalf("%s outbox case %d: %v", name, i, err)
 			}
-			if len(data) > f.PageSize {
-				t.Fatalf("%s outbox case %d: %d baris > limit %d", name, i, len(data), f.PageSize)
+			if len(data) > f.Limit {
+				t.Fatalf("%s outbox case %d: %d baris > limit %d", name, i, len(data), f.Limit)
 			}
 		}
 	}

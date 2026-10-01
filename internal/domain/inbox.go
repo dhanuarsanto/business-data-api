@@ -29,9 +29,7 @@ type Inbox struct {
 type InboxFilter struct {
 	StartDate           *time.Time
 	EndDate             *time.Time
-	PageSize            int
-	LimitTotal          *int
-	LowerBound          int64
+	Limit               int
 	Terminal            *int
 	Reseller            *string
 	Pengirim            *string
@@ -40,12 +38,10 @@ type InboxFilter struct {
 	Pesan               string
 	RequestFromReseller *bool
 	JawabanFromProvider *bool
-	Cursor              int64
 }
 
 type InboxRepository interface {
-	Get(ctx context.Context, tenant string, filter InboxFilter) ([]dto.InboxItem, bool, error)
-	LowerBound(ctx context.Context, tenant string, filter InboxFilter) (int64, error)
+	Get(ctx context.Context, tenant string, filter InboxFilter) ([]dto.InboxItem, error)
 	Insert(ctx context.Context, tenant string, data Inbox) error
 	Update(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error
 }

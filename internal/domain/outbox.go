@@ -31,9 +31,7 @@ type Outbox struct {
 type OutboxFilter struct {
 	StartDate        *time.Time
 	EndDate          *time.Time
-	PageSize         int
-	LimitTotal       *int
-	LowerBound       int64
+	Limit            int
 	Reseller         *string
 	Penerima         *string
 	Tipe             *string
@@ -41,12 +39,10 @@ type OutboxFilter struct {
 	Pesan            string
 	ReplyToReseller  *bool
 	PerintahProvider *bool
-	Cursor           int64
 }
 
 type OutboxRepository interface {
-	Get(ctx context.Context, tenant string, filter OutboxFilter) ([]dto.OutboxItem, bool, error)
-	LowerBound(ctx context.Context, tenant string, filter OutboxFilter) (int64, error)
+	Get(ctx context.Context, tenant string, filter OutboxFilter) ([]dto.OutboxItem, error)
 	Insert(ctx context.Context, tenant string, data Outbox) error
 	Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error
 }

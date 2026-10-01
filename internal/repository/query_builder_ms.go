@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func buildPageQueryMS(cols []string, from, whereClause string, namedArgs []any, useTglLeading bool, limitVal int) (string, []any) {
+func buildListQueryMS(cols []string, from, whereClause string, namedArgs []any, useTglLeading bool, limitVal int) (string, []any) {
 	if useTglLeading {
 		subQ := `SELECT TOP (@p_limit) kode FROM ` + from + whereClause + ` ORDER BY tgl_entri DESC, kode DESC`
 		namedArgs = append(namedArgs, sql.Named("p_limit", limitVal))

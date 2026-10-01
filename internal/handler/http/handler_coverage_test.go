@@ -22,7 +22,6 @@ import (
 
 type stubInboxRepo struct {
 	items    []dto.InboxItem
-	hasNext  bool
 	getErr   error
 	writeErr error
 	inserted domain.Inbox
@@ -31,12 +30,9 @@ type stubInboxRepo struct {
 	tenant   string
 }
 
-func (s *stubInboxRepo) Get(_ context.Context, tenant string, f domain.InboxFilter) ([]dto.InboxItem, bool, error) {
+func (s *stubInboxRepo) Get(_ context.Context, tenant string, f domain.InboxFilter) ([]dto.InboxItem, error) {
 	s.filter, s.tenant = f, tenant
-	return s.items, s.hasNext, s.getErr
-}
-func (s *stubInboxRepo) LowerBound(context.Context, string, domain.InboxFilter) (int64, error) {
-	return 0, nil
+	return s.items, s.getErr
 }
 func (s *stubInboxRepo) Insert(_ context.Context, _ string, data domain.Inbox) error {
 	s.inserted = data
@@ -49,7 +45,6 @@ func (s *stubInboxRepo) Update(_ context.Context, _ string, _ int64, req dto.Upd
 
 type stubOutboxRepo struct {
 	items    []dto.OutboxItem
-	hasNext  bool
 	getErr   error
 	writeErr error
 	inserted domain.Outbox
@@ -57,12 +52,9 @@ type stubOutboxRepo struct {
 	filter   domain.OutboxFilter
 }
 
-func (s *stubOutboxRepo) Get(_ context.Context, _ string, f domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
+func (s *stubOutboxRepo) Get(_ context.Context, _ string, f domain.OutboxFilter) ([]dto.OutboxItem, error) {
 	s.filter = f
-	return s.items, s.hasNext, s.getErr
-}
-func (s *stubOutboxRepo) LowerBound(context.Context, string, domain.OutboxFilter) (int64, error) {
-	return 0, nil
+	return s.items, s.getErr
 }
 func (s *stubOutboxRepo) Insert(_ context.Context, _ string, data domain.Outbox) error {
 	s.inserted = data
@@ -138,10 +130,10 @@ func decodeJSON(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 func TestGetInboxMemetakanSemuaParameter(t *testing.T) {
 	response.Init("test")
 
-	repo := &stubInboxRepo{items: []dto.InboxItem{{Kode: 55}, {Kode: 77}}, hasNext: true}
+	repo := &stubInboxRepo{items: []dto.InboxItem{{Kode: 55}, {Kode: 77}}}
 	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
 
-	target := "/?pageSize=7&cursor=30&limit=100&startDate=2026-01-01&endDate=2026-01-31" +
+	target := "/?limit=100&startDate=2026-01-01&endDate=2026-01-31" +
 		"&terminal=5&reseller=R1&pengirim=Budi&tipe=S&status=2&pesan=%20halo%20" +
 		"&requestFromReseller=true&jawabanFromProvider=1"
 	rec := httptest.NewRecorder()
@@ -154,11 +146,8 @@ func TestGetInboxMemetakanSemuaParameter(t *testing.T) {
 	if repo.tenant != "maxtop" {
 		t.Fatalf("tenant harus diteruskan, dapat %q", repo.tenant)
 	}
-	if f.PageSize != 7 || f.Cursor != 30 {
-		t.Fatalf("pageSize=%d cursor=%d", f.PageSize, f.Cursor)
-	}
-	if f.LimitTotal == nil || *f.LimitTotal != 100 {
-		t.Fatal("limit harus diteruskan")
+	if f.Limit != 100 {
+		t.Fatalf("limit=%d, harus 100", f.Limit)
 	}
 	if f.StartDate == nil || f.EndDate == nil {
 		t.Fatal("tanggal harus diteruskan")
@@ -177,12 +166,14 @@ func TestGetInboxMemetakanSemuaParameter(t *testing.T) {
 	}
 
 	body := decodeJSON(t, rec)
-	meta, _ := body["meta"].(map[string]any)
-	if meta["next_cursor"] != float64(77) {
-		t.Fatalf("next_cursor harus kode terakhir, dapat %v", meta["next_cursor"])
+	for _, k := range []string{"meta", "trace_id"} {
+		if _, ada := body[k]; ada {
+			t.Fatalf("key %q tak boleh ada di respons: %v", k, body)
+		}
 	}
-	if meta["has_next_page"] != true || meta["has_prev_page"] != true {
-		t.Fatalf("meta paging salah: %v", meta)
+	items, _ := body["items"].([]any)
+	if len(items) != 2 {
+		t.Fatalf("items=%d, harus 2", len(items))
 	}
 }
 
@@ -210,12 +201,11 @@ func TestGetInboxParameterRusakDiabaikanDanSumberDefault(t *testing.T) {
 		t.Fatal("nilai selain true/1 harus berarti false")
 	}
 	body := decodeJSON(t, rec)
-	meta, _ := body["meta"].(map[string]any)
-	if meta["has_prev_page"] != false {
-		t.Fatalf("tanpa cursor harus has_prev_page=false, dapat %v", meta["has_prev_page"])
+	if _, ada := body["items"]; !ada {
+		t.Fatalf("items harus ada, dapat %v", body)
 	}
-	if len(repo.items) != 0 && meta["next_cursor"] != float64(0) {
-		t.Fatalf("result kosong harus next_cursor nol, dapat %v", meta["next_cursor"])
+	if f.Limit != domain.DefaultLimit {
+		t.Fatalf("limit rusak harus default, dapat %d", f.Limit)
 	}
 }
 
@@ -429,11 +419,11 @@ func TestUpdateInboxSemuaCabang(t *testing.T) {
 func TestGetOutboxSemuaCabang(t *testing.T) {
 	response.Init("test")
 
-	repo := &stubOutboxRepo{items: []dto.OutboxItem{{Kode: 5}}, hasNext: true}
+	repo := &stubOutboxRepo{items: []dto.OutboxItem{{Kode: 5}}}
 	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
 
 	target := "/?reseller=R1&penerima=Siti&tipe=P&status=1&pesan=%20halo%20" +
-		"&replyToReseller=true&perintahProvider=1&pageSize=9&cursor=4"
+		"&replyToReseller=true&perintahProvider=1&limit=50"
 	rec := httptest.NewRecorder()
 	h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
 
@@ -450,14 +440,15 @@ func TestGetOutboxSemuaCabang(t *testing.T) {
 	if f.ReplyToReseller == nil || !*f.ReplyToReseller || f.PerintahProvider == nil || !*f.PerintahProvider {
 		t.Fatal("flag boolean tak diteruskan")
 	}
-	if f.PageSize != 9 || f.Cursor != 4 {
-		t.Fatalf("paging tak diteruskan: %+v", f)
+	if f.Limit != 50 {
+		t.Fatalf("limit=%d, harus 50", f.Limit)
 	}
 
 	body := decodeJSON(t, rec)
-	meta, _ := body["meta"].(map[string]any)
-	if meta["next_cursor"] != float64(5) || meta["has_prev_page"] != true {
-		t.Fatalf("meta paging salah: %v", meta)
+	for _, k := range []string{"meta", "trace_id"} {
+		if _, ada := body[k]; ada {
+			t.Fatalf("key %q tak boleh ada di respons: %v", k, body)
+		}
 	}
 }
 

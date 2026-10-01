@@ -22,11 +22,11 @@ var (
 )
 
 func inboxFilterUji() domain.InboxFilter {
-	return domain.InboxFilter{PageSize: 1, LimitTotal: ptr(10)}
+	return domain.InboxFilter{Limit: 1}
 }
 
 func outboxFilterUji() domain.OutboxFilter {
-	return domain.OutboxFilter{PageSize: 1, LimitTotal: ptr(10)}
+	return domain.OutboxFilter{Limit: 1}
 }
 
 func sampleInbox() domain.Inbox {
@@ -60,21 +60,18 @@ func updateOutboxRequestUji() dto.UpdateOutboxRequest {
 
 // ------------------------------------------------------------- Inbox: PG
 
-func TestInboxPGGetBerhasilDenganHalamanBerikutnya(t *testing.T) {
+func TestInboxPGGetBerhasil(t *testing.T) {
 	env := newFakeEnv(t)
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
-		return &pgRowsFake{values: inboxRowValues(11), remaining: 2}, nil
+		return &pgRowsFake{values: inboxRowValues(11), remaining: 1}, nil
 	}
 
-	items, hasNext, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
+	items, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
 	if err != nil {
 		t.Fatalf("err unexpected: %v", err)
 	}
-	if !hasNext {
-		t.Fatal("hasNextPage harus true")
-	}
 	if len(items) != 1 {
-		t.Fatalf("harus 1 item setelah dipotong, dapat %d", len(items))
+		t.Fatalf("harus 1 item sesuai limit, dapat %d", len(items))
 	}
 	if items[0].Kode != 11 {
 		t.Fatalf("kode tidak sesuai: %d", items[0].Kode)
@@ -87,15 +84,15 @@ func TestInboxPGGetBerhasilDenganHalamanBerikutnya(t *testing.T) {
 	}
 }
 
-func TestInboxPGGetBerhasilTanpaHalamanBerikutnya(t *testing.T) {
+func TestInboxPGGetKosong(t *testing.T) {
 	env := newFakeEnv(t)
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
-		return &pgRowsFake{values: inboxRowValues(12), remaining: 1}, nil
+		return &pgRowsFake{values: inboxRowValues(12), remaining: 0}, nil
 	}
 
-	items, hasNext, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
-	if err != nil || hasNext || len(items) != 1 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
+	if err != nil || len(items) != 0 {
+		t.Fatalf("hasil kosong harus tanpa error, dapat %d baris err=%v", len(items), err)
 	}
 }
 
@@ -103,7 +100,7 @@ func TestInboxPGGetGagalSaatQuery(t *testing.T) {
 	env := newFakeEnv(t)
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) { return nil, errScripted }
 
-	_, _, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
+	_, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
 	if !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
@@ -115,7 +112,7 @@ func TestInboxPGGetGagalSaatScan(t *testing.T) {
 		return &pgRowsFake{values: inboxRowValues(13), remaining: 1, scanErr: errScripted}, nil
 	}
 
-	_, _, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
+	_, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
 	if !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
@@ -127,27 +124,25 @@ func TestInboxPGGetGagalSaatIterasi(t *testing.T) {
 		return &pgRowsFake{values: inboxRowValues(14), remaining: 0, iterErr: errScripted}, nil
 	}
 
-	_, _, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
+	_, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, inboxFilterUji())
 	if !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 }
 
-func TestInboxPGGetBatasAtasKosongTetapLanjut(t *testing.T) {
+func TestInboxPGGetBatasTanggalKosongTetapLanjut(t *testing.T) {
 	env := newFakeEnv(t)
 	filter := inboxFilterUji()
 	filter.EndDate = ptr(ujiWaktu())
-	env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-		if strings.Contains(q, "tgl_entri <=") {
-			return &pgRowFake{scanErr: pgx.ErrNoRows}
-		}
-		return &pgRowFake{values: []any{int64(999)}}
+	filter.StartDate = ptr(ujiWaktu().AddDate(0, 0, -1))
+	env.pg.queryRowFn = func(string, []any) pgx.Row {
+		return &pgRowFake{scanErr: pgx.ErrNoRows}
 	}
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
 		return &pgRowsFake{values: inboxRowValues(15), remaining: 1}, nil
 	}
 
-	items, _, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter)
+	items, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter)
 	if err != nil || len(items) != 1 {
 		t.Fatalf("items=%d err=%v", len(items), err)
 	}
@@ -173,7 +168,7 @@ func TestInboxPGGetGagalSaatMemotongBatasAtasDanBawah(t *testing.T) {
 				return &pgRowFake{values: []any{int64(1)}}
 			}
 
-			_, _, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter)
+			_, err := NewInboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter)
 			if !errors.Is(err, errScripted) {
 				t.Fatalf("err harus errScripted, dapat %v", err)
 			}
@@ -269,8 +264,6 @@ func TestInboxPGGetFilterLengkapDanTenantTidakTerdaftar(t *testing.T) {
 	filter := inboxFilterUji()
 	filter.StartDate = ptr(ujiWaktu())
 	filter.EndDate = ptr(ujiWaktu())
-	filter.LowerBound = 100
-	filter.Cursor = 900
 	filter.Terminal = ptr(7)
 	filter.Reseller = ptr("RS-01")
 	filter.Pengirim = ptr("Budi")
@@ -291,164 +284,65 @@ func TestInboxPGGetFilterLengkapDanTenantTidakTerdaftar(t *testing.T) {
 	}
 	repo := NewInboxRepositories(env.reg).PG
 
-	if _, _, err := repo.Get(context.Background(), tenantUji, filter); err != nil {
+	if _, err := repo.Get(context.Background(), tenantUji, filter); err != nil {
 		t.Fatalf("err unexpected: %v", err)
 	}
 	if got := env.pg.queryLog(); len(got) != 1 {
 		t.Fatalf("harus 1 Query, dapat %d", len(got))
 	}
-	if _, _, err := repo.Get(context.Background(), "tenant-hilang", inboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
+	if _, err := repo.Get(context.Background(), "tenant-hilang", inboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }
 
-func TestInboxMSGetDenganBatasDanKursor(t *testing.T) {
+func TestInboxMSGetDenganFilterPenuh(t *testing.T) {
 	env := newFakeEnv(t)
 	filter := inboxFilterUji()
-	filter.LowerBound = 100
-	filter.Cursor = 900
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
 		return &msRowsFake{columns: inboxKolom(), data: [][]driver.Value{msNilaiInbox(17)}}, nil
 	}
-	if _, _, err := NewInboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, filter); err != nil {
+	if _, err := NewInboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, filter); err != nil {
 		t.Fatalf("err unexpected: %v", err)
-	}
-}
-
-func TestInboxPGLowerBoundDenganBatasAtasBerhasil(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := inboxFilterUji()
-	filter.EndDate = ptr(ujiWaktu())
-	env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-		if strings.Contains(q, "OFFSET") {
-			return &pgRowFake{values: []any{int64(321)}}
-		}
-		return &pgRowFake{values: []any{int64(500)}}
-	}
-
-	kode, err := NewInboxRepositories(env.reg).PG.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 321 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-}
-
-func TestInboxPGLowerBoundMengembalikanKodeTerakhir(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := inboxFilterUji()
-	filter.StartDate = ptr(ujiWaktu())
-	filter.LowerBound = 100
-	filter.Cursor = 900
-	env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-		if strings.Contains(q, "OFFSET") {
-			return &pgRowFake{values: []any{int64(777)}}
-		}
-		return &pgRowFake{values: []any{int64(555)}}
-	}
-
-	kode, err := NewInboxRepositories(env.reg).PG.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 777 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-	if got := env.pg.rowLog(); len(got) != 2 {
-		t.Fatalf("harus 2 QueryRow, dapat %d: %v", len(got), got)
-	}
-}
-
-func TestInboxPGLowerBoundKososongDanError(t *testing.T) {
-	for _, tc := range []struct {
-		nama    string
-		scanErr error
-		harapan int64
-	}{
-		{"tanpa_baris", pgx.ErrNoRows, 0},
-		{"error", errScripted, 0},
-	} {
-		t.Run(tc.nama, func(t *testing.T) {
-			env := newFakeEnv(t)
-			env.pg.queryRowFn = func(string, []any) pgx.Row { return &pgRowFake{scanErr: tc.scanErr} }
-
-			kode, err := NewInboxRepositories(env.reg).PG.LowerBound(context.Background(), tenantUji, inboxFilterUji())
-			if kode != tc.harapan {
-				t.Fatalf("kode=%d", kode)
-			}
-			if tc.nama == "tanpa_baris" && err != nil {
-				t.Fatalf("err harus nil, dapat %v", err)
-			}
-			if tc.nama == "error" && !errors.Is(err, errScripted) {
-				t.Fatalf("err harus errScripted, dapat %v", err)
-			}
-		})
-	}
-}
-
-func TestInboxPGLowerBoundGagalSaatMemotongDanTenantTidakTerdaftar(t *testing.T) {
-	for _, tc := range []struct {
-		nama string
-		atur func(*domain.InboxFilter)
-		cari string
-	}{
-		{"cutEnd", func(f *domain.InboxFilter) { f.EndDate = ptr(ujiWaktu()) }, "tgl_entri <="},
-		{"cutStart", func(f *domain.InboxFilter) { f.StartDate = ptr(ujiWaktu()) }, "tgl_entri <"},
-	} {
-		t.Run(tc.nama, func(t *testing.T) {
-			env := newFakeEnv(t)
-			filter := inboxFilterUji()
-			tc.atur(&filter)
-			env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-				if strings.Contains(q, tc.cari) {
-					return &pgRowFake{scanErr: errScripted}
-				}
-				return &pgRowFake{values: []any{int64(1)}}
-			}
-			if _, err := NewInboxRepositories(env.reg).PG.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-				t.Fatalf("err harus errScripted, dapat %v", err)
-			}
-		})
-	}
-
-	env := newFakeEnv(t)
-	if _, err := NewInboxRepositories(env.reg).PG.LowerBound(context.Background(), "tenant-hilang", inboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
-		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }
 
 // ------------------------------------------------------------- Inbox: MSSQL
 
-func TestInboxMSGetBerhasilDenganHalamanBerikutnya(t *testing.T) {
+func TestInboxMSGetBerhasil(t *testing.T) {
 	env := newFakeEnv(t)
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
 		return &msRowsFake{
 			columns: inboxKolom(),
-			data:    [][]driver.Value{msNilaiInbox(21), msNilaiInbox(22)},
+			data:    [][]driver.Value{msNilaiInbox(21)},
 		}, nil
 	}
 
-	items, hasNext, err := NewInboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, inboxFilterUji())
-	if err != nil || !hasNext || len(items) != 1 || items[0].Kode != 21 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err := NewInboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, inboxFilterUji())
+	if err != nil || len(items) != 1 || items[0].Kode != 21 {
+		t.Fatalf("items=%d err=%v", len(items), err)
 	}
 	if got := env.ms.queryLog(); len(got) != 1 || !strings.Contains(got[0], "FROM inbox") {
 		t.Fatalf("query tidak sesuai: %v", got)
 	}
 }
 
-func TestInboxMSGetBerhasilTanpaHalamanBerikutnyaDanGagal(t *testing.T) {
+func TestInboxMSGetKosongDanGagal(t *testing.T) {
 	env := newFakeEnv(t)
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
-		return &msRowsFake{columns: inboxKolom(), data: [][]driver.Value{msNilaiInbox(23)}}, nil
+		return &msRowsFake{columns: inboxKolom(), data: [][]driver.Value{}}, nil
 	}
 	repo := NewInboxRepositories(env.reg).MS
-	items, hasNext, err := repo.Get(context.Background(), tenantUji, inboxFilterUji())
-	if err != nil || hasNext || len(items) != 1 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err := repo.Get(context.Background(), tenantUji, inboxFilterUji())
+	if err != nil || len(items) != 0 {
+		t.Fatalf("hasil kosong harus tanpa error, dapat %d baris err=%v", len(items), err)
 	}
 
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-	if _, _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); !errors.Is(err, errScripted) {
+	if _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 
-	if _, _, err := repo.Get(context.Background(), "tenant-hilang", inboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
+	if _, err := repo.Get(context.Background(), "tenant-hilang", inboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }
@@ -462,7 +356,7 @@ func TestInboxMSGetGagalSaatScanDanIterasi(t *testing.T) {
 		baris[0] = tipeTidakCocok{}
 		return &msRowsFake{columns: inboxKolom(), data: [][]driver.Value{baris}}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); err == nil {
+	if _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); err == nil {
 		t.Fatal("harus gagal saat scan tipe tidak cocok")
 	}
 
@@ -474,7 +368,7 @@ func TestInboxMSGetGagalSaatScanDanIterasi(t *testing.T) {
 			failErr: errStreamBroken,
 		}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); !errors.Is(err, errStreamBroken) {
+	if _, err := repo.Get(context.Background(), tenantUji, inboxFilterUji()); !errors.Is(err, errStreamBroken) {
 		t.Fatalf("err harus errStreamBroken, dapat %v", err)
 	}
 }
@@ -560,99 +454,36 @@ func TestInboxMSUpdateTglStatusMengikutiStatus(t *testing.T) {
 	}
 }
 
-func TestInboxMSLowerBoundBerhasilKosongDanError(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := inboxFilterUji()
-	filter.StartDate = ptr(ujiWaktu())
-	env.ms.queryFn = func(q string, _ []driver.NamedValue) (driver.Rows, error) {
-		if strings.Contains(q, "TOP (1)") {
-			return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(555)}}}, nil
-		}
-		return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(888)}}}, nil
-	}
-	kode, err := NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 888 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
-		return &msRowsFake{columns: []string{"kode"}}, nil
-	}
-	kode, err = NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 0 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-	if _, err = NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-		t.Fatalf("err harus errScripted, dapat %v", err)
-	}
-
-	if _, err = NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), "tenant-hilang", filter); !errors.Is(err, database.ErrTenantNotFound) {
-		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
-	}
-}
-
-func TestInboxMSLowerBoundGagalSaatMemotongBatasAtas(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := inboxFilterUji()
-	filter.EndDate = ptr(ujiWaktu())
-	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-
-	if _, err := NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-		t.Fatalf("err harus errScripted, dapat %v", err)
-	}
-}
-
-func TestInboxMSLowerBoundBatasAtasKosongTetapLanjut(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := inboxFilterUji()
-	filter.EndDate = ptr(ujiWaktu())
-	env.ms.queryFn = func(q string, _ []driver.NamedValue) (driver.Rows, error) {
-		if strings.Contains(q, "TOP (1)") {
-			return &msRowsFake{columns: []string{"kode"}}, nil
-		}
-		return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(64)}}}, nil
-	}
-
-	kode, err := NewInboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 64 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-}
-
 // ------------------------------------------------------------ Outbox: PG
 
-func TestOutboxPGGetBerhasilDenganDanTanpaHalamanBerikutnya(t *testing.T) {
+func TestOutboxPGGetBerhasilDanKosong(t *testing.T) {
 	env := newFakeEnv(t)
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
-		return &pgRowsFake{values: outboxRowValues(31), remaining: 2}, nil
+		return &pgRowsFake{values: outboxRowValues(31), remaining: 1}, nil
 	}
 	repo := NewOutboxRepositories(env.reg).PG
 
-	items, hasNext, err := repo.Get(context.Background(), tenantUji, outboxFilterUji())
-	if err != nil || !hasNext || len(items) != 1 || items[0].Kode != 31 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err := repo.Get(context.Background(), tenantUji, outboxFilterUji())
+	if err != nil || len(items) != 1 || items[0].Kode != 31 {
+		t.Fatalf("items=%d err=%v", len(items), err)
 	}
 	if items[0].Penerima != "0812999" {
 		t.Fatalf("penerima tidak sesuai: %s", items[0].Penerima)
 	}
 
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
-		return &pgRowsFake{values: outboxRowValues(32), remaining: 1}, nil
+		return &pgRowsFake{values: outboxRowValues(32), remaining: 0}, nil
 	}
-	items, hasNext, err = repo.Get(context.Background(), tenantUji, outboxFilterUji())
-	if err != nil || hasNext || len(items) != 1 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err = repo.Get(context.Background(), tenantUji, outboxFilterUji())
+	if err != nil || len(items) != 0 {
+		t.Fatalf("hasil kosong harus tanpa error, dapat %d baris err=%v", len(items), err)
 	}
 }
 
-func TestOutboxPGGetDenganBatasKursorDanFilterLengkap(t *testing.T) {
+func TestOutboxPGGetDenganBatasTanggalDanFilterLengkap(t *testing.T) {
 	env := newFakeEnv(t)
 	filter := outboxFilterUji()
 	filter.StartDate = ptr(ujiWaktu())
-	filter.LowerBound = 100
-	filter.Cursor = 900
 	filter.Reseller = ptr("RS-01")
 	filter.Penerima = ptr("0812999")
 	filter.Tipe = ptr("hp")
@@ -667,20 +498,42 @@ func TestOutboxPGGetDenganBatasKursorDanFilterLengkap(t *testing.T) {
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
 		return &pgRowsFake{values: outboxRowValues(36), remaining: 1}, nil
 	}
-	if _, _, err := NewOutboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter); err != nil {
+	if _, err := NewOutboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter); err != nil {
 		t.Fatalf("err unexpected: %v", err)
 	}
 }
 
-func TestOutboxMSGetDenganBatasDanKursor(t *testing.T) {
+func TestOutboxPGGetBatasTanggalMemakaiPlaceholderNomor(t *testing.T) {
 	env := newFakeEnv(t)
 	filter := outboxFilterUji()
-	filter.LowerBound = 100
-	filter.Cursor = 900
+	filter.EndDate = ptr(ujiWaktu())
+	env.pg.queryRowFn = func(string, []any) pgx.Row { return &pgRowFake{values: []any{int64(900)}} }
+	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
+		return &pgRowsFake{values: outboxRowValues(51), remaining: 1}, nil
+	}
+
+	if _, err := NewOutboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter); err != nil {
+		t.Fatalf("err unexpected: %v", err)
+	}
+	got := env.pg.queryLog()
+	if len(got) != 1 {
+		t.Fatalf("harus 1 query, dapat %d", len(got))
+	}
+	if !strings.Contains(got[0], "AND kode <= $2") {
+		t.Fatalf("placeholder batas atas harus $2, dapat: %q", got[0])
+	}
+	if strings.Contains(got[0], "$.") {
+		t.Fatalf("placeholder tak boleh memakai titik, dapat: %q", got[0])
+	}
+}
+
+func TestOutboxMSGetDenganFilterPenuh(t *testing.T) {
+	env := newFakeEnv(t)
+	filter := outboxFilterUji()
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
 		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{msNilaiOutbox(37)}}, nil
 	}
-	if _, _, err := NewOutboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, filter); err != nil {
+	if _, err := NewOutboxRepositories(env.reg).MS.Get(context.Background(), tenantUji, filter); err != nil {
 		t.Fatalf("err unexpected: %v", err)
 	}
 }
@@ -690,25 +543,25 @@ func TestOutboxPGGetSemuaCabangGagal(t *testing.T) {
 	repo := NewOutboxRepositories(env.reg).PG
 
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) { return nil, errScripted }
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
 		return &pgRowsFake{values: outboxRowValues(33), remaining: 1, scanErr: errScripted}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
 		return &pgRowsFake{values: outboxRowValues(34), iterErr: errScripted}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 
-	if _, _, err := repo.Get(context.Background(), "tenant-hilang", outboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
+	if _, err := repo.Get(context.Background(), "tenant-hilang", outboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }
@@ -729,7 +582,7 @@ func TestOutboxPGGetMemotongBatasDanSeluruhnyaGagal(t *testing.T) {
 	env.pg.queryFn = func(string, []any) (pgx.Rows, error) {
 		return &pgRowsFake{values: outboxRowValues(35), remaining: 1}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, filter); err != nil {
+	if _, err := repo.Get(context.Background(), tenantUji, filter); err != nil {
 		t.Fatalf("err unexpected: %v", err)
 	}
 
@@ -754,7 +607,7 @@ func TestOutboxPGGetMemotongBatasDanSeluruhnyaGagal(t *testing.T) {
 				}
 				return &pgRowFake{values: []any{int64(1)}}
 			}
-			if _, _, err := NewOutboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
+			if _, err := NewOutboxRepositories(env.reg).PG.Get(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
 				t.Fatalf("err harus errScripted, dapat %v", err)
 			}
 		})
@@ -826,113 +679,29 @@ func TestOutboxPGUpdateMemakaiTglStatusDanKodeTerakhir(t *testing.T) {
 	}
 }
 
-func TestOutboxMSLowerBoundGagalSaatMemotongBatasAtas(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := outboxFilterUji()
-	filter.EndDate = ptr(ujiWaktu())
-	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-
-	if _, err := NewOutboxRepositories(env.reg).MS.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-		t.Fatalf("err harus errScripted, dapat %v", err)
-	}
-}
-
-func TestOutboxPGLowerBoundSemuaCabang(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := outboxFilterUji()
-	filter.StartDate = ptr(ujiWaktu())
-	filter.EndDate = ptr(ujiWaktu())
-	filter.LowerBound = 5
-	filter.Cursor = 700
-	env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-		switch {
-		case strings.Contains(q, "OFFSET"):
-			return &pgRowFake{values: []any{int64(654)}}
-		case strings.Contains(q, "tgl_entri <="):
-			return &pgRowFake{values: []any{int64(222)}}
-		default:
-			return &pgRowFake{values: []any{int64(111)}}
-		}
-	}
-	repo := NewOutboxRepositories(env.reg).PG
-
-	kode, err := repo.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 654 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.pg.queryRowFn = func(string, []any) pgx.Row { return &pgRowFake{scanErr: pgx.ErrNoRows} }
-	if kode, err = repo.LowerBound(context.Background(), tenantUji, filter); err != nil || kode != 0 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-		if strings.Contains(q, "OFFSET") {
-			return &pgRowFake{scanErr: errScripted}
-		}
-		return &pgRowFake{values: []any{int64(111)}}
-	}
-	if _, err = repo.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-		t.Fatalf("err harus errScripted, dapat %v", err)
-	}
-
-	if _, err = repo.LowerBound(context.Background(), "tenant-hilang", filter); !errors.Is(err, database.ErrTenantNotFound) {
-		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
-	}
-}
-
-func TestOutboxPGLowerBoundGagalSaatMemotong(t *testing.T) {
-	for _, tc := range []struct {
-		nama string
-		cari string
-	}{
-		{"cutEnd", "tgl_entri <="},
-		{"cutStart", "tgl_entri <"},
-	} {
-		t.Run(tc.nama, func(t *testing.T) {
-			env := newFakeEnv(t)
-			filter := outboxFilterUji()
-			if tc.nama == "cutEnd" {
-				filter.EndDate = ptr(ujiWaktu())
-			} else {
-				filter.StartDate = ptr(ujiWaktu())
-			}
-			env.pg.queryRowFn = func(q string, _ []any) pgx.Row {
-				if strings.Contains(q, tc.cari) {
-					return &pgRowFake{scanErr: errScripted}
-				}
-				return &pgRowFake{values: []any{int64(1)}}
-			}
-			if _, err := NewOutboxRepositories(env.reg).PG.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-				t.Fatalf("err harus errScripted, dapat %v", err)
-			}
-		})
-	}
-}
-
 // ------------------------------------------------------------ Outbox: MSSQL
 
-func TestOutboxMSGetBerhasilDenganDanTanpaHalamanBerikutnya(t *testing.T) {
+func TestOutboxMSGetBerhasilDanKosong(t *testing.T) {
 	env := newFakeEnv(t)
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
-		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{msNilaiOutbox(41), msNilaiOutbox(42)}}, nil
+		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{msNilaiOutbox(41)}}, nil
 	}
 	repo := NewOutboxRepositories(env.reg).MS
 
-	items, hasNext, err := repo.Get(context.Background(), tenantUji, outboxFilterUji())
-	if err != nil || !hasNext || len(items) != 1 || items[0].Kode != 41 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err := repo.Get(context.Background(), tenantUji, outboxFilterUji())
+	if err != nil || len(items) != 1 || items[0].Kode != 41 {
+		t.Fatalf("items=%d err=%v", len(items), err)
 	}
 	if items[0].KodeReseller == nil || *items[0].KodeReseller != "RS-01" {
 		t.Fatalf("kode_reseller tidak sesuai: %+v", items[0].KodeReseller)
 	}
 
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) {
-		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{msNilaiOutbox(43)}}, nil
+		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{}}, nil
 	}
-	items, hasNext, err = repo.Get(context.Background(), tenantUji, outboxFilterUji())
-	if err != nil || hasNext || len(items) != 1 {
-		t.Fatalf("items=%d hasNext=%v err=%v", len(items), hasNext, err)
+	items, err = repo.Get(context.Background(), tenantUji, outboxFilterUji())
+	if err != nil || len(items) != 0 {
+		t.Fatalf("hasil kosong harus tanpa error, dapat %d baris err=%v", len(items), err)
 	}
 }
 
@@ -941,7 +710,7 @@ func TestOutboxMSGetSemuaCabangGagal(t *testing.T) {
 	repo := NewOutboxRepositories(env.reg).MS
 
 	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errScripted) {
 		t.Fatalf("err harus errScripted, dapat %v", err)
 	}
 
@@ -950,7 +719,7 @@ func TestOutboxMSGetSemuaCabangGagal(t *testing.T) {
 		baris[0] = tipeTidakCocok{}
 		return &msRowsFake{columns: outboxKolom(), data: [][]driver.Value{baris}}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); err == nil {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); err == nil {
 		t.Fatal("harus gagal saat scan tipe tidak cocok")
 	}
 
@@ -962,11 +731,11 @@ func TestOutboxMSGetSemuaCabangGagal(t *testing.T) {
 			failErr: errStreamBroken,
 		}, nil
 	}
-	if _, _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errStreamBroken) {
+	if _, err := repo.Get(context.Background(), tenantUji, outboxFilterUji()); !errors.Is(err, errStreamBroken) {
 		t.Fatalf("err harus errStreamBroken, dapat %v", err)
 	}
 
-	if _, _, err := repo.Get(context.Background(), "tenant-hilang", outboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
+	if _, err := repo.Get(context.Background(), "tenant-hilang", outboxFilterUji()); !errors.Is(err, database.ErrTenantNotFound) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }
@@ -1043,49 +812,6 @@ func TestOutboxMSUpdateTglStatusDanSeluruhCabangGagal(t *testing.T) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 	if err := repo.Update(context.Background(), "tenant-hilang", 1, updateOutboxRequestUji()); !errors.Is(err, database.ErrTenantNotFound) {
-		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
-	}
-}
-
-func TestOutboxMSLowerBoundSemuaCabang(t *testing.T) {
-	env := newFakeEnv(t)
-	filter := outboxFilterUji()
-	filter.EndDate = ptr(ujiWaktu())
-	env.ms.queryFn = func(q string, _ []driver.NamedValue) (driver.Rows, error) {
-		if strings.Contains(q, "TOP (1)") {
-			return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(321)}}}, nil
-		}
-		return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(999)}}}, nil
-	}
-	repo := NewOutboxRepositories(env.reg).MS
-
-	kode, err := repo.LowerBound(context.Background(), tenantUji, filter)
-	if err != nil || kode != 999 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.ms.queryFn = func(q string, _ []driver.NamedValue) (driver.Rows, error) {
-		if strings.Contains(q, "TOP (1)") {
-			return &msRowsFake{columns: []string{"kode"}}, nil
-		}
-		return &msRowsFake{columns: []string{"kode"}}, nil
-	}
-	if kode, err = repo.LowerBound(context.Background(), tenantUji, filter); err != nil || kode != 0 {
-		t.Fatalf("kode=%d err=%v", kode, err)
-	}
-
-	env.ms.queryFn = func(q string, _ []driver.NamedValue) (driver.Rows, error) {
-		if strings.Contains(q, "TOP (1)") {
-			return &msRowsFake{columns: []string{"kode"}, data: [][]driver.Value{{int64(321)}}}, nil
-		}
-		return nil, errScripted
-	}
-	if _, err = repo.LowerBound(context.Background(), tenantUji, filter); !errors.Is(err, errScripted) {
-		t.Fatalf("err harus errScripted, dapat %v", err)
-	}
-
-	env.ms.queryFn = func(string, []driver.NamedValue) (driver.Rows, error) { return nil, errScripted }
-	if _, err = repo.LowerBound(context.Background(), "tenant-hilang", filter); !errors.Is(err, database.ErrTenantNotFound) {
 		t.Fatalf("err harus ErrTenantNotFound, dapat %v", err)
 	}
 }

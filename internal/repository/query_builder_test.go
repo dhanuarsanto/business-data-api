@@ -49,9 +49,9 @@ func TestQualifyColsMemberiAliasTanpaManipulasiString(t *testing.T) {
 	}
 }
 
-func TestBuildPageQueryPGKodeDescUntukJalurDefault(t *testing.T) {
+func TestBuildListQueryPGKodeDescUntukJalurDefault(t *testing.T) {
 	cols := []string{"kode", "tgl_entri"}
-	q, args := buildPageQueryPG(cols, "inbox", whereBase, nil, 1, false, 21)
+	q, args := buildListQueryPG(cols, "inbox", whereBase, nil, 1, false, 21)
 
 	if !strings.Contains(q, "SELECT kode, tgl_entri FROM inbox WHERE 1=1 ORDER BY kode DESC LIMIT $1") {
 		t.Fatalf("query default salah: %q", q)
@@ -61,13 +61,12 @@ func TestBuildPageQueryPGKodeDescUntukJalurDefault(t *testing.T) {
 	}
 }
 
-// Halaman berikutnya dibatasi kode < cursor, dan cursor diambil dari kode baris
-// terakhir. Jadi baris terakhir wajib punya kode terkecil di halaman; kalau outer
-// diurutkan tgl_entri, baris terakhir bisa ber-kode besar sehingga baris yang
-// sudah terkirim muncul lagi di halaman berikutnya.
-func TestBuildPageQueryPGOuterTerurutKodeSupayaCursorTidakBerulang(t *testing.T) {
+// Subquery memilih n baris terbaru berdasarkan tgl_entri; query luar wajib
+// mengurutkan kode DESC supaya klien menerima kode terbesar lebih dulu dan
+// tidak pernah melihat baris yang sama di dua permintaan berbeda.
+func TestBuildListQueryPGOuterTerurutKodeDesc(t *testing.T) {
 	cols := []string{"kode", "tgl_entri"}
-	q, _ := buildPageQueryPG(cols, "inbox", whereBase, nil, 1, true, 21)
+	q, _ := buildListQueryPG(cols, "inbox", whereBase, nil, 1, true, 21)
 
 	if !strings.Contains(q, "ORDER BY i.kode DESC LIMIT") {
 		t.Fatalf("outer query wajib urut kode DESC, dapat: %q", q)
@@ -80,9 +79,9 @@ func TestBuildPageQueryPGOuterTerurutKodeSupayaCursorTidakBerulang(t *testing.T)
 	}
 }
 
-func TestBuildPageQueryMSOuterTerurutKodeSupayaCursorTidakBerulang(t *testing.T) {
+func TestBuildListQueryMSOuterTerurutKodeDesc(t *testing.T) {
 	cols := []string{"kode", "tgl_entri"}
-	q, _ := buildPageQueryMS(cols, "inbox", whereBase, nil, true, 21)
+	q, _ := buildListQueryMS(cols, "inbox", whereBase, nil, true, 21)
 
 	if !strings.Contains(q, "ORDER BY i.kode DESC") {
 		t.Fatalf("outer query wajib urut kode DESC, dapat: %q", q)

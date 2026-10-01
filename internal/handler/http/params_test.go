@@ -8,81 +8,48 @@ import (
 	"go.internal/business-data-api/internal/domain"
 )
 
-func TestParsePageParamsTanpaParameter(t *testing.T) {
-	p := parsePageParams(url.Values{})
+func TestParseListParamsTanpaParameter(t *testing.T) {
+	p := parseListParams(url.Values{})
 
-	if p.PageSize != domain.DefaultPageSize {
-		t.Fatalf("pageSize kosong harus default, dapat %d", p.PageSize)
-	}
-	if p.Cursor != 0 {
-		t.Fatalf("cursor kosong harus nol, dapat %d", p.Cursor)
-	}
-	if p.LimitTotal != nil {
-		t.Fatalf("limit kosong harus nil, dapat %v", *p.LimitTotal)
+	if p.Limit != domain.DefaultLimit {
+		t.Fatalf("limit kosong harus default, dapat %d", p.Limit)
 	}
 	if p.StartDate != nil || p.EndDate != nil {
-		t.Fatalf("tanggal kosong harus nil")
+		t.Fatal("tanggal kosong harus nil")
 	}
 }
 
-func TestParsePageParamsPageSizeDibatasi(t *testing.T) {
+func TestParseListParamsLimitDibatasi(t *testing.T) {
 	cases := []struct {
 		masuk string
 		want  int
 	}{
-		{"99999", domain.MaxPageSize},
-		{"  ", domain.DefaultPageSize},
-		{"-10", domain.DefaultPageSize},
-		{"bukan-angka", domain.DefaultPageSize},
+		{"99999", domain.MaxLimit},
+		{"500000", domain.MaxLimit},
+		{"  ", domain.DefaultLimit},
+		{"-10", domain.DefaultLimit},
+		{"bukan-angka", domain.DefaultLimit},
 		{"50", 50},
 	}
 
 	for _, c := range cases {
-		got := parsePageParams(url.Values{"pageSize": {c.masuk}}).PageSize
+		got := parseListParams(url.Values{"limit": {c.masuk}}).Limit
 		if got != c.want {
-			t.Fatalf("pageSize %q harus jadi %d, dapat %d", c.masuk, c.want, got)
+			t.Fatalf("limit %q harus jadi %d, dapat %d", c.masuk, c.want, got)
 		}
 	}
 }
 
-func TestParsePageParamsCursorRusakDiabaikan(t *testing.T) {
-	for _, masuk := range []string{"bukan-angka", "", "99999999999999999999"} {
-		if got := parsePageParams(url.Values{"cursor": {masuk}}).Cursor; got != 0 {
-			t.Fatalf("cursor %q harus jadi nol, dapat %d", masuk, got)
-		}
-	}
-	if got := parsePageParams(url.Values{"cursor": {"777"}}).Cursor; got != 777 {
-		t.Fatalf("cursor angka harus kept, dapat %d", got)
+func TestParseListParamsParameterPagingDiabaikan(t *testing.T) {
+	p := parseListParams(url.Values{"pageSize": {"999"}, "cursor": {"77"}})
+
+	if p.Limit != domain.DefaultLimit {
+		t.Fatalf("pageSize/cursor tak boleh memengaruhi limit, dapat %d", p.Limit)
 	}
 }
 
-func TestParsePageParamsLimitDivalidasi(t *testing.T) {
-	cases := []struct {
-		masuk string
-		ada   bool
-		want  int
-	}{
-		{"50", true, 50},
-		{"0", false, 0},
-		{"-1", false, 0},
-		{"bukan-angka", false, 0},
-		{"", false, 0},
-		{"99999999", true, domain.MaxLimitTotal},
-	}
-
-	for _, c := range cases {
-		got := parsePageParams(url.Values{"limit": {c.masuk}}).LimitTotal
-		if (got != nil) != c.ada {
-			t.Fatalf("limit %q harus ada=%v, dapat %v", c.masuk, c.ada, got)
-		}
-		if got != nil && *got != c.want {
-			t.Fatalf("limit %q harus jadi %d, dapat %d", c.masuk, c.want, *got)
-		}
-	}
-}
-
-func TestParsePageParamsTanggalDivalidasiDanDigeserAkhirHari(t *testing.T) {
-	p := parsePageParams(url.Values{
+func TestParseListParamsTanggalDivalidasiDanDigeserAkhirHari(t *testing.T) {
+	p := parseListParams(url.Values{
 		"startDate": {"2026-01-15"},
 		"endDate":   {"2026-01-15"},
 	})
@@ -99,8 +66,8 @@ func TestParsePageParamsTanggalDivalidasiDanDigeserAkhirHari(t *testing.T) {
 	}
 }
 
-func TestParsePageParamsTanggalRusakDiabaikan(t *testing.T) {
-	p := parsePageParams(url.Values{
+func TestParseListParamsTanggalRusakDiabaikan(t *testing.T) {
+	p := parseListParams(url.Values{
 		"startDate": {"15-01-2026"},
 		"endDate":   {""},
 	})

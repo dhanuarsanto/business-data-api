@@ -162,19 +162,3 @@ func TestErrorTanpaTraceContextMenggunakanDefault(t *testing.T) {
 		t.Fatalf("pesan tak sesuai: %q", rec.Body.String())
 	}
 }
-
-func TestCursorPaginationMetaMenyembunyikanKursorNol(t *testing.T) {
-	ada := CursorPaginationMeta{HasNextPage: true, HasPrevPage: false, NextCursor: 42}
-	if ada.NextCursor != 42 || !ada.HasNextPage || ada.HasPrevPage {
-		t.Fatalf("nilai meta tak sesuai: %+v", ada)
-	}
-
-	tanpa := CursorPaginationMeta{}
-	hasil, err := json.Marshal(tanpa)
-	if err != nil {
-		t.Fatalf("marshal gagal: %v", err)
-	}
-	if string(hasil) != `{"has_next_page":false,"has_prev_page":false}` {
-		t.Fatalf("kursor nol harus dihilangkan, dapat %s", hasil)
-	}
-}

@@ -22,7 +22,6 @@ type OutboxHandler struct {
 }
 
 func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
@@ -30,7 +29,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryParams := r.URL.Query()
-	page := parsePageParams(queryParams)
+	params := parseListParams(queryParams)
 
 	var resellerPtr *string
 	if val := queryParams.Get("reseller"); val != "" {
@@ -71,10 +70,9 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := domain.OutboxFilter{
-		StartDate:        page.StartDate,
-		EndDate:          page.EndDate,
-		PageSize:         page.PageSize,
-		LimitTotal:       page.LimitTotal,
+		StartDate:        params.StartDate,
+		EndDate:          params.EndDate,
+		Limit:            params.Limit,
 		Reseller:         resellerPtr,
 		Penerima:         penerimaPtr,
 		Tipe:             tipePtr,
@@ -82,29 +80,15 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Pesan:            strings.TrimSpace(queryParams.Get("pesan")),
 		ReplyToReseller:  replyToResellerPtr,
 		PerintahProvider: perintahProviderPtr,
-		Cursor:           page.Cursor,
 	}
 
-	data, hasNextPage, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
+	data, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 
-	var nextCursor int64
-	if len(data) > 0 {
-		nextCursor = data[len(data)-1].Kode
-	}
-
-	response.Success(w, r, map[string]any{
-		"trace_id": tCtx.TraceID,
-		"items":    data,
-		"meta": response.CursorPaginationMeta{
-			HasNextPage: hasNextPage,
-			HasPrevPage: page.Cursor > 0,
-			NextCursor:  nextCursor,
-		},
-	})
+	response.Success(w, r, map[string]any{"items": data})
 }
 
 func (h *OutboxHandler) CreateOutbox(w http.ResponseWriter, r *http.Request) {

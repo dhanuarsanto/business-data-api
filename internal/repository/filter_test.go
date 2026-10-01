@@ -304,9 +304,9 @@ func TestBuildOutboxFilterMSTriaseGabungDanKosong(t *testing.T) {
 	}
 }
 
-func TestBuildPageQueryMSJalurDefaultMemakaiTopDanTanpaAlias(t *testing.T) {
+func TestBuildListQueryMSJalurDefaultMemakaiTopDanTanpaAlias(t *testing.T) {
 	cols := []string{"kode", "tgl_entri"}
-	q, args := buildPageQueryMS(cols, "outbox", whereBase, nil, false, 51)
+	q, args := buildListQueryMS(cols, "outbox", whereBase, nil, false, 51)
 
 	if !strings.Contains(q, "SELECT TOP (@p_limit) kode, tgl_entri FROM outbox WHERE 1=1 ORDER BY kode DESC") {
 		t.Fatalf("query default salah: %q", q)
@@ -319,12 +319,12 @@ func TestBuildPageQueryMSJalurDefaultMemakaiTopDanTanpaAlias(t *testing.T) {
 	}
 }
 
-func TestBuildPageQueryMSJalurTglMempertahankanArgumenSyarat(t *testing.T) {
+func TestBuildListQueryMSJalurTglMempertahankanArgumenSyarat(t *testing.T) {
 	cols := []string{"kode", "tgl_entri"}
 	where := whereBase + " AND kode_reseller = @reseller"
 	sebelum := []any{sql.Named("reseller", "R1")}
 
-	q, args := buildPageQueryMS(cols, "outbox", where, sebelum, true, 26)
+	q, args := buildListQueryMS(cols, "outbox", where, sebelum, true, 26)
 
 	subquery := `SELECT TOP (@p_limit) kode FROM outbox` + where + ` ORDER BY tgl_entri DESC, kode DESC`
 	want := "JOIN (" + subquery + ") s ON i.kode=s.kode ORDER BY i.kode DESC"
@@ -342,12 +342,12 @@ func TestBuildPageQueryMSJalurTglMempertahankanArgumenSyarat(t *testing.T) {
 	}
 }
 
-func TestBuildPageQueryPGMempertahankanArgumenSyaratPadaKeduaJalur(t *testing.T) {
+func TestBuildListQueryPGMempertahankanArgumenSyaratPadaKeduaJalur(t *testing.T) {
 	cols := []string{"kode"}
 	where := whereBase + " AND status = $1"
 	sebelum := []any{int16(2)}
 
-	q, args := buildPageQueryPG(cols, "inbox", where, sebelum, 2, false, 11)
+	q, args := buildListQueryPG(cols, "inbox", where, sebelum, 2, false, 11)
 	if !strings.Contains(q, "SELECT kode FROM inbox"+where+" ORDER BY kode DESC LIMIT $2") {
 		t.Fatalf("jalur default tak sesuai: %q", q)
 	}
@@ -355,7 +355,7 @@ func TestBuildPageQueryPGMempertahankanArgumenSyaratPadaKeduaJalur(t *testing.T)
 		t.Fatalf("jalur default: argumen tak sesuai: %v", args)
 	}
 
-	q, args = buildPageQueryPG(cols, "inbox", where, sebelum, 2, true, 11)
+	q, args = buildListQueryPG(cols, "inbox", where, sebelum, 2, true, 11)
 	subquery := "SELECT kode FROM inbox" + where + " ORDER BY tgl_entri DESC, kode DESC LIMIT $2"
 	if !strings.Contains(q, "SELECT i.kode FROM inbox i JOIN ("+subquery+") s ON i.kode=s.kode ORDER BY i.kode DESC LIMIT $3") {
 		t.Fatalf("jalur tgl_leading tak sesuai: %q", q)

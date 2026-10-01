@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func buildPageQueryPG(cols []string, from, whereClause string, args []any, argID int, useTglLeading bool, limitVal int) (string, []any) {
+func buildListQueryPG(cols []string, from, whereClause string, args []any, argID int, useTglLeading bool, limitVal int) (string, []any) {
 	if useTglLeading {
 		subQ := `SELECT kode FROM ` + from + whereClause + fmt.Sprintf(` ORDER BY tgl_entri DESC, kode DESC LIMIT $%d`, argID)
 		args = append(args, limitVal)

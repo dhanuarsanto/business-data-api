@@ -1,4 +1,4 @@
-﻿openapi: 3.0.0
+openapi: 3.0.0
 info:
   title: Data API Gateway
   description: "API Gateway multi-tenant (Maxtop, Pandora, Toplink) dengan dukungan Dual-DB (Postgres & MSSQL)."
@@ -381,40 +381,21 @@ components:
         nama:
           type: string
 
-    CursorPaginationMeta:
-      type: object
-      properties:
-        has_next_page:
-          type: boolean
-        has_prev_page:
-          type: boolean
-        next_cursor:
-          type: integer
-          format: int64
-
     InboxResponse:
       type: object
       properties:
-        trace_id:
-          type: string
         items:
           type: array
           items:
             $ref: "#/components/schemas/Inbox"
-        meta:
-          $ref: "#/components/schemas/CursorPaginationMeta"
 
     OutboxResponse:
       type: object
       properties:
-        trace_id:
-          type: string
         items:
           type: array
           items:
             $ref: "#/components/schemas/Outbox"
-        meta:
-          $ref: "#/components/schemas/CursorPaginationMeta"
 
 x-error-responses: &errorResponses
   "401":
@@ -545,7 +526,7 @@ paths:
 
   /api/v1/{tenant}/inbox:
     get:
-      summary: Get Inbox (13 Opsi Filter)
+      summary: Get Inbox (11 Opsi Filter)
       description: "Mengambil daftar pesan Inbox"
       security:
         - ApiKeyAuth: []
@@ -567,14 +548,9 @@ paths:
           schema:
             type: string
             format: date
-        - name: pageSize
-          in: query
-          description: Jumlah data per halaman (default 10, maksimal 500)
-          schema:
-            type: integer
         - name: limit
           in: query
-          description: Total data maksimal yang boleh di-deliver selama pagination (opsional, maksimum 100.000)
+          description: Jumlah baris maksimal yang dikembalikan (default 10, maksimal 10000)
           schema:
             type: integer
         - name: terminal
@@ -617,12 +593,6 @@ paths:
           description: Checkbox filter jawaban dari provider (is_jawaban = 1)
           schema:
             type: boolean
-        - name: cursor
-          in: query
-          description: Cursor pagination (kode record terakhir)
-          schema:
-            type: integer
-            format: int64
       responses:
         <<: *errorResponses
         "200":
@@ -690,7 +660,7 @@ paths:
 
   /api/v1/{tenant}/outbox:
     get:
-      summary: Get Outbox (12 Opsi Filter)
+      summary: Get Outbox (10 Opsi Filter)
       description: "Mengambil daftar pesan Outbox"
       security:
         - ApiKeyAuth: []
@@ -712,14 +682,9 @@ paths:
           schema:
             type: string
             format: date
-        - name: pageSize
-          in: query
-          description: Jumlah data per halaman (default 10, maksimal 500)
-          schema:
-            type: integer
         - name: limit
           in: query
-          description: Total data maksimal yang boleh di-deliver selama pagination (opsional, maksimum 100.000)
+          description: Jumlah baris maksimal yang dikembalikan (default 10, maksimal 10000)
           schema:
             type: integer
         - name: reseller
@@ -757,12 +722,6 @@ paths:
           description: Checkbox filter perintah provider (is_perintah = 1)
           schema:
             type: boolean
-        - name: cursor
-          in: query
-          description: Cursor pagination (kode record terakhir)
-          schema:
-            type: integer
-            format: int64
       responses:
         <<: *errorResponses
         "200":

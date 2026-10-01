@@ -43,10 +43,10 @@ Semua DDL sudah DIEKSEKUSI manual di database. Jangan membuat ulang tanpa alasan
 
 ## Perilaku yang bergantung pada index ini
 
-1. **Pagination default = `ORDER BY kode DESC`** (terbaru dulu). Kosongkan seluruh `tgl_entri` dukungan bisection & index terarah.
+1. **Pengurutan hasil = `ORDER BY kode DESC`** (terbaru dulu). Kosongkan seluruh `tgl_entri` dukungan bisection & index terarah.
 2. **Bisection** (`kode_cut`) memanfaatkan `idx_*_kode_tgl (kode DESC INCLUDE tgl_entri)` + slack 50k. Sewaktu `StartDate` diset, batas bawah juga dibisect (`kode > cutStart`) sehingga filter tanggal `tgl_entri >= start` tidak lagi dipakai query utama — hasil identik secara logika, tapi planner selalu lewat index kode (cepat deterministik, tanpa Bitmap/Seq scan).
 3. **Partial jawaban/perintah** duduk untuk filter triase (`requestFromReseller` / `replyToReseller` + `is_jawaban=0` / `is_perintah=0`); versi `tgl_entri DESC` digunakan saat filter tanggal + triase. Kedua flag triase saling lepas: menyalakan keduanya berarti tidak ada syarat triase sama sekali, sama seperti tidak menyalakan apa pun.
-4. Pada jalur tgl-leading, subquery tetap memilih baris dengan `ORDER BY tgl_entri DESC, kode DESC`, tetapi query luar tetap mengurutkan `i.kode DESC`. Urutan luar wajib `kode DESC` karena cursor halaman berikutnya diambil dari kode baris terakhir lalu dipakai sebagai batas `kode < cursor`; kalau urut ikut `tgl_entri`, baris terakhir bisa ber-kode besar dan baris yang sudah terkirim muncul lagi di halaman berikutnya. Index tgl-leading di tabel tetap berguna karena melayani pemilihan n baris terbaru di dalam subquery.
+4. Pada jalur tgl-leading, subquery memilih `n` baris terbaru dengan `ORDER BY tgl_entri DESC, kode DESC`, lalu query luar mengurutkan `i.kode DESC`. Urutan luar wajib `kode DESC` supaya klien selalu menerima kode terbesar lebih dulu dan baris yang sama tidak pernah muncul di dua permintaan berbeda. Index tgl-leading di tabel tetap berguna karena melayani pemilihan `n` baris terbaru di dalam subquery.
 5. Sort kolom di luar `kode` dan `tgl_entri` **belum** didukung (butuh keputusan & index per kolom — lihat catatan).
 
 ## MSSQL — index yang HARUS dibuat manual (untuk pola varian tgl+flag)

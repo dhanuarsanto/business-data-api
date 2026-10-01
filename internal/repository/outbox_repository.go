@@ -3,12 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
 	"go.internal/business-data-api/pkg/database"
@@ -23,10 +21,10 @@ type outboxPGRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
+func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
 	db, err := r.dbRegistry.Postgres(tenant)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	f := filter
@@ -36,7 +34,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 	if filter.EndDate != nil {
 		cut, err := cutEndPG(ctx, db, "outbox", *filter.EndDate)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
 		args = append(args, cut+cutSlack)
@@ -46,32 +44,20 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 	if filter.StartDate != nil {
 		cut, err := cutStartPG(ctx, db, "outbox", *filter.StartDate)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
 		args = append(args, cut)
 		argID++
 	}
 
-	if filter.LowerBound > 0 {
-		whereClause += fmt.Sprintf(` AND kode >= $%d`, argID)
-		args = append(args, filter.LowerBound)
-		argID++
-	}
-
-	if filter.Cursor > 0 {
-		whereClause += fmt.Sprintf(` AND kode < $%d`, argID)
-		args = append(args, filter.Cursor)
-		argID++
-	}
-
 	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
-	query, pqArgs := buildPageQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
+	query, pqArgs := buildListQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.Limit)
 	rows, err := db.Query(ctx, query, pqArgs...)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -80,21 +66,16 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 	for rows.Next() {
 		var o dto.OutboxItem
 		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		outboxes = append(outboxes, o)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	hasNextPage := len(outboxes) > filter.PageSize
-	if hasNextPage {
-		outboxes = outboxes[:filter.PageSize]
-	}
-
-	return outboxes, hasNextPage, nil
+	return outboxes, nil
 }
 
 func (r *outboxPGRepository) Insert(ctx context.Context, tenant string, data domain.Outbox) error {
@@ -143,31 +124,21 @@ type outboxMSRepository struct {
 	dbRegistry *database.DBRegistry
 }
 
-func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, bool, error) {
+func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
 	db, err := r.dbRegistry.MSSQL(tenant)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	whereClause, namedArgs := buildOutboxFilterMS(filter)
 
-	if filter.LowerBound > 0 {
-		whereClause += ` AND kode >= @lowerBound`
-		namedArgs = append(namedArgs, sql.Named("lowerBound", filter.LowerBound))
-	}
-
-	if filter.Cursor > 0 {
-		whereClause += ` AND kode < @cursor`
-		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
-	}
-
 	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
-	query, pqNamed := buildPageQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
+	query, pqNamed := buildListQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.Limit)
 
 	rows, err := db.QueryContext(ctx, query, pqNamed...)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -176,21 +147,16 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 	for rows.Next() {
 		var o dto.OutboxItem
 		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		outboxes = append(outboxes, o)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	hasNextPage := len(outboxes) > filter.PageSize
-	if hasNextPage {
-		outboxes = outboxes[:filter.PageSize]
-	}
-
-	return outboxes, hasNextPage, nil
+	return outboxes, nil
 }
 
 func (r *outboxMSRepository) Insert(ctx context.Context, tenant string, data domain.Outbox) error {
@@ -251,72 +217,6 @@ func (r *outboxMSRepository) Update(ctx context.Context, tenant string, kode int
 		sql.Named("kode", kode),
 	)
 	return err
-}
-
-func (r *outboxPGRepository) LowerBound(ctx context.Context, tenant string, filter domain.OutboxFilter) (int64, error) {
-	db, err := r.dbRegistry.Postgres(tenant)
-	if err != nil {
-		return 0, err
-	}
-	f := filter
-	f.StartDate = nil
-	whereClause, args, argID := buildOutboxFilterPG(f)
-	if filter.EndDate != nil {
-		cut, err := cutEndPG(ctx, db, "outbox", *filter.EndDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause = prependBound(whereClause, " AND kode <= $"+strconv.Itoa(argID))
-		args = append(args, cut+cutSlack)
-		argID++
-	}
-	if filter.StartDate != nil {
-		cut, err := cutStartPG(ctx, db, "outbox", *filter.StartDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause += fmt.Sprintf(` AND kode > $%d`, argID)
-		args = append(args, cut)
-		argID++
-	}
-	query := `SELECT kode FROM outbox` + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT 1 OFFSET $%d`, argID)
-	args = append(args, *filter.LimitTotal-1)
-	var k int64
-	err = db.QueryRow(ctx, query, args...).Scan(&k)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	return k, nil
-}
-
-func (r *outboxMSRepository) LowerBound(ctx context.Context, tenant string, filter domain.OutboxFilter) (int64, error) {
-	db, err := r.dbRegistry.MSSQL(tenant)
-	if err != nil {
-		return 0, err
-	}
-	whereClause, namedArgs := buildOutboxFilterMS(filter)
-	if filter.EndDate != nil {
-		cut, err := cutEndMS(ctx, db, "outbox", *filter.EndDate)
-		if err != nil {
-			return 0, err
-		}
-		whereClause = prependBound(whereClause, " AND kode <= @lowerCut")
-		namedArgs = append(namedArgs, sql.Named("lowerCut", cut+cutSlack))
-	}
-	namedArgs = append(namedArgs, sql.Named("lowerOffset", *filter.LimitTotal-1))
-	query := `SELECT kode FROM outbox` + whereClause + ` ORDER BY kode DESC OFFSET @lowerOffset ROWS FETCH NEXT 1 ROWS ONLY`
-	var k int64
-	err = db.QueryRowContext(ctx, query, namedArgs...).Scan(&k)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, nil
-		}
-		return 0, err
-	}
-	return k, nil
 }
 
 func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {

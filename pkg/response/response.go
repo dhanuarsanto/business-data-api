@@ -20,12 +20,6 @@ type JSONResponse struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-type CursorPaginationMeta struct {
-	HasNextPage bool  `json:"has_next_page"`
-	HasPrevPage bool  `json:"has_prev_page"`
-	NextCursor  int64 `json:"next_cursor,omitempty"`
-}
-
 func Success(w http.ResponseWriter, r *http.Request, data any) {
 	write(w, r, http.StatusOK, "API Success", data)
 }
