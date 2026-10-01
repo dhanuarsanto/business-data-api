@@ -97,12 +97,6 @@ func (p *pgFake) rowLog() []string {
 	return append([]string(nil), p.rowsQueries...)
 }
 
-func (p *pgFake) execLog() []string {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return append([]string(nil), p.execs...)
-}
-
 type pgRowsFake struct {
 	values    []any
 	remaining int
@@ -343,12 +337,14 @@ func newFakeEnv(t *testing.T) *fakeEnv {
 func inboxRowValues(kode int64) []any {
 	reseller := "RS-01"
 	terminal := 7
-	return []any{kode, ujiWaktu(), "0812345", reseller, "halo", int16(1), nil, terminal, "SC-1"}
+	transaksi := 4242
+	return []any{kode, ujiWaktu(), "0812345", reseller, "halo", int16(1), nil, terminal, "SC-1", transaksi}
 }
 
 func outboxRowValues(kode int64) []any {
 	reseller := "RS-01"
-	return []any{kode, ujiWaktu(), "0812999", reseller, "hai", int16(0), nil}
+	transaksi := 5151
+	return []any{kode, ujiWaktu(), "0812999", reseller, "hai", int16(0), nil, transaksi}
 }
 
 func resellerRowValues(kode, nama string) []any {

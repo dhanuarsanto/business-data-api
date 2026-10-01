@@ -97,8 +97,8 @@ components:
       description: >-
         Baris inbox pada hasil GET /inbox. Kolom bertipe NOT NULL
         (kode, tgl_entri, pengirim, pesan, status) selalu dikembalikan.
-        Kolom nullable (kode_reseller, tgl_status, kode_terminal, service_center)
-        DILEWATI dari JSON saat nilainya NULL.
+        Kolom nullable (kode_reseller, tgl_status, kode_terminal, service_center,
+        kode_transaksi) DILEWATI dari JSON saat nilainya NULL.
       properties:
         kode:
           type: integer
@@ -138,6 +138,11 @@ components:
           nullable: true
           description: Dihilangkan dari respons saat NULL.
           example: "SC01"
+        kode_transaksi:
+          type: integer
+          nullable: true
+          description: Dihilangkan dari respons saat NULL.
+          example: 2741051
 
     CreateInboxRequest:
       type: object
@@ -221,8 +226,8 @@ components:
       description: >-
         Baris outbox pada hasil GET /outbox. Kolom bertipe NOT NULL
         (kode, tgl_entri, penerima, pesan, status) selalu dikembalikan.
-        Kolom nullable (kode_reseller, tgl_status) DILEWATI dari JSON
-        saat nilainya NULL.
+        Kolom nullable (kode_reseller, tgl_status, kode_transaksi) DILEWATI
+        dari JSON saat nilainya NULL.
       properties:
         kode:
           type: integer
@@ -252,6 +257,11 @@ components:
           nullable: true
           description: Dihilangkan dari respons saat NULL.
           example: "2026-09-06T10:05:00Z"
+        kode_transaksi:
+          type: integer
+          nullable: true
+          description: Dihilangkan dari respons saat NULL.
+          example: 2741051
 
     CreateOutboxRequest:
       type: object

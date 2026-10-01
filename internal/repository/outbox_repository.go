@@ -65,7 +65,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		argID++
 	}
 
-	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status"}
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqArgs := buildPageQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.PageSize+1)
@@ -79,7 +79,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 
 	for rows.Next() {
 		var o dto.OutboxItem
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus); err != nil {
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
 			return nil, false, err
 		}
 		outboxes = append(outboxes, o)
@@ -161,7 +161,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status"}
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqNamed := buildPageQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -175,7 +175,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 
 	for rows.Next() {
 		var o dto.OutboxItem
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus); err != nil {
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
 			return nil, false, err
 		}
 		outboxes = append(outboxes, o)
@@ -359,10 +359,12 @@ func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
 		args = append(args, "%"+filter.Pesan+"%")
 		argID++
 	}
-	if filter.PerintahProvider != nil && *filter.PerintahProvider {
-		whereClause += ` AND is_perintah = 1`
-	} else if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+	perintah := filter.PerintahProvider != nil && *filter.PerintahProvider
+	reply := filter.ReplyToReseller != nil && *filter.ReplyToReseller
+	if reply && !perintah {
 		whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
+	} else if perintah && !reply {
+		whereClause += ` AND is_perintah = 1`
 	}
 
 	return whereClause, args, argID
@@ -400,10 +402,12 @@ func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
 		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
 	}
-	if filter.PerintahProvider != nil && *filter.PerintahProvider {
-		whereClause += ` AND is_perintah = 1`
-	} else if filter.ReplyToReseller != nil && *filter.ReplyToReseller {
+	perintah := filter.PerintahProvider != nil && *filter.PerintahProvider
+	reply := filter.ReplyToReseller != nil && *filter.ReplyToReseller
+	if reply && !perintah {
 		whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
+	} else if perintah && !reply {
+		whereClause += ` AND is_perintah = 1`
 	}
 
 	return whereClause, namedArgs

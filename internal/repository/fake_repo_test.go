@@ -1320,19 +1320,19 @@ func TestResellerDropdownMSBerhasilDanSeluruhCabangGagal(t *testing.T) {
 // ------------------------------------------------------------------ helper
 
 func inboxKolom() []string {
-	return []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center"}
+	return []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
 }
 
 func outboxKolom() []string {
-	return []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status"}
+	return []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
 }
 
 func msNilaiInbox(kode int64) []driver.Value {
 	return []driver.Value{
-		kode, ujiWaktu(), "0812345", "RS-01", "halo", int16(1), nil, int64(7), "SC-1",
+		kode, ujiWaktu(), "0812345", "RS-01", "halo", int16(1), nil, int64(7), "SC-1", int64(4242),
 	}
 }
 
 func msNilaiOutbox(kode int64) []driver.Value {
-	return []driver.Value{kode, ujiWaktu(), "0812999", "RS-01", "hai", int16(0), nil}
+	return []driver.Value{kode, ujiWaktu(), "0812999", "RS-01", "hai", int16(0), nil, int64(5151)}
 }

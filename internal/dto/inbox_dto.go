@@ -12,6 +12,7 @@ type InboxItem struct {
 	TglStatus     *time.Time `json:"tgl_status,omitempty"`
 	KodeTerminal  *int       `json:"kode_terminal,omitempty"`
 	ServiceCenter *string    `json:"service_center,omitempty"`
+	KodeTransaksi *int       `json:"kode_transaksi,omitempty"`
 }
 
 type CreateInboxRequest struct {

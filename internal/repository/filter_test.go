@@ -55,21 +55,26 @@ func TestBuildInboxFilterPGSemuaFilterBernomorBerurutan(t *testing.T) {
 	}
 }
 
-func TestBuildInboxFilterPGJawabanDariProviderMenang(t *testing.T) {
-	for _, pasangan := range [][2]bool{{false, true}, {true, false}, {false, false}, {true, true}} {
-		request, jawaban := pasangan[0], pasangan[1]
-		t.Run(fmt.Sprintf("request=%v jawaban=%v", request, jawaban), func(t *testing.T) {
-			where, _, _ := buildInboxFilterPG(domain.InboxFilter{
+func TestBuildInboxFilterPGTriaseGabung(t *testing.T) {
+	for _, kasus := range []struct {
+		request, jawaban bool
+		ingin            string
+	}{
+		{false, false, whereBase},
+		{false, true, whereBase + " AND is_jawaban = 1"},
+		{true, false, whereBase + " AND kode_reseller IS NOT NULL AND is_jawaban = 0"},
+		{true, true, whereBase},
+	} {
+		t.Run(fmt.Sprintf("request=%v jawaban=%v", kasus.request, kasus.jawaban), func(t *testing.T) {
+			request, jawaban := kasus.request, kasus.jawaban
+			where, args, next := buildInboxFilterPG(domain.InboxFilter{
 				RequestFromReseller: &request, JawabanFromProvider: &jawaban,
 			})
-
-			switch {
-			case jawaban && !strings.Contains(where, "is_jawaban = 1"):
-				t.Fatalf("jawaban dari provider harus menang: %q", where)
-			case !jawaban && request && !strings.Contains(where, "kode_reseller IS NOT NULL AND is_jawaban = 0"):
-				t.Fatalf("request dari reseller harus dipakai: %q", where)
-			case !jawaban && !request && strings.Count(where, whereBase) != 1:
-				t.Fatalf("tanpa flag aktif WHERE tak boleh berubah: %q", where)
+			if where != kasus.ingin {
+				t.Fatalf("filter triase tak sesuai:\ndapat : %q\nharus : %q", where, kasus.ingin)
+			}
+			if len(args) != 0 || next != 1 {
+				t.Fatalf("flag triase tak boleh menambah argumen: %v %d", args, next)
 			}
 		})
 	}
@@ -135,26 +140,28 @@ func TestBuildInboxFilterMSSemuaFilterBernamaUnik(t *testing.T) {
 	}
 }
 
-func TestBuildInboxFilterMSJawabanDariProviderMenang(t *testing.T) {
-	request, jawaban := true, true
-	where, args := buildInboxFilterMS(domain.InboxFilter{RequestFromReseller: &request, JawabanFromProvider: &jawaban})
-	if !strings.Contains(where, "is_jawaban = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
-		t.Fatalf("jawaban dari provider harus menang: %q", where)
-	}
-	if len(args) != 0 {
-		t.Fatalf("flag boolean tak menambah argumen, dapat %d", len(args))
-	}
-
-	dimatikan := false
-	where, _ = buildInboxFilterMS(domain.InboxFilter{JawabanFromProvider: &dimatikan, RequestFromReseller: &request})
-	if !strings.Contains(where, "kode_reseller IS NOT NULL AND is_jawaban = 0") {
-		t.Fatalf("jawaban dimatikan harus jatuh ke request: %q", where)
-	}
-
-	kedua := false
-	where, _ = buildInboxFilterMS(domain.InboxFilter{JawabanFromProvider: &kedua, RequestFromReseller: &kedua})
-	if where != whereBase {
-		t.Fatalf("semua flag mati harus polos, dapat %q", where)
+func TestBuildInboxFilterMSTriaseGabung(t *testing.T) {
+	for _, kasus := range []struct {
+		request, jawaban bool
+		ingin            string
+	}{
+		{false, false, whereBase},
+		{false, true, whereBase + " AND is_jawaban = 1"},
+		{true, false, whereBase + " AND kode_reseller IS NOT NULL AND is_jawaban = 0"},
+		{true, true, whereBase},
+	} {
+		t.Run(fmt.Sprintf("request=%v jawaban=%v", kasus.request, kasus.jawaban), func(t *testing.T) {
+			request, jawaban := kasus.request, kasus.jawaban
+			where, args := buildInboxFilterMS(domain.InboxFilter{
+				RequestFromReseller: &request, JawabanFromProvider: &jawaban,
+			})
+			if where != kasus.ingin {
+				t.Fatalf("filter triase tak sesuai:\ndapat : %q\nharus : %q", where, kasus.ingin)
+			}
+			if len(args) != 0 {
+				t.Fatalf("flag triase tak menambah argumen, dapat %d", len(args))
+			}
+		})
 	}
 }
 
@@ -192,14 +199,28 @@ func TestBuildOutboxFilterPGSemuaFilterBernomorBerurutan(t *testing.T) {
 	}
 }
 
-func TestBuildOutboxFilterPGPerintahProviderMenang(t *testing.T) {
-	ya, tidak := true, false
-	where, args, next := buildOutboxFilterPG(domain.OutboxFilter{PerintahProvider: &ya, ReplyToReseller: &tidak})
-	if !strings.Contains(where, "is_perintah = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
-		t.Fatalf("perintah provider harus menang: %q", where)
-	}
-	if len(args) != 0 || next != 1 {
-		t.Fatalf("flag tak boleh menambah argumen: %v %d", args, next)
+func TestBuildOutboxFilterPGTriaseGabungDanKosong(t *testing.T) {
+	for _, kasus := range []struct {
+		reply, perintah bool
+		ingin           string
+	}{
+		{false, false, whereBase},
+		{false, true, whereBase + " AND is_perintah = 1"},
+		{true, false, whereBase + " AND kode_reseller IS NOT NULL AND is_perintah = 0"},
+		{true, true, whereBase},
+	} {
+		t.Run(fmt.Sprintf("reply=%v perintah=%v", kasus.reply, kasus.perintah), func(t *testing.T) {
+			reply, perintah := kasus.reply, kasus.perintah
+			where, args, next := buildOutboxFilterPG(domain.OutboxFilter{
+				PerintahProvider: &perintah, ReplyToReseller: &reply,
+			})
+			if where != kasus.ingin {
+				t.Fatalf("filter triase tak sesuai:\ndapat : %q\nharus : %q", where, kasus.ingin)
+			}
+			if len(args) != 0 || next != 1 {
+				t.Fatalf("flag triase tak boleh menambah argumen: %v %d", args, next)
+			}
+		})
 	}
 
 	kosong, args, next := buildOutboxFilterPG(domain.OutboxFilter{})
@@ -253,14 +274,28 @@ func TestBuildOutboxFilterMSSemuaFilterBernamaUnik(t *testing.T) {
 	}
 }
 
-func TestBuildOutboxFilterMSPerintahProviderMenangDanKosong(t *testing.T) {
-	ya, tidak := true, false
-	where, args := buildOutboxFilterMS(domain.OutboxFilter{PerintahProvider: &ya, ReplyToReseller: &tidak})
-	if !strings.Contains(where, "is_perintah = 1") || strings.Contains(where, "kode_reseller IS NOT NULL") {
-		t.Fatalf("perintah provider harus menang: %q", where)
-	}
-	if len(args) != 0 {
-		t.Fatalf("flag tak menambah argumen, dapat %d", len(args))
+func TestBuildOutboxFilterMSTriaseGabungDanKosong(t *testing.T) {
+	for _, kasus := range []struct {
+		reply, perintah bool
+		ingin           string
+	}{
+		{false, false, whereBase},
+		{false, true, whereBase + " AND is_perintah = 1"},
+		{true, false, whereBase + " AND kode_reseller IS NOT NULL AND is_perintah = 0"},
+		{true, true, whereBase},
+	} {
+		t.Run(fmt.Sprintf("reply=%v perintah=%v", kasus.reply, kasus.perintah), func(t *testing.T) {
+			reply, perintah := kasus.reply, kasus.perintah
+			where, args := buildOutboxFilterMS(domain.OutboxFilter{
+				PerintahProvider: &perintah, ReplyToReseller: &reply,
+			})
+			if where != kasus.ingin {
+				t.Fatalf("filter triase tak sesuai:\ndapat : %q\nharus : %q", where, kasus.ingin)
+			}
+			if len(args) != 0 {
+				t.Fatalf("flag triase tak menambah argumen, dapat %d", len(args))
+			}
+		})
 	}
 
 	kosong, args := buildOutboxFilterMS(domain.OutboxFilter{})

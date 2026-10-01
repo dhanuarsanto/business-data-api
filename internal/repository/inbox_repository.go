@@ -85,7 +85,7 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 		argID++
 	}
 
-	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center"}
+	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 
@@ -100,7 +100,7 @@ func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domai
 
 	for rows.Next() {
 		var i dto.InboxItem
-		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter); err != nil {
+		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter, &i.KodeTransaksi); err != nil {
 			return nil, false, err
 		}
 		inboxes = append(inboxes, i)
@@ -179,7 +179,7 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 		namedArgs = append(namedArgs, sql.Named("cursor", filter.Cursor))
 	}
 
-	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center"}
+	cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
 	useTglLeading := filter.EndDate != nil && ((filter.JawabanFromProvider != nil && *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil && *filter.RequestFromReseller))
 	query, pqNamed := buildPageQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.PageSize+1)
 
@@ -193,7 +193,7 @@ func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domai
 
 	for rows.Next() {
 		var i dto.InboxItem
-		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter); err != nil {
+		if err := rows.Scan(&i.Kode, &i.TglEntri, &i.Pengirim, &i.KodeReseller, &i.Pesan, &i.Status, &i.TglStatus, &i.KodeTerminal, &i.ServiceCenter, &i.KodeTransaksi); err != nil {
 			return nil, false, err
 		}
 		inboxes = append(inboxes, i)
@@ -386,10 +386,12 @@ func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {
 		args = append(args, "%"+filter.Pesan+"%")
 		argID++
 	}
-	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
-		whereClause += ` AND is_jawaban = 1`
-	} else if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
+	jawaban := filter.JawabanFromProvider != nil && *filter.JawabanFromProvider
+	request := filter.RequestFromReseller != nil && *filter.RequestFromReseller
+	if request && !jawaban {
 		whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
+	} else if jawaban && !request {
+		whereClause += ` AND is_jawaban = 1`
 	}
 
 	return whereClause, args, argID
@@ -431,10 +433,12 @@ func buildInboxFilterMS(filter domain.InboxFilter) (string, []any) {
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
 		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
 	}
-	if filter.JawabanFromProvider != nil && *filter.JawabanFromProvider {
-		whereClause += ` AND is_jawaban = 1`
-	} else if filter.RequestFromReseller != nil && *filter.RequestFromReseller {
+	jawaban := filter.JawabanFromProvider != nil && *filter.JawabanFromProvider
+	request := filter.RequestFromReseller != nil && *filter.RequestFromReseller
+	if request && !jawaban {
 		whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
+	} else if jawaban && !request {
+		whereClause += ` AND is_jawaban = 1`
 	}
 
 	return whereClause, namedArgs
