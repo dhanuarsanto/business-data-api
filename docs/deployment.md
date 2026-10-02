@@ -4,6 +4,191 @@ Catatan khusus yang perlu diketahui tim saat deploy/operasional. Dokumentasi ind
 
 Semua nilai di bawah diambil dari kode (`internal/config/config.go`, `cmd/api/main.go`, `cmd/api/modules.go`, `internal/handler/http/router.go`, `internal/handler/http/auth_handler.go`, `internal/middleware/`, `pkg/jwt/jwt.go`, `pkg/logger/logger.go`, `pkg/response/response.go`) dan `.env.example`.
 
+## Kebutuhan server
+
+### Perangkat lunak
+
+| Kebutuhan | Keterangan |
+|---|---|
+| Go 1.27.1 atau lebih baru | **Hanya di mesin build.** Server tidak butuh Go (`go.mod:3`) |
+| Windows atau Linux | Binary tunggal, tanpa dependensi runtime |
+| CGO tidak aktif | `CGO_ENABLED=0`, semua driver murni Go. Tidak ada libc, DLL, atau ODBC di server |
+
+Driver database yang dipakai: `pgx/v5` v5.10.0 untuk Postgres dan `go-mssqldb` v1.11.0 untuk MSSQL. Keduanya murni Go, jadi tidak perlu memasang driver basis data apa pun di server.
+
+Ukuran binary sekitar **27 MB** bila dibangun dengan `-trimpath -ldflags "-s -w"`.
+
+### Jaringan
+
+| Kebutuhan | Keterangan |
+|---|---|
+| Satu port inbound | `PORT`, bawaan 8080, **HTTP polos** |
+| Enam koneksi keluar ke database | 3 Postgres + 3 MSSQL, satu per tenant. Semuanya harus terjangkau sejak proses mulai |
+
+`main.go:101` memakai `ListenAndServe` tanpa TLS, jadi **server tidak memegang sertifikat**. Kalau klien memakai HTTPS, TLS wajib dituntaskan di reverse proxy di depannya. Kalau API dibuka langsung ke internet tanpa proxy, seluruh trafik berjalan tanpa enkripsi — itu bukan konfigurasi yang layak.
+
+Butir lain: `?limit=10000` memindahkan 4 MB per permintaan, jadi bandwidth antarmuka uplink harus diingat. Lihat `optimize_indexes.md` untuk angka pengukurannya.
+
+### Database
+
+Tidak ada migrasi skema sama sekali — repo ini tidak memuat berkas `.sql` dan server tidak pernah membuat atau mengubah objek basis data.
+
+| Aspek | Kebutuhan |
+|---|---|
+| Postgres | Terverifikasi jalan di versi 14.24 |
+| `max_connections` Postgres | API ini saja bisa membuka 3 × `POSTGRES_MAX_CONNS` = **30** koneksi. Nilai bawaan server yang dipakai sekarang 100, cukup |
+| MSSQL | Driver `go-mssqldb`, tanpa batasan versi khusus |
+
+Port yang perlu dibuka dari host API: Postgres 5432, MSSQL 8170 (port tidak standar, ikut dikonfigurasi lewat URL).
+
+### Sumber daya
+
+| Aspek | Minimum | Rekomendasi |
+|---|---|---|
+| RAM | 512 MB | 1 GB |
+| CPU | 1 vCPU | 1 vCPU |
+| Disk | 100 MB | 200 MB |
+
+Proses API sendiri ringan. Yang paling besar adalah payload respons, yang ukurannya `?limit` × sekitar 200 byte, dan dihitung dua kali karena JSON ditahan di memori sebelum dikirim. `limit=10000` berarti sekitar 4 MB per permintaan besar.
+
+Disk dipakai untuk binary 27 MB, `docs/swagger.yaml`, dan log. Log maksimum 10 MB per berkas dengan 30 berkas cadangan, jadi batasnya sekitar 310 MB sebelum rotasi memampatkan yang lama.
+
+### Berkas dan izin
+
+| Lokasi | Izin | Alasan |
+|---|---|---|
+| Direktori kerja | tulis | `SetupLogger` membuat `logs/` sendiri (`logger.go:40`), tapi butuh izin tulis di direktori kerja |
+| `logs/` | tulis | `logs/api.log` plus rotasi lumberjack |
+| `api_keys.json` | baca saja | Server hanya membacanya, lalu memuat ulang tiap 60 detik (`apikey.go:39, 60-73`). Tidak pernah ditulis server |
+| `.env` | baca saja | Dimuat sekali saat proses mulai |
+| `docs/swagger.yaml` | baca saja | Tanpa berkas ini, `/swagger` dan `/docs/swagger.yaml` membalas 404 (`router.go:17-35`) |
+
+Jalankan sebagai user khusus non-root. Jangan memakai user database yang sama sebagai user proses.
+
+## Cara deploy
+
+### 1. Build di mesin build
+
+Jangan build di server, karena itu butuh Go 1.27.1.
+
+```bash
+go build -trimpath -ldflags "-s -w" -o bin/api ./cmd/api       # Linux
+go build -trimpath -ldflags "-s -w" -o bin/api.exe ./cmd/api   # Windows
+```
+
+`make build` melakukan hal yang sama tanpa flag pengurangan ukuran.
+
+### 2. Siapkan direktori deploy
+
+```
+/opt/business-data-api/
+├── api                  # binary hasil build
+├── docs/
+│   └── swagger.yaml     # wajib, kalau tidak /swagger membalas 404
+├── .env
+├── api_keys.json
+└── logs/                # dibuat otomatis oleh proses
+```
+
+### 3. Buat rahasia di mesin development
+
+Kedua generator menolak berjalan kalau `APP_ENV=production` (`cmd/keygen/main.go:15-18`, `cmd/jwtgen/main.go:14-18`). Jadi jangan jalankan di server produksi, jalankan di laptop lalu salin hasilnya.
+
+`JWT_SECRET`:
+
+```bash
+APP_ENV=development go run cmd/jwtgen/main.go
+```
+
+Daftar API key:
+
+```bash
+APP_ENV=development go run cmd/keygen/main.go "Nama Developer"
+```
+
+`keygen` menambahkan kunci baru ke `api_keys.json` di direktori tempat perintah dijalankan, jadi jalankan dari akar repo, lalu salin berkas hasilnya ke server.
+
+### 4. Tulis `.env` produksi
+
+Salin `.env.example` sebagai kerangka, lalu isi mengikuti bagian "Daftar periksa" di bawah. `JWT_SECRET` hasil langkah 3 tadi, `API_KEYS_PATH` memakai path absolut.
+
+### 5. Jalankan dari dalam direktori deploy
+
+```bash
+cd /opt/business-data-api
+./api
+```
+
+Langkah ini penting. `godotenv.Load()` (`config.go:105`) dan `swaggerYAMLPath()` (`router.go:17`) sama-sama relatif ke direktori kerja, begitu juga `logs/api.log`. Menjalankan `./api` dari direktori lain membuat berkas `.env` tidak ditemukan, log ditulis ke tempat lain, dan `/swagger` 404.
+
+### 6. Verifikasi
+
+```bash
+curl -H "X-API-KEY: <key>" http://127.0.0.1:8080/health
+```
+
+Harus membalas 200 dengan `{"status":"API berjalan dengan normal!"}`. Tanpa header `X-API-KEY` jawabannya 401, jadi jangan salah menilai sebagai gagal.
+
+Lalu amati log:
+
+```bash
+tail -f logs/api.log
+```
+
+Baris pertama harus berisi `Menjalankan API mode=production port=8080`. Kalau proses langsung mati, penyebabnya hampir selalu salah satu dari: variabel wajib kosong, `JWT_SECRET` kurang dari 32 byte, keenam koneksi database gagal, atau `TRUSTED_PROXIES` tidak valid. Pesannya menyebut nama variabelnya.
+
+### 7. Daftarkan sebagai service
+
+Contoh systemd. `WorkingDirectory` **wajib** diisi, bukan opsional, karena alasan di langkah 5.
+
+```ini
+[Unit]
+Description=Business Data API
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=apisvc
+WorkingDirectory=/opt/business-data-api
+ExecStart=/opt/business-data-api/api
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/business-data-api/logs
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`ProtectSystem=strict` bersama `ReadWritePaths` membuat seluruh direktori deploy tidak bisa ditulis kecuali `logs/`. Kalau deploy di luar Linux, padanannya adalah membuat user service Windows dengan "Log on as" user khusus dan direktori kerja yang diisi manual.
+
+`StartLimitIntervalSec` dan `StartLimitBurst` sengaja dipasang. Kesalahan konfigurasi memicu `os.Exit(1)`, jadi dengan `Restart=on-failure` tanpa batas, satu `.env` yang salah akan menyebabkan proses mulai ulang terus-menerus tanpa henti. Batas ini membuatnya berhenti setelah lima kegagalan dalam 60 detik, sehingga penyebabnya bisa dibaca dari log.
+
+Aktifkan dan pantau:
+
+```bash
+systemctl daemon-reload
+systemctl enable --now business-data-api
+systemctl status business-data-api
+journalctl -u business-data-api -f
+```
+
+### 8. Mengembalikan versi lama
+
+Tidak ada migrasi skema, jadi tidak ada langkah basis data saat mengembalikan versi. Cukup: hentikan service, ganti berkas binary, jalankan lagi.
+
+```bash
+systemctl stop business-data-api
+cp /opt/business-data-api/api.previous /opt/business-data-api/api
+systemctl start business-data-api
+```
+
+Satu catatan: mengembalikan versi kode **tidak** membalikkan data yang sudah berubah. Kalau endpoint tulis pernah aktif (`POSTGRES_WRITE_ENABLED=true` atau lewat jalur MSSQL yang tidak dikunci), perubahan data di database tetap ada setelah kode dikembalikan.
+
 ## Prasyarat start
 
 Server **menolak start** (`os.Exit(1)`) kalau salah satu hal berikut tidak terpenuhi.
@@ -222,6 +407,8 @@ Dua limiter, keduanya token bucket per IP dengan IP dari resolver proxy.
 8. Timeout disesuaikan dengan beban, khususnya `SERVER_SHUTDOWN_TIMEOUT` bila ada request lambat.
 9. Probe `/health` menyertakan `X-API-KEY`.
 10. `logs/` writable oleh user service, dan rotasi log sudah ditangani (lumberjack bawaan, atau mechanism pengarsipan lain).
+11. `docs/swagger.yaml` ikut ter-deploy di samping binary, kalau `/swagger` dipakai.
+12. Working directory service sudah diisi dan menunjuk ke direktori deploy, bukan ke `/` atau direktori system.
 
 ## Test
 
