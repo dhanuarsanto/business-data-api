@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/netip"
 	"strings"
 	"testing"
 )
@@ -48,6 +49,32 @@ func TestParseTrustedProxiesCIDRDanIP(t *testing.T) {
 	}
 	if got[3].String() != "172.16.0.0/12" {
 		t.Fatalf("prefix terakhir salah: %s", got[3])
+	}
+}
+
+func TestParseTrustedProxiesIPv6HarusDidaftarkanEksplisit(t *testing.T) {
+	cfg := Config{TrustedProxies: "127.0.0.1,::1,fe80::/10"}
+
+	got, err := cfg.ParseTrustedProxies()
+	if err != nil {
+		t.Fatalf("parse tidak boleh gagal: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("harus dapat 3 prefix, dapat %d", len(got))
+	}
+	if got[1].String() != "::1/128" {
+		t.Fatalf("IP IPv6 tunggal harus jadi /128, dapat %s", got[1])
+	}
+	if got[2].String() != "fe80::/10" {
+		t.Fatalf("CIDR IPv6 salah: %s", got[2])
+	}
+
+	ipv4Only := netip.MustParsePrefix("127.0.0.1/32")
+	if ipv4Only.Contains(netip.MustParseAddr("::1")) {
+		t.Fatal("prefix IPv4 tidak boleh mencocokkan alamat IPv6")
+	}
+	if !got[1].Contains(netip.MustParseAddr("::1")) {
+		t.Fatal("::1/128 harus mencocokkan ::1")
 	}
 }
 
