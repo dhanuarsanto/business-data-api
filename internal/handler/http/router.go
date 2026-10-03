@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.internal/business-data-api/internal/config"
+	"go.internal/business-data-api/internal/version"
 	"go.internal/business-data-api/pkg/response"
 
 	api_middleware "go.internal/business-data-api/internal/middleware"
@@ -85,7 +86,8 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 
 	protectedApiKey.Get("/health", func(w http.ResponseWriter, req *http.Request) {
 		response.Success(w, req, map[string]string{
-			"status": "API berjalan dengan normal!",
+			"status":  "API berjalan dengan normal!",
+			"version": version.Get(),
 		})
 	})
 

@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"go.internal/business-data-api/internal/config"
+	"go.internal/business-data-api/internal/version"
 	"go.internal/business-data-api/pkg/database"
 	"go.internal/business-data-api/pkg/jwt"
 	"go.internal/business-data-api/pkg/logger"
@@ -19,6 +20,8 @@ import (
 	http_handler "go.internal/business-data-api/internal/handler/http"
 	api_middleware "go.internal/business-data-api/internal/middleware"
 )
+
+var _ = version.Get()
 
 func main() {
 	cfg := config.LoadConfig()

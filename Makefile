@@ -12,11 +12,13 @@ run:
 dev:
 	air
 
+VERSION := $(shell type version.txt)
+
 build:
 ifeq ($(OS),Windows_NT)
-	set CGO_ENABLED=0 && go build -trimpath -ldflags="-s -w" -o $(BIN_NAME) ./cmd/api
+	set CGO_ENABLED=0 && go build -trimpath -ldflags="-s -w -X 'go.internal/business-data-api/internal/version.Version=$(VERSION)'" -o $(BIN_NAME) ./cmd/api
 else
-	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BIN_NAME) ./cmd/api
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X 'go.internal/business-data-api/internal/version.Version=$(VERSION)'" -o $(BIN_NAME) ./cmd/api
 endif
 
 test:
