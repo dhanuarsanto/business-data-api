@@ -74,7 +74,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
@@ -93,11 +92,10 @@ func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	response.SuccessCreated(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembuatan user sukses"})
+	response.SuccessCreated(w, r, map[string]any{"message": "Pembuatan user sukses"})
 }
 
 func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
@@ -117,7 +115,7 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Pembaruan user sukses"})
+	response.Success(w, r, map[string]any{"message": "Pembaruan user sukses"})
 }
 
 func NewAuthHandler(authUsecase *usecase.AuthUsecase, networkMatrix map[string]bool, ipResolver *api_middleware.TrustedProxyResolver, cookieSecure bool) *AuthHandler {

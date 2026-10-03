@@ -7,7 +7,6 @@ import (
 	"go.internal/business-data-api/internal/config"
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/usecase"
-	"go.internal/business-data-api/pkg/logger"
 	"go.internal/business-data-api/pkg/response"
 
 	api_middleware "go.internal/business-data-api/internal/middleware"
@@ -18,7 +17,6 @@ type MasterHandler struct {
 }
 
 func (h *MasterHandler) ListResellerForDropdown(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
@@ -32,8 +30,7 @@ func (h *MasterHandler) ListResellerForDropdown(w http.ResponseWriter, r *http.R
 	}
 
 	response.Success(w, r, map[string]any{
-		"trace_id": tCtx.TraceID,
-		"items":    data,
+		"items": data,
 	})
 }
 

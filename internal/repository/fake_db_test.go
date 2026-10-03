@@ -344,7 +344,9 @@ func inboxRowValues(kode int64) []any {
 func outboxRowValues(kode int64) []any {
 	reseller := "RS-01"
 	transaksi := 5151
-	return []any{kode, ujiWaktu(), "0812999", reseller, "hai", int16(0), nil, transaksi}
+	tipe := "1"
+	var kodeInbox *int64
+	return []any{kode, ujiWaktu(), "0812999", reseller, "hai", int16(0), nil, transaksi, tipe, kodeInbox}
 }
 
 func resellerRowValues(kode, nama string) []any {

@@ -1050,7 +1050,7 @@ func inboxKolom() []string {
 }
 
 func outboxKolom() []string {
-	return []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
+	return []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi", "tipe_penerima", "kode_inbox"}
 }
 
 func msNilaiInbox(kode int64) []driver.Value {
@@ -1060,5 +1060,5 @@ func msNilaiInbox(kode int64) []driver.Value {
 }
 
 func msNilaiOutbox(kode int64) []driver.Value {
-	return []driver.Value{kode, ujiWaktu(), "0812999", "RS-01", "hai", int16(0), nil, int64(5151)}
+	return []driver.Value{kode, ujiWaktu(), "0812999", "RS-01", "hai", int16(0), nil, int64(5151), "1", nil}
 }

@@ -51,7 +51,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 		argID++
 	}
 
-	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi", "tipe_penerima", "kode_inbox"}
 
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqArgs := buildListQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.Limit)
@@ -65,7 +65,7 @@ func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter doma
 
 	for rows.Next() {
 		var o dto.OutboxItem
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi, &o.TipePenerima, &o.KodeInbox); err != nil {
 			return nil, err
 		}
 		outboxes = append(outboxes, o)
@@ -132,7 +132,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 
 	whereClause, namedArgs := buildOutboxFilterMS(filter)
 
-	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi"}
+	cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi", "tipe_penerima", "kode_inbox"}
 	useTglLeading := filter.EndDate != nil && ((filter.PerintahProvider != nil && *filter.PerintahProvider) || (filter.ReplyToReseller != nil && *filter.ReplyToReseller))
 	query, pqNamed := buildListQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.Limit)
 
@@ -146,7 +146,7 @@ func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter doma
 
 	for rows.Next() {
 		var o dto.OutboxItem
-		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi); err != nil {
+		if err := rows.Scan(&o.Kode, &o.TglEntri, &o.Penerima, &o.KodeReseller, &o.Pesan, &o.Status, &o.TglStatus, &o.KodeTransaksi, &o.TipePenerima, &o.KodeInbox); err != nil {
 			return nil, err
 		}
 		outboxes = append(outboxes, o)

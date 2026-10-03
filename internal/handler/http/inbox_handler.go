@@ -11,7 +11,6 @@ import (
 	"go.internal/business-data-api/internal/domain"
 	"go.internal/business-data-api/internal/dto"
 	"go.internal/business-data-api/internal/usecase"
-	"go.internal/business-data-api/pkg/logger"
 	"go.internal/business-data-api/pkg/response"
 
 	api_middleware "go.internal/business-data-api/internal/middleware"
@@ -100,7 +99,6 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *InboxHandler) CreateInbox(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	dbSource := r.Header.Get("X-DB-Source")
 	if dbSource == "" {
@@ -146,11 +144,10 @@ func (h *InboxHandler) CreateInbox(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	response.SuccessCreated(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.SuccessCreated(w, r, map[string]any{"message": "Sukses"})
 }
 
 func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
-	tCtx := logger.GetTraceContext(r.Context())
 	tenant := chi.URLParam(r, "tenant")
 	kodeStr := chi.URLParam(r, "kode")
 	kode, err := strconv.ParseInt(kodeStr, 10, 64)
@@ -174,7 +171,7 @@ func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	response.Success(w, r, map[string]any{"trace_id": tCtx.TraceID, "message": "Sukses"})
+	response.Success(w, r, map[string]any{"message": "Sukses"})
 }
 
 func NewInboxHandler(usecase *usecase.InboxUsecase) *InboxHandler {

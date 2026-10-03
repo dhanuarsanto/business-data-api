@@ -11,6 +11,8 @@ type OutboxItem struct {
 	Status        int16      `json:"status"`
 	TglStatus     *time.Time `json:"tgl_status,omitempty"`
 	KodeTransaksi *int       `json:"kode_transaksi,omitempty"`
+	TipePenerima  string     `json:"tipe_penerima"`
+	KodeInbox     *int64     `json:"kode_inbox,omitempty"`
 }
 
 type CreateOutboxRequest struct {

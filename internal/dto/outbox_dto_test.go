@@ -7,7 +7,7 @@ import (
 )
 
 var wantOutboxItemKeys = []string{
-	"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status",
+	"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "tipe_penerima", "kode_inbox",
 }
 
 func outboxItemKeys(t *testing.T, item OutboxItem) map[string]any {
@@ -39,6 +39,7 @@ func assertOutboxItemKeys(t *testing.T, item OutboxItem) {
 func TestOutboxItemKeysTerlengkap(t *testing.T) {
 	ts := time.Date(2026, 9, 6, 10, 0, 0, 0, time.UTC)
 	rs := "R001"
+	ki := int64(123)
 	assertOutboxItemKeys(t, OutboxItem{
 		Kode:         90210,
 		TglEntri:     ts,
@@ -47,25 +48,29 @@ func TestOutboxItemKeysTerlengkap(t *testing.T) {
 		Pesan:        "SALDO",
 		Status:       0,
 		TglStatus:    &ts,
+		TipePenerima: "1",
+		KodeInbox:    &ki,
 	})
 }
 
 func TestOutboxItemKeyNullableHilangSaatNull(t *testing.T) {
 	m := outboxItemKeys(t, OutboxItem{
-		Kode:     1,
-		TglEntri: time.Date(2026, 9, 6, 10, 0, 0, 0, time.UTC),
-		Penerima: "x",
-		Pesan:    "y",
+		Kode:         1,
+		TglEntri:     time.Date(2026, 9, 6, 10, 0, 0, 0, time.UTC),
+		Penerima:     "x",
+		Pesan:        "y",
+		TipePenerima: "",
+		KodeInbox:    nil,
 	})
 
-	for _, k := range []string{"kode_reseller", "tgl_status"} {
+	for _, k := range []string{"kode_reseller", "tgl_status", "kode_inbox"} {
 		if v, ok := m[k]; ok {
 			t.Fatalf("key %q harus hilang saat null, dapat %v", k, v)
 		}
 	}
 
-	if len(m) != 5 {
-		t.Fatalf("key count = %d, mau 5: %v", len(m), m)
+	if len(m) != 6 {
+		t.Fatalf("key count = %d, mau 6: %v", len(m), m)
 	}
 }
 
@@ -97,7 +102,7 @@ func TestOutboxItemKolomLamaTidakBocor(t *testing.T) {
 	})
 
 	for _, k := range []string{
-		"tipe_penerima", "kode_inbox", "kode_transaksi", "bebas_biaya",
+		"kode_transaksi", "bebas_biaya",
 		"is_perintah", "kode_modul", "prioritas", "modul_proses",
 		"pengirim", "kode_terminal", "ctr_kirim", "nama_reseller",
 	} {
