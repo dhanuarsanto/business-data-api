@@ -354,16 +354,6 @@ components:
           type: integer
           nullable: true
 
-    SuccessResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: sukses
-        data:
-          type: object
-          additionalProperties: true
-
     ErrorResponse:
       type: object
       properties:
@@ -381,21 +371,98 @@ components:
         nama:
           type: string
 
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: API berjalan dengan normal!
+
+    LoginResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            username:
+              type: string
+              example: admin
+            rules:
+              type: string
+              example: sa
+            token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+
+    WriteAckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            trace_id:
+              type: string
+              example: TRC-1a2b3c4d5e6f7081
+            message:
+              type: string
+              example: Sukses
+
     InboxResponse:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Inbox"
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Inbox"
 
     OutboxResponse:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Outbox"
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Outbox"
+
+    ResellerListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: sukses
+        data:
+          type: object
+          properties:
+            trace_id:
+              type: string
+              example: TRC-1a2b3c4d5e6f7081
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Reseller"
 
 x-error-responses: &errorResponses
   "401":
@@ -439,7 +506,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/HealthResponse"
 
   /api/v1/{tenant}/auth/login:
     post:
@@ -465,7 +532,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/LoginResponse"
 
   /api/v1/{tenant}/auth/users:
     post:
@@ -491,7 +558,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/auth/users/{username}:
     put:
@@ -522,7 +589,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/inbox:
     get:
@@ -624,7 +691,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/inbox/{kode}:
     put:
@@ -656,7 +723,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/outbox:
     get:
@@ -753,7 +820,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/outbox/{kode}:
     put:
@@ -785,7 +852,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/WriteAckResponse"
 
   /api/v1/{tenant}/master/reseller-dropdown:
     get:
@@ -806,11 +873,4 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Reseller"
+                $ref: "#/components/schemas/ResellerListResponse"

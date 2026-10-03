@@ -13,7 +13,11 @@ dev:
 	air
 
 build:
-	go build -o $(BIN_NAME) ./cmd/api
+ifeq ($(OS),Windows_NT)
+	set CGO_ENABLED=0 && go build -trimpath -ldflags="-s -w" -o $(BIN_NAME) ./cmd/api
+else
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BIN_NAME) ./cmd/api
+endif
 
 test:
 	go test ./... -v

@@ -50,13 +50,15 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 	r.Use(api_middleware.SecurityTracer(resolver))
 	r.Use(api_middleware.RequestBodyLimit(cfg.MaxBodyBytes))
 
-	r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
-		http.ServeFile(w, req, swaggerYAMLPath())
-	})
+	if cfg.AppEnv != "production" {
+		r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) {
+			http.ServeFile(w, req, swaggerYAMLPath())
+		})
 
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("/docs/swagger.yaml"),
-	))
+		r.Get("/swagger/*", httpSwagger.Handler(
+			httpSwagger.URL("/docs/swagger.yaml"),
+		))
+	}
 
 	keyPath := cfg.APIKeysPath
 	if keyPath == "" {
@@ -81,6 +83,12 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 		response.Error(w, req, http.StatusMethodNotAllowed, "Method HTTP tidak diizinkan pada endpoint ini")
 	})
 
+	protectedApiKey.Get("/health", func(w http.ResponseWriter, req *http.Request) {
+		response.Success(w, req, map[string]string{
+			"status": "API berjalan dengan normal!",
+		})
+	})
+
 	public := protectedApiKey.With(
 		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
 	)
@@ -89,12 +97,6 @@ func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolv
 		api_middleware.RequireToken(),
 		api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
 	)
-
-	public.Get("/health", func(w http.ResponseWriter, req *http.Request) {
-		response.Success(w, req, map[string]string{
-			"status": "API berjalan dengan normal!",
-		})
-	})
 
 	for _, m := range modules {
 		m.RegisterRoutes(public, protected, cfg, roleMatrix)

@@ -37,7 +37,7 @@ $RECYCLE.BIN/
 .air
 tmp/
 
-# 8. API Keys (rahasia — generate via cmd/keygen)
+# 8. API Keys
 api_keys.json
 
 # 6. IDE / Editor
@@ -52,5 +52,4 @@ api_keys.json
 logs/
 *.log
 
-.serena
-grahify-out
+.ruff_cache
