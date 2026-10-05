@@ -13,7 +13,6 @@ import (
 	"go.internal/business-data-api/pkg/logger"
 )
 
-// PGConn adalah himpunan operasi Postgres yang dipakai lapisan repository.
 type PGConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
