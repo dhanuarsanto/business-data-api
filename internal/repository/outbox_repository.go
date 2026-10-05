@@ -254,6 +254,11 @@ func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
 		args = append(args, *filter.Status)
 		argID++
 	}
+	if filter.StatusMin != nil {
+		whereClause += fmt.Sprintf(` AND status >= $%d`, argID)
+		args = append(args, *filter.StatusMin)
+		argID++
+	}
 	if filter.Pesan != "" {
 		whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
 		args = append(args, "%"+filter.Pesan+"%")
@@ -297,6 +302,10 @@ func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
 	if filter.Status != nil {
 		whereClause += ` AND status = @status`
 		namedArgs = append(namedArgs, sql.Named("status", *filter.Status))
+	}
+	if filter.StatusMin != nil {
+		whereClause += ` AND status >= @statusMin`
+		namedArgs = append(namedArgs, sql.Named("statusMin", *filter.StatusMin))
 	}
 	if filter.Pesan != "" {
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`

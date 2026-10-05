@@ -49,10 +49,17 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var statusPtr *int16
-	if statusStr := queryParams.Get("status"); statusStr != "" {
-		if s, err := strconv.ParseInt(statusStr, 10, 16); err == nil {
-			val := int16(s)
-			statusPtr = &val
+	var statusMinPtr *int16
+	if val := queryParams.Get("status"); val != "" {
+		v := strings.TrimSpace(val)
+		if v == "failed" || v == "gagal" {
+			min40 := int16(40)
+			statusMinPtr = &min40
+		} else if s, err := strconv.ParseInt(v, 10, 16); err == nil {
+			if s >= -32768 && s <= 32767 {
+				v16 := int16(s)
+				statusPtr = &v16
+			}
 		}
 	}
 
@@ -76,6 +83,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Penerima:         penerimaPtr,
 		Tipe:             tipePtr,
 		Status:           statusPtr,
+		StatusMin:        statusMinPtr,
 		Pesan:            strings.TrimSpace(queryParams.Get("pesan")),
 		ReplyToReseller:  replyToResellerPtr,
 		PerintahProvider: perintahProviderPtr,

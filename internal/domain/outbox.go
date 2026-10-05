@@ -36,6 +36,7 @@ type OutboxFilter struct {
 	Penerima         *string
 	Tipe             *string
 	Status           *int16
+	StatusMin        *int16
 	Pesan            string
 	ReplyToReseller  *bool
 	PerintahProvider *bool

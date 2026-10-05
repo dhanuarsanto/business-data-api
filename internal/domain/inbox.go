@@ -35,6 +35,7 @@ type InboxFilter struct {
 	Pengirim            *string
 	Tipe                *string
 	Status              *int16
+	StatusMin           *int16
 	Pesan               string
 	RequestFromReseller *bool
 	JawabanFromProvider *bool
