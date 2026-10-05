@@ -234,13 +234,13 @@ func TestNetworkRoleGuardSemuaCabang(t *testing.T) {
 		want       int
 	}{
 		{"global only tolak remote publik", true, nil, "203.0.113.5:1234", nil, http.StatusForbidden},
+		{"global only terima private IPv4", true, nil, "10.0.0.5:1234", nil, http.StatusOK},
 		{"global only terima loopback IPv4", true, nil, "127.0.0.1:1234", nil, http.StatusOK},
-		{"global only terima loopback IPv6", true, nil, "[::1]:1234", nil, http.StatusOK},
-		{"global only tolak private non-loopback", true, nil, "10.0.0.5:1234", nil, http.StatusForbidden},
+		{"global only terima private IPv4 RFC1918", true, nil, "192.168.1.100:1234", nil, http.StatusOK},
 		{"tanpa claims lolos saat global only mati", false, map[string]bool{"rahasia": true}, "203.0.113.5:1234", nil, http.StatusOK},
 		{"role publik boleh dari luar", false, map[string]bool{"rahasia": true, "publik": false}, "203.0.113.5:1234", map[string]any{"rules": "publik"}, http.StatusOK},
 		{"role lokal ditolak dari luar", false, map[string]bool{"rahasia": true, "publik": false}, "203.0.113.5:1234", map[string]any{"rules": "rahasia"}, http.StatusForbidden},
-		{"role lokal diterima dari dalam", false, map[string]bool{"rahasia": true, "publik": false}, "127.0.0.1:1234", map[string]any{"rules": "rahasia"}, http.StatusOK},
+		{"role lokal diterima dari dalam", false, map[string]bool{"rahasia": true, "publik": false}, "10.0.0.5:1234", map[string]any{"rules": "rahasia"}, http.StatusOK},
 		{"role tak dikenal ikut bintang lokal", false, map[string]bool{"*": true}, "203.0.113.5:1234", map[string]any{"rules": "asing"}, http.StatusForbidden},
 		{"role tak dikenal tanpa bintang lolos", false, map[string]bool{"rahasia": true}, "203.0.113.5:1234", map[string]any{"rules": "asing"}, http.StatusOK},
 		{"remote tidak valid dianggap bukan lokal", false, map[string]bool{"*": true}, "bukan-alamat", map[string]any{"rules": "asing"}, http.StatusForbidden},

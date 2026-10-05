@@ -66,7 +66,7 @@ func TestLoginMenolakSaatJWTBelumDiinisialisasi(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := reqWithParams(http.MethodPost, "/", `{"username":"budi","password":"rahasia"}`,
 		map[string]string{"tenant": "maxtop"}, nil)
-	req.RemoteAddr = "127.0.0.1:1234"
+	req.RemoteAddr = "10.0.0.5:1234"
 	h.Login(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {

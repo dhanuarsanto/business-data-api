@@ -73,7 +73,7 @@ func parseRemoteAddr(raw string) netip.Addr {
 
 func (t *TrustedProxyResolver) IsLocal(r *http.Request) bool {
 	ip := t.clientAddr(r)
-	return ip.IsLoopback()
+	return ip.IsLoopback() || ip.IsPrivate()
 }
 
 func NetworkRoleGuard(globalLocalOnly bool, roleMatrix map[string]bool, resolver *TrustedProxyResolver) func(http.Handler) http.Handler {
