@@ -1,0 +1,3718 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">go.internal/business-data-api/cmd/api/main.go (29.9%)</option>
+				
+				<option value="file1">go.internal/business-data-api/cmd/api/modules.go (100.0%)</option>
+				
+				<option value="file2">go.internal/business-data-api/cmd/jwtgen/main.go (100.0%)</option>
+				
+				<option value="file3">go.internal/business-data-api/cmd/keygen/main.go (100.0%)</option>
+				
+				<option value="file4">go.internal/business-data-api/internal/config/config.go (100.0%)</option>
+				
+				<option value="file5">go.internal/business-data-api/internal/handler/http/auth_handler.go (100.0%)</option>
+				
+				<option value="file6">go.internal/business-data-api/internal/handler/http/errors.go (100.0%)</option>
+				
+				<option value="file7">go.internal/business-data-api/internal/handler/http/filters.go (100.0%)</option>
+				
+				<option value="file8">go.internal/business-data-api/internal/handler/http/inbox_handler.go (100.0%)</option>
+				
+				<option value="file9">go.internal/business-data-api/internal/handler/http/master_handler.go (100.0%)</option>
+				
+				<option value="file10">go.internal/business-data-api/internal/handler/http/outbox_handler.go (100.0%)</option>
+				
+				<option value="file11">go.internal/business-data-api/internal/handler/http/params.go (100.0%)</option>
+				
+				<option value="file12">go.internal/business-data-api/internal/handler/http/router.go (98.8%)</option>
+				
+				<option value="file13">go.internal/business-data-api/internal/middleware/apikey.go (100.0%)</option>
+				
+				<option value="file14">go.internal/business-data-api/internal/middleware/bodylimit.go (100.0%)</option>
+				
+				<option value="file15">go.internal/business-data-api/internal/middleware/jwt_rbac.go (100.0%)</option>
+				
+				<option value="file16">go.internal/business-data-api/internal/middleware/network_guard.go (100.0%)</option>
+				
+				<option value="file17">go.internal/business-data-api/internal/middleware/postgres_write_guard.go (100.0%)</option>
+				
+				<option value="file18">go.internal/business-data-api/internal/middleware/ratelimit.go (100.0%)</option>
+				
+				<option value="file19">go.internal/business-data-api/internal/middleware/recoverer.go (100.0%)</option>
+				
+				<option value="file20">go.internal/business-data-api/internal/middleware/tracer.go (100.0%)</option>
+				
+				<option value="file21">go.internal/business-data-api/internal/repository/inbox_repository.go (99.1%)</option>
+				
+				<option value="file22">go.internal/business-data-api/internal/repository/outbox_repository.go (99.0%)</option>
+				
+				<option value="file23">go.internal/business-data-api/internal/repository/query_builder.go (100.0%)</option>
+				
+				<option value="file24">go.internal/business-data-api/internal/repository/query_builder_ms.go (100.0%)</option>
+				
+				<option value="file25">go.internal/business-data-api/internal/repository/query_builder_pg.go (100.0%)</option>
+				
+				<option value="file26">go.internal/business-data-api/internal/repository/reseller_repository.go (100.0%)</option>
+				
+				<option value="file27">go.internal/business-data-api/internal/repository/user_repository.go (100.0%)</option>
+				
+				<option value="file28">go.internal/business-data-api/internal/usecase/auth_usecase.go (100.0%)</option>
+				
+				<option value="file29">go.internal/business-data-api/internal/usecase/inbox_usecase.go (100.0%)</option>
+				
+				<option value="file30">go.internal/business-data-api/internal/usecase/master_usecase.go (100.0%)</option>
+				
+				<option value="file31">go.internal/business-data-api/internal/usecase/outbox_usecase.go (100.0%)</option>
+				
+				<option value="file32">go.internal/business-data-api/internal/version/version.go (0.0%)</option>
+				
+				<option value="file33">go.internal/business-data-api/pkg/database/mssql.go (96.7%)</option>
+				
+				<option value="file34">go.internal/business-data-api/pkg/database/postgres.go (94.3%)</option>
+				
+				<option value="file35">go.internal/business-data-api/pkg/database/registry.go (100.0%)</option>
+				
+				<option value="file36">go.internal/business-data-api/pkg/jwt/jwt.go (97.7%)</option>
+				
+				<option value="file37">go.internal/business-data-api/pkg/logger/context.go (100.0%)</option>
+				
+				<option value="file38">go.internal/business-data-api/pkg/logger/logger.go (100.0%)</option>
+				
+				<option value="file39">go.internal/business-data-api/pkg/response/response.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/version"
+        "go.internal/business-data-api/pkg/database"
+        "go.internal/business-data-api/pkg/jwt"
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+
+        http_handler "go.internal/business-data-api/internal/handler/http"
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+var _ = version.Get()
+
+func main() {
+        <span class="cov8" title="1">cfg := config.LoadConfig()
+        if len(cfg.JWTSecret) &lt; jwt.MinSecretLength </span>{
+                <span class="cov8" title="1">slog.Error("JWT_SECRET terlalu pendek — wajib minimal 32 byte demi keamanan token")
+                os.Exit(1)
+</span>        }
+        <span class="cov8" title="1">logger.SetupLogger(cfg.AppEnv)
+        response.Init(cfg.AppEnv)
+        jwt.InitJWT(cfg.JWTSecret, cfg.JWTTokenDuration, cfg.JWTIssuer)
+</span>
+        <span class="cov8" title="1">slog.Info("Menjalankan API", "mode", cfg.AppEnv, "port", cfg.Port)
+</span>
+        <span class="cov8" title="1">dbRegistry := database.NewDBRegistry()
+        ctx := context.Background()
+</span>
+        <span class="cov8" title="1">pgMaxtop, err := database.NewPostgresPool(ctx, cfg.PostgresMaxtopURL, pgPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov8" title="1">slog.Error("Gagal koneksi Postgres Maxtop", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">msMaxtop, err := database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL, msPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Gagal koneksi MSSQL Maxtop", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">dbRegistry.Register(tenantMaxtop, pgMaxtop, msMaxtop)
+</span>
+        <span class="cov0" title="0">pgPandora, err := database.NewPostgresPool(ctx, cfg.PostgresPandoraURL, pgPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Gagal koneksi Postgres Pandora", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">msPandora, err := database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL, msPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Gagal koneksi MSSQL Pandora", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">dbRegistry.Register(tenantPandora, pgPandora, msPandora)
+</span>
+        <span class="cov0" title="0">pgToplink, err := database.NewPostgresPool(ctx, cfg.PostgresToplinkURL, pgPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Gagal koneksi Postgres Toplink", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">msToplink, err := database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL, msPoolOptions(cfg))
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Gagal koneksi MSSQL Toplink", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">dbRegistry.Register(tenantToplink, pgToplink, msToplink)
+</span>
+        <span class="cov0" title="0">trustedProxies, err := cfg.ParseTrustedProxies()
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Konfigurasi TRUSTED_PROXIES tidak valid", "error", err)
+                os.Exit(1)
+</span>        }
+        <span class="cov0" title="0">if len(trustedProxies) == 0 </span>{
+                <span class="cov0" title="0">if cfg.AppEnv == "production" &amp;&amp; cfg.GlobalLocalOnly &amp;&amp; !cfg.AllowDirectClients </span>{
+                        <span class="cov0" title="0">slog.Error("Konfigurasi tidak aman: GLOBAL_LOCAL_ONLY=true tetapi jalur klien belum dideklarasikan. Isi TRUSTED_PROXIES (IP/CIDR proxy/nginx/LB) bila API di belakang reverse-proxy, atau set ALLOW_DIRECT_CLIENTS=true bila klien terhubung langsung ke API.")
+                        os.Exit(1)
+</span>                }
+                <span class="cov0" title="0">slog.Warn("TRUSTED_PROXIES kosong — rate limit memakai RemoteAddr. Set IP/CIDR proxy (nginx/IIS/LB) bila API di belakang reverse-proxy")</span>
+        }
+        <span class="cov0" title="0">ipResolver := api_middleware.NewTrustedProxyResolver(trustedProxies)
+</span>
+        <span class="cov0" title="0">activeModules, networkMatrix, roleMatrix := BuildModules(dbRegistry, cfg, ipResolver)
+        r, limiters, keyManager := http_handler.SetupRoutes(cfg, ipResolver, networkMatrix, roleMatrix, activeModules...)
+</span>
+        <span class="cov0" title="0">srv := &amp;http.Server{
+                Addr:              fmt.Sprintf(":%d", cfg.Port),
+                Handler:           r,
+                ReadHeaderTimeout: cfg.ServerReadHeaderTimeout,
+                ReadTimeout:       cfg.ServerReadTimeout,
+                WriteTimeout:      cfg.ServerWriteTimeout,
+                IdleTimeout:       cfg.ServerIdleTimeout,
+</span>        }
+
+        <span class="cov0" title="0">go func() </span>{
+                <span class="cov0" title="0">if err := srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span>{
+                        <span class="cov0" title="0">slog.Error("Kesalahan server", "error", err)
+                        os.Exit(1)
+</span>                }
+        }()
+
+        <span class="cov0" title="0">quit := make(chan os.Signal, 1)
+        signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+        &lt;-quit
+</span>
+        <span class="cov0" title="0">slog.Info("Sinyal berhenti diterima, mematikan server...")
+        shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ServerShutdownTimeout)
+        defer cancel()
+</span>
+        <span class="cov0" title="0">if err := srv.Shutdown(shutdownCtx); err != nil </span>{
+                <span class="cov0" title="0">slog.Error("Server dipaksa mati", "error", err)
+</span>        }
+
+        <span class="cov0" title="0">for _, l := range limiters </span>{
+                <span class="cov0" title="0">l.Stop()
+</span>        }
+        <span class="cov0" title="0">keyManager.Stop()
+</span>
+        <span class="cov0" title="0">dbRegistry.CloseAll()
+        slog.Info("Server berhasil dimatikan dengan aman")</span>
+}
+
+func pgPoolOptions(cfg *config.Config) database.PostgresPoolOptions {
+        <span class="cov8" title="1">return database.PostgresPoolOptions{
+                MaxConns:          cfg.PostgresMaxConns,
+                MinConns:          cfg.PostgresMinConns,
+                MaxConnIdleTime:   cfg.PostgresMaxConnIdleTime,
+                MaxConnLifetime:   cfg.PostgresMaxConnLifetime,
+                HealthCheckPeriod: cfg.PostgresHealthCheckPeriod,
+</span>        }
+}
+
+func msPoolOptions(cfg *config.Config) database.MSSQLPoolOptions {
+        <span class="cov8" title="1">return database.MSSQLPoolOptions{
+                MaxOpenConns:    cfg.MSSQLMaxOpenConns,
+                MaxIdleConns:    cfg.MSSQLMaxIdleConns,
+                MaxConnLifetime: cfg.MSSQLMaxConnLifetime,
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "go.internal/business-data-api/pkg/database"
+
+        "go.internal/business-data-api/internal/config"
+        http_handler "go.internal/business-data-api/internal/handler/http"
+        api_middleware "go.internal/business-data-api/internal/middleware"
+        "go.internal/business-data-api/internal/repository"
+        "go.internal/business-data-api/internal/usecase"
+)
+
+const (
+        tenantMaxtop  = "maxtop"
+        tenantPandora = "pandora"
+        tenantToplink = "toplink"
+
+        roleSA    = "sa"
+        roleOP    = "op"
+        roleOpOut = "opout"
+)
+
+func BuildModules(dbRegistry *database.DBRegistry, cfg *config.Config, ipResolver *api_middleware.TrustedProxyResolver) ([]http_handler.Module, map[string]bool, map[string][]string) {
+        <span class="cov8" title="1">networkMatrix := map[string]bool{
+                "*":    true,
+                roleSA: false,
+</span>        }
+
+        <span class="cov8" title="1">roleMatrix := map[string][]string{
+                "ManageUsers":          {roleSA},
+                "ReadResellerDropdown": {roleSA, roleOP, roleOpOut},
+                "ReadInbox":            {roleSA, roleOP, roleOpOut},
+                "WriteInbox":           {roleSA},
+                "ReadOutbox":           {roleSA, roleOP, roleOpOut},
+                "WriteOutbox":          {roleSA},
+</span>        }
+
+        <span class="cov8" title="1">userRepos := repository.NewUserRepositories(dbRegistry)
+        authUsecase := usecase.NewAuthUsecase(userRepos.PG, userRepos.MS)
+        authHandler := http_handler.NewAuthHandler(authUsecase, networkMatrix, ipResolver, cfg.CookieSecure)
+</span>
+        <span class="cov8" title="1">inboxRepos := repository.NewInboxRepositories(dbRegistry)
+        inboxUsecase := usecase.NewInboxUsecase(inboxRepos.PG, inboxRepos.MS)
+        inboxHandler := http_handler.NewInboxHandler(inboxUsecase)
+</span>
+        <span class="cov8" title="1">outboxRepos := repository.NewOutboxRepositories(dbRegistry)
+        outboxUsecase := usecase.NewOutboxUsecase(outboxRepos.PG, outboxRepos.MS)
+        outboxHandler := http_handler.NewOutboxHandler(outboxUsecase)
+</span>
+        <span class="cov8" title="1">resellerRepos := repository.NewResellerRepositories(dbRegistry)
+        masterUsecase := usecase.NewMasterUsecase(resellerRepos.PG, resellerRepos.MS)
+        masterHandler := http_handler.NewMasterHandler(masterUsecase)
+</span>
+        <span class="cov8" title="1">activeModules := []http_handler.Module{
+                authHandler,
+                inboxHandler,
+                outboxHandler,
+                masterHandler,
+</span>        }
+
+        <span class="cov8" title="1">return activeModules, networkMatrix, roleMatrix
+</span>}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package main
+
+import (
+        "crypto/rand"
+        "encoding/hex"
+        "fmt"
+        "os"
+
+        "github.com/joho/godotenv"
+)
+
+func main() {
+        <span class="cov8" title="1">godotenv.Load()
+        if os.Getenv("APP_ENV") == "production" </span>{
+                <span class="cov8" title="1">fmt.Println("AKSES DITOLAK: Script generator ini dilarang keras dieksekusi di server Production!")
+                os.Exit(1)
+</span>        }
+
+        <span class="cov8" title="1">bytes := make([]byte, 32)
+        rand.Read(bytes)
+        fmt.Printf("Silakan gunakan string berikut sebagai JWT_SECRET di .env Anda:\n\n%s\n", hex.EncodeToString(bytes))</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package main
+
+import (
+        "crypto/rand"
+        "encoding/hex"
+        "encoding/json"
+        "fmt"
+        "os"
+
+        "github.com/joho/godotenv"
+)
+
+func main() {
+        <span class="cov8" title="1">godotenv.Load()
+        if os.Getenv("APP_ENV") == "production" </span>{
+                <span class="cov8" title="1">fmt.Println("AKSES DITOLAK: Script generator ini dilarang keras dieksekusi di server Production!")
+                os.Exit(1)
+</span>        }
+
+        <span class="cov8" title="1">if len(os.Args) &lt; 2 </span>{
+                <span class="cov8" title="1">fmt.Println("Gunakan perintah: go run cmd/keygen/main.go \"Nama Developer\"")
+                return
+</span>        }
+        <span class="cov8" title="1">developerName := os.Args[1]
+</span>
+        <span class="cov8" title="1">bytes := make([]byte, 32)
+        rand.Read(bytes)
+        newKey := "key_" + hex.EncodeToString(bytes)
+</span>
+        <span class="cov8" title="1">filePath := os.Getenv("API_KEYS_PATH")
+        if filePath == "" </span>{
+                <span class="cov8" title="1">filePath = "api_keys.json"
+</span>        }
+        <span class="cov8" title="1">fileData, _ := os.ReadFile(filePath)
+        keys := make(map[string]string)
+        json.Unmarshal(fileData, &amp;keys)
+</span>
+        <span class="cov8" title="1">keys[newKey] = developerName
+</span>
+        <span class="cov8" title="1">newData, _ := json.MarshalIndent(keys, "", "  ")
+        os.WriteFile(filePath, newData, 0644)
+</span>
+        <span class="cov8" title="1">fmt.Printf("API Key berhasil dibuat untuk: %s\n", developerName)
+        fmt.Printf("API Key: %s\n", newKey)</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package config
+
+import (
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/netip"
+        "os"
+        "strings"
+        "time"
+
+        "github.com/caarlos0/env/v11"
+        "github.com/joho/godotenv"
+)
+
+type Config struct {
+        AppEnv               string `env:"APP_ENV" envDefault:"development"`
+        GlobalLocalOnly      bool   `env:"GLOBAL_LOCAL_ONLY" envDefault:"true"`
+        PostgresWriteEnabled bool   `env:"POSTGRES_WRITE_ENABLED" envDefault:"false"`
+        Port                 int    `env:"PORT" envDefault:"8080"`
+        AllowedOrigins       string `env:"ALLOWED_ORIGINS" envDefault:"http://localhost:3000,http://localhost:5173"`
+        TrustedProxies       string `env:"TRUSTED_PROXIES" envDefault:""`
+        AllowDirectClients   bool   `env:"ALLOW_DIRECT_CLIENTS" envDefault:"false"`
+        MaxBodyBytes         int64  `env:"MAX_BODY_BYTES" envDefault:"1048576"`
+        CookieSecure         bool   `env:"COOKIE_SECURE" envDefault:"true"`
+        APIKeysPath          string `env:"API_KEYS_PATH" envDefault:"api_keys.json"`
+
+        PostgresMaxtopURL string `env:"POSTGRES_MAXTOP_URL,required"`
+        MSSQLMaxtopURL    string `env:"MSSQL_MAXTOP_URL,required"`
+
+        PostgresPandoraURL string `env:"POSTGRES_PANDORA_URL,required"`
+        MSSQLPandoraURL    string `env:"MSSQL_PANDORA_URL,required"`
+
+        PostgresToplinkURL string `env:"POSTGRES_TOPLINK_URL,required"`
+        MSSQLToplinkURL    string `env:"MSSQL_TOPLINK_URL,required"`
+
+        PostgresMaxConns          int           `env:"POSTGRES_MAX_CONNS" envDefault:"10"`
+        PostgresMinConns          int           `env:"POSTGRES_MIN_CONNS" envDefault:"0"`
+        PostgresMaxConnIdleTime   time.Duration `env:"POSTGRES_MAX_CONN_IDLE_TIME" envDefault:"5m"`
+        PostgresMaxConnLifetime   time.Duration `env:"POSTGRES_MAX_CONN_LIFETIME" envDefault:"30m"`
+        PostgresHealthCheckPeriod time.Duration `env:"POSTGRES_HEALTH_CHECK_PERIOD" envDefault:"1m"`
+
+        MSSQLMaxOpenConns    int           `env:"MSSQL_MAX_OPEN_CONNS" envDefault:"10"`
+        MSSQLMaxIdleConns    int           `env:"MSSQL_MAX_IDLE_CONNS" envDefault:"5"`
+        MSSQLMaxConnLifetime time.Duration `env:"MSSQL_MAX_CONN_LIFETIME" envDefault:"30m"`
+
+        RateLimitGlobalRate      float64       `env:"RATE_LIMIT_GLOBAL_RATE" envDefault:"50"`
+        RateLimitGlobalCapacity  int           `env:"RATE_LIMIT_GLOBAL_CAPACITY" envDefault:"100"`
+        RateLimitLoginRate       float64       `env:"RATE_LIMIT_LOGIN_RATE" envDefault:"0.2"`
+        RateLimitLoginCapacity   int           `env:"RATE_LIMIT_LOGIN_CAPACITY" envDefault:"5"`
+        RateLimitCleanupInterval time.Duration `env:"RATE_LIMIT_CLEANUP_INTERVAL" envDefault:"3m"`
+
+        ServerReadHeaderTimeout time.Duration `env:"SERVER_READ_HEADER_TIMEOUT" envDefault:"10s"`
+        ServerReadTimeout       time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"10s"`
+        ServerWriteTimeout      time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"60s"`
+        ServerIdleTimeout       time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"`
+        ServerShutdownTimeout   time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" envDefault:"10s"`
+
+        CORSMaxAge int `env:"CORS_MAX_AGE" envDefault:"300"`
+
+        JWTSecret        string        `env:"JWT_SECRET,required"`
+        JWTIssuer        string        `env:"JWT_ISSUER" envDefault:"business-data-api"`
+        JWTTokenDuration time.Duration `env:"JWT_TOKEN_DURATION" envDefault:"24h"`
+}
+
+func (c *Config) GetAllowedOrigins() []string {
+        <span class="cov8" title="1">var cleaned []string
+        for o := range strings.SplitSeq(c.AllowedOrigins, ",") </span>{
+                <span class="cov8" title="1">trimmed := strings.TrimSpace(o)
+                if trimmed != "" </span>{
+                        <span class="cov8" title="1">cleaned = append(cleaned, trimmed)
+</span>                }
+        }
+        <span class="cov8" title="1">if len(cleaned) == 0 </span>{
+                <span class="cov8" title="1">return []string{"http://localhost:3000", "http://localhost:5173"}
+</span>        }
+        <span class="cov8" title="1">return cleaned</span>
+}
+
+func (c *Config) ParseTrustedProxies() ([]netip.Prefix, error) {
+        <span class="cov8" title="1">var prefixes []netip.Prefix
+        for raw := range strings.SplitSeq(c.TrustedProxies, ",") </span>{
+                <span class="cov8" title="1">part := strings.TrimSpace(raw)
+                if part == "" </span>{
+                        <span class="cov8" title="1">continue</span>
+                }
+                <span class="cov8" title="1">if strings.Contains(part, "/") </span>{
+                        <span class="cov8" title="1">p, err := netip.ParsePrefix(part)
+                        if err != nil </span>{
+                                <span class="cov8" title="1">return nil, fmt.Errorf("CIDR trusted proxy tidak valid %q: %w", part, err)
+</span>                        }
+                        <span class="cov8" title="1">prefixes = append(prefixes, p)
+                        continue</span>
+                }
+                <span class="cov8" title="1">addr, err := netip.ParseAddr(part)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return nil, fmt.Errorf("IP trusted proxy tidak valid %q: %w", part, err)
+</span>                }
+                <span class="cov8" title="1">prefixes = append(prefixes, netip.PrefixFrom(addr, addr.BitLen()))</span>
+        }
+        <span class="cov8" title="1">return prefixes, nil</span>
+}
+
+func LoadConfig() *Config {
+        <span class="cov8" title="1">if err := godotenv.Load(); err != nil &amp;&amp; !errors.Is(err, os.ErrNotExist) </span>{
+                <span class="cov8" title="1">slog.Warn("Gagal memuat berkas .env, lanjut memakai variabel lingkungan", "error", err)
+</span>        }
+
+        <span class="cov8" title="1">var cfg Config
+        if err := env.Parse(&amp;cfg); err != nil </span>{
+                <span class="cov8" title="1">slog.Error("Gagal mem-parsing konfigurasi", "error", err)
+                os.Exit(1)
+</span>        }
+
+        <span class="cov8" title="1">return &amp;cfg</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package http
+
+import (
+        "encoding/json"
+        "errors"
+        "log/slog"
+        "net/http"
+
+        "github.com/go-chi/chi/v5"
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/internal/usecase"
+        "go.internal/business-data-api/pkg/jwt"
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+type AuthHandler struct {
+        authUsecase   *usecase.AuthUsecase
+        networkMatrix map[string]bool
+        ipResolver    *api_middleware.TrustedProxyResolver
+        cookieSecure  bool
+        sessionMaxAge int
+        authLimiter   *api_middleware.RateLimiter
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+        tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+        <span class="cov8" title="1">var payload dto.LoginRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+        <span class="cov8" title="1">user, err := h.authUsecase.Login(r.Context(), tenant, dbSource, payload.Username, payload.Password)
+        if err != nil </span>{
+                <span class="cov8" title="1">slog.Warn("Security Alert - Bruteforce / Invalid Login", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "username", payload.Username)
+                response.Error(w, r, http.StatusUnauthorized, "Username atau password salah")
+                return
+</span>        }
+
+        <span class="cov8" title="1">if !h.ipResolver.IsLocal(r) &amp;&amp; !api_middleware.IsRoleAllowedFromOutside(user.Rules, h.networkMatrix) </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusForbidden, "Akses Login ditolak. Peran Anda diwajibkan login melalui jaringan lokal.")
+                return
+</span>        }
+
+        <span class="cov8" title="1">token, err := jwt.GenerateToken(user.UserID, user.Username, user.Rules, tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusInternalServerError, "Gagal generate token")
+                return
+</span>        }
+
+        <span class="cov8" title="1">http.SetCookie(w, &amp;http.Cookie{
+                Name:     "access_token",
+                Value:    token,
+                Path:     "/",
+                MaxAge:   h.sessionMaxAge,
+                HttpOnly: true,
+                Secure:   h.cookieSecure,
+                SameSite: http.SameSiteStrictMode,
+        })
+        response.Success(w, r, map[string]any{
+                "username": user.Username,
+                "rules":    user.Rules,
+                "token":    token,
+        })</span>
+}
+
+func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+        <span class="cov8" title="1">var payload dto.CreateUserRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+        <span class="cov8" title="1">if err := h.authUsecase.CreateUser(r.Context(), tenant, dbSource, domain.User{Username: payload.Username, Password: payload.Password, Rules: payload.Rules}); err != nil </span>{
+                <span class="cov8" title="1">if errors.Is(err, usecase.ErrInvalidInput) </span>{
+                        <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Username, password, dan rules wajib diisi")
+                        return
+</span>                }
+                <span class="cov8" title="1">writeError(w, r, err)
+                return</span>
+        }
+        <span class="cov8" title="1">response.SuccessCreated(w, r, map[string]any{"message": "Pembuatan user sukses"})</span>
+}
+
+func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+        <span class="cov8" title="1">username := chi.URLParam(r, "username")
+        var payload dto.UpdateUserRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+        <span class="cov8" title="1">if err := h.authUsecase.UpdateUser(r.Context(), tenant, dbSource, username, payload.Password, payload.Rules); err != nil </span>{
+                <span class="cov8" title="1">if errors.Is(err, usecase.ErrInvalidInput) </span>{
+                        <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Password dan rules tidak boleh kosong")
+                        return
+</span>                }
+                <span class="cov8" title="1">writeError(w, r, err)
+                return</span>
+        }
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{"message": "Pembaruan user sukses"})</span>
+}
+
+func NewAuthHandler(authUsecase *usecase.AuthUsecase, networkMatrix map[string]bool, ipResolver *api_middleware.TrustedProxyResolver, cookieSecure bool) *AuthHandler {
+        <span class="cov8" title="1">return &amp;AuthHandler{authUsecase: authUsecase, networkMatrix: networkMatrix, ipResolver: ipResolver, cookieSecure: cookieSecure}
+</span>}
+
+func (h *AuthHandler) RegisterRoutes(public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+        <span class="cov8" title="1">h.sessionMaxAge = int(cfg.JWTTokenDuration.Seconds())
+        h.authLimiter = api_middleware.NewRateLimiter(cfg.RateLimitLoginRate, cfg.RateLimitLoginCapacity, h.ipResolver, cfg.RateLimitCleanupInterval)
+</span>
+        <span class="cov8" title="1">public.With(h.authLimiter.Middleware()).Post("/api/v1/{tenant}/auth/login", h.Login)
+</span>
+        <span class="cov8" title="1">protected.Route("/api/v1/{tenant}/auth/users", func(users chi.Router) </span>{
+                <span class="cov8" title="1">users.Use(api_middleware.RequireRole(roleMatrix["ManageUsers"]...))
+                users.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
+                users.Post("/", h.CreateUser)
+                users.Put("/{username}", h.UpdateUser)
+</span>        })
+}
+
+func (h *AuthHandler) RateLimiters() []*api_middleware.RateLimiter {
+        <span class="cov8" title="1">if h.authLimiter == nil </span>{
+                <span class="cov8" title="1">return nil
+</span>        }
+        <span class="cov8" title="1">return []*api_middleware.RateLimiter{h.authLimiter}</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package http
+
+import (
+        "errors"
+        "log/slog"
+        "net/http"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/pkg/database"
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+)
+
+func writeError(w http.ResponseWriter, r *http.Request, err error) {
+        <span class="cov8" title="1">switch </span>{
+        case errors.Is(err, database.ErrTenantNotFound):
+                <span class="cov8" title="1">response.Error(w, r, http.StatusNotFound, "Tenant tidak ditemukan")</span>
+        case errors.Is(err, domain.ErrSourceNotValid):
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Header X-DB-Source tidak valid")</span>
+        default:
+                <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                slog.Error("Kesalahan internal tak Tertangani",
+                        "trace_id", tCtx.TraceID,
+                        "developer", tCtx.Developer,
+                        "path", tCtx.Path,
+                        "method", r.Method,
+                        "error", err,
+                )
+                response.Error(w, r, http.StatusInternalServerError, "Terjadi kesalahan pada server")</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package http
+
+import (
+        "errors"
+        "strconv"
+        "strings"
+)
+
+const maxStringLen = 255
+
+var (
+        ErrInvalidTerminal  = errors.New("terminal must be non-negative integer")
+        ErrInvalidStatus    = errors.New("status must be 0..32767, 'failed' or 'gagal'")
+        ErrInvalidBoolParam = errors.New("boolean param must be true/1/false/0")
+)
+
+func parseStringFilter(val string) *string {
+        <span class="cov8" title="1">v := strings.TrimSpace(val)
+        if v == "" || len(v) &gt; maxStringLen </span>{
+                <span class="cov8" title="1">return nil
+</span>        }
+        <span class="cov8" title="1">return &amp;v</span>
+}
+
+func parseTerminalFilter(val string) (*int, error) {
+        <span class="cov8" title="1">v := strings.TrimSpace(val)
+        if v == "" </span>{
+                <span class="cov8" title="1">return nil, nil
+</span>        }
+        <span class="cov8" title="1">n, err := strconv.Atoi(v)
+        if err != nil || n &lt; 0 || n &gt; 2147483647 </span>{
+                <span class="cov8" title="1">return nil, ErrInvalidTerminal
+</span>        }
+        <span class="cov8" title="1">return &amp;n, nil</span>
+}
+
+func parseStatusFilter(val string) (status *int16, statusMin *int16, err error) {
+        <span class="cov8" title="1">v := strings.TrimSpace(val)
+        if v == "" </span>{
+                <span class="cov8" title="1">return nil, nil, nil
+</span>        }
+        <span class="cov8" title="1">if v == "failed" || v == "gagal" </span>{
+                <span class="cov8" title="1">min40 := int16(40)
+                return nil, &amp;min40, nil
+</span>        }
+        <span class="cov8" title="1">n, err := strconv.ParseInt(v, 10, 16)
+        if err != nil || n &lt; 0 || n &gt; 32767 </span>{
+                <span class="cov8" title="1">return nil, nil, ErrInvalidStatus
+</span>        }
+        <span class="cov8" title="1">v16 := int16(n)
+        return &amp;v16, nil, nil</span>
+}
+
+func parseBoolFilter(val string) (*bool, error) {
+        <span class="cov8" title="1">v := strings.TrimSpace(val)
+        if v == "" </span>{
+                <span class="cov8" title="1">return nil, nil
+</span>        }
+        <span class="cov8" title="1">switch v </span>{
+        case "true", "1":
+                <span class="cov8" title="1">b := true
+                return &amp;b, nil</span>
+        case "false", "0":
+                <span class="cov8" title="1">b := false
+                return &amp;b, nil</span>
+        default:
+                <span class="cov8" title="1">return nil, ErrInvalidBoolParam</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package http
+
+import (
+        "encoding/json"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/go-chi/chi/v5"
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/internal/usecase"
+        "go.internal/business-data-api/pkg/response"
+
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+type InboxHandler struct {
+        usecase *usecase.InboxUsecase
+}
+
+func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">queryParams := r.URL.Query()
+        params, err := parseListParams(queryParams)
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">terminalPtr, err := parseTerminalFilter(queryParams.Get("terminal"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">resellerPtr := parseStringFilter(queryParams.Get("reseller"))
+        pengirimPtr := parseStringFilter(queryParams.Get("pengirim"))
+        tipePtr := parseStringFilter(queryParams.Get("tipe"))
+</span>
+        <span class="cov8" title="1">statusPtr, statusMinPtr, err := parseStatusFilter(queryParams.Get("status"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">reqFromResellerPtr, err := parseBoolFilter(queryParams.Get("requestFromReseller"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">jawFromProviderPtr, err := parseBoolFilter(queryParams.Get("jawabanFromProvider"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">pesan := strings.TrimSpace(queryParams.Get("pesan"))
+        if len(pesan) &gt; maxStringLen </span>{
+                <span class="cov8" title="1">pesan = ""
+</span>        }
+
+        <span class="cov8" title="1">filter := domain.InboxFilter{
+                StartDate:           params.StartDate,
+                EndDate:             params.EndDate,
+                Limit:               params.Limit,
+                Terminal:            terminalPtr,
+                Reseller:            resellerPtr,
+                Pengirim:            pengirimPtr,
+                Tipe:                tipePtr,
+                Status:              statusPtr,
+                StatusMin:           statusMinPtr,
+                Pesan:               pesan,
+                RequestFromReseller: reqFromResellerPtr,
+                JawabanFromProvider: jawFromProviderPtr,
+</span>        }
+
+        <span class="cov8" title="1">data, err := h.usecase.GetInbox(r.Context(), tenant, dbSource, filter)
+        if err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{"items": data})</span>
+}
+
+func (h *InboxHandler) CreateInbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">var payload dto.CreateInboxRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+
+        <span class="cov8" title="1">tipePengirim := payload.TipePengirim
+        if tipePengirim == "" </span>{
+                <span class="cov8" title="1">tipePengirim = "S"
+</span>        }
+        <span class="cov8" title="1">status := int16(0)
+        if payload.Status != nil </span>{
+                <span class="cov8" title="1">status = *payload.Status
+</span>        }
+        <span class="cov8" title="1">isJawaban := int16(0)
+        if payload.IsJawaban != nil </span>{
+                <span class="cov8" title="1">isJawaban = *payload.IsJawaban
+</span>        }
+
+        <span class="cov8" title="1">data := domain.Inbox{
+                Pesan:         payload.Pesan,
+                Pengirim:      payload.Pengirim,
+                Penerima:      payload.Penerima,
+                TipePengirim:  tipePengirim,
+                Status:        status,
+                KodeTerminal:  payload.KodeTerminal,
+                KodeReseller:  payload.KodeReseller,
+                KodeTransaksi: payload.KodeTransaksi,
+                ServiceCenter: payload.ServiceCenter,
+                IsJawaban:     isJawaban,
+                IsCs:          payload.IsCs,
+                KodeJawabanCs: payload.KodeJawabanCs,
+                Hash:          payload.Hash,
+</span>        }
+
+        <span class="cov8" title="1">if err := h.usecase.CreateInbox(r.Context(), tenant, dbSource, data); err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+        <span class="cov8" title="1">response.SuccessCreated(w, r, map[string]any{"message": "Sukses"})</span>
+}
+
+func (h *InboxHandler) UpdateInbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        kodeStr := chi.URLParam(r, "kode")
+        kode, err := strconv.ParseInt(kodeStr, 10, 64)
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Parameter kode harus berupa angka")
+                return
+</span>        }
+
+        <span class="cov8" title="1">dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">var payload dto.UpdateInboxRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+
+        <span class="cov8" title="1">if err := h.usecase.UpdateInbox(r.Context(), tenant, dbSource, kode, payload); err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{"message": "Sukses"})</span>
+}
+
+func NewInboxHandler(usecase *usecase.InboxUsecase) *InboxHandler {
+        <span class="cov8" title="1">return &amp;InboxHandler{usecase: usecase}
+</span>}
+
+func (h *InboxHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+        <span class="cov8" title="1">protected.Route("/api/v1/{tenant}/inbox", func(inbox chi.Router) </span>{
+                <span class="cov8" title="1">inbox.Group(func(read chi.Router) </span>{
+                        <span class="cov8" title="1">read.Use(api_middleware.RequireRole(roleMatrix["ReadInbox"]...))
+                        read.Get("/", h.GetInbox)
+</span>                })
+
+                <span class="cov8" title="1">inbox.Group(func(write chi.Router) </span>{
+                        <span class="cov8" title="1">write.Use(api_middleware.RequireRole(roleMatrix["WriteInbox"]...))
+                        write.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
+                        write.Post("/", h.CreateInbox)
+                        write.Put("/{kode}", h.UpdateInbox)
+</span>                })
+        })
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package http
+
+import (
+        "net/http"
+
+        "github.com/go-chi/chi/v5"
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/usecase"
+        "go.internal/business-data-api/pkg/response"
+
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+type MasterHandler struct {
+        usecase *usecase.MasterUsecase
+}
+
+func (h *MasterHandler) ListResellerForDropdown(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">data, err := h.usecase.ListResellerForDropdown(r.Context(), tenant, dbSource)
+        if err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{
+                "items": data,
+        })</span>
+}
+
+func NewMasterHandler(usecase *usecase.MasterUsecase) *MasterHandler {
+        <span class="cov8" title="1">return &amp;MasterHandler{usecase: usecase}
+</span>}
+
+func (h *MasterHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+        <span class="cov8" title="1">protected.Route("/api/v1/{tenant}/master", func(master chi.Router) </span>{
+                <span class="cov8" title="1">master.Use(api_middleware.RequireRole(roleMatrix["ReadResellerDropdown"]...))
+                master.Get("/reseller-dropdown", h.ListResellerForDropdown)
+</span>        })
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package http
+
+import (
+        "encoding/json"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/go-chi/chi/v5"
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/internal/usecase"
+        "go.internal/business-data-api/pkg/response"
+
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+type OutboxHandler struct {
+        usecase *usecase.OutboxUsecase
+}
+
+func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">queryParams := r.URL.Query()
+        params, err := parseListParams(queryParams)
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">resellerPtr := parseStringFilter(queryParams.Get("reseller"))
+        penerimaPtr := parseStringFilter(queryParams.Get("penerima"))
+        tipePtr := parseStringFilter(queryParams.Get("tipe"))
+</span>
+        <span class="cov8" title="1">statusPtr, statusMinPtr, err := parseStatusFilter(queryParams.Get("status"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">replyToResellerPtr, err := parseBoolFilter(queryParams.Get("replyToReseller"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">perintahProviderPtr, err := parseBoolFilter(queryParams.Get("perintahProvider"))
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, err.Error())
+                return
+</span>        }
+
+        <span class="cov8" title="1">pesan := strings.TrimSpace(queryParams.Get("pesan"))
+        if len(pesan) &gt; maxStringLen </span>{
+                <span class="cov8" title="1">pesan = ""
+</span>        }
+
+        <span class="cov8" title="1">filter := domain.OutboxFilter{
+                StartDate:        params.StartDate,
+                EndDate:          params.EndDate,
+                Limit:            params.Limit,
+                Reseller:         resellerPtr,
+                Penerima:         penerimaPtr,
+                Tipe:             tipePtr,
+                Status:           statusPtr,
+                StatusMin:        statusMinPtr,
+                Pesan:            pesan,
+                ReplyToReseller:  replyToResellerPtr,
+                PerintahProvider: perintahProviderPtr,
+</span>        }
+
+        <span class="cov8" title="1">data, err := h.usecase.GetOutbox(r.Context(), tenant, dbSource, filter)
+        if err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{"items": data})</span>
+}
+
+func (h *OutboxHandler) CreateOutbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">var payload dto.CreateOutboxRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+
+        <span class="cov8" title="1">tipePenerima := payload.TipePenerima
+        if tipePenerima == "" </span>{
+                <span class="cov8" title="1">tipePenerima = "P"
+</span>        }
+        <span class="cov8" title="1">status := int16(payload.Status)
+        isPerintah := payload.IsPerintah
+        bebasBiaya := int16(payload.BebasBiaya)
+</span>
+        <span class="cov8" title="1">data := domain.Outbox{
+                Pesan:         payload.Pesan,
+                Penerima:      payload.Penerima,
+                TipePenerima:  tipePenerima,
+                Status:        status,
+                IsPerintah:    isPerintah,
+                BebasBiaya:    bebasBiaya,
+                KodeInbox:     payload.KodeInbox,
+                KodeTransaksi: payload.KodeTransaksi,
+                KodeReseller:  payload.KodeReseller,
+                KodeModul:     payload.KodeModul,
+                Prioritas:     payload.Prioritas,
+                ModulProses:   payload.ModulProses,
+                Pengirim:      payload.Pengirim,
+                KodeTerminal:  payload.KodeTerminal,
+                CtrKirim:      payload.CtrKirim,
+</span>        }
+
+        <span class="cov8" title="1">if err := h.usecase.CreateOutbox(r.Context(), tenant, dbSource, data); err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+        <span class="cov8" title="1">response.SuccessCreated(w, r, map[string]any{"message": "Sukses"})</span>
+}
+
+func (h *OutboxHandler) UpdateOutbox(w http.ResponseWriter, r *http.Request) {
+        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+        kodeStr := chi.URLParam(r, "kode")
+        kode, err := strconv.ParseInt(kodeStr, 10, 64)
+        if err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Parameter kode harus berupa angka")
+                return
+</span>        }
+
+        <span class="cov8" title="1">dbSource := r.Header.Get("X-DB-Source")
+        if dbSource == "" </span>{
+                <span class="cov8" title="1">dbSource = domain.SourcePostgres
+</span>        }
+
+        <span class="cov8" title="1">var payload dto.UpdateOutboxRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;payload); err != nil </span>{
+                <span class="cov8" title="1">response.Error(w, r, http.StatusBadRequest, "Format JSON tidak valid")
+                return
+</span>        }
+
+        <span class="cov8" title="1">if err := h.usecase.UpdateOutbox(r.Context(), tenant, dbSource, kode, payload); err != nil </span>{
+                <span class="cov8" title="1">writeError(w, r, err)
+                return
+</span>        }
+        <span class="cov8" title="1">response.Success(w, r, map[string]any{"message": "Sukses"})</span>
+}
+
+func NewOutboxHandler(usecase *usecase.OutboxUsecase) *OutboxHandler {
+        <span class="cov8" title="1">return &amp;OutboxHandler{usecase: usecase}
+</span>}
+
+func (h *OutboxHandler) RegisterRoutes(_public, protected chi.Router, cfg *config.Config, roleMatrix map[string][]string) {
+        <span class="cov8" title="1">protected.Route("/api/v1/{tenant}/outbox", func(outbox chi.Router) </span>{
+                <span class="cov8" title="1">outbox.Group(func(read chi.Router) </span>{
+                        <span class="cov8" title="1">read.Use(api_middleware.RequireRole(roleMatrix["ReadOutbox"]...))
+                        read.Get("/", h.GetOutbox)
+</span>                })
+
+                <span class="cov8" title="1">outbox.Group(func(write chi.Router) </span>{
+                        <span class="cov8" title="1">write.Use(api_middleware.RequireRole(roleMatrix["WriteOutbox"]...))
+                        write.Use(api_middleware.PostgresWriteGuard(cfg.PostgresWriteEnabled))
+                        write.Post("/", h.CreateOutbox)
+                        write.Put("/{kode}", h.UpdateOutbox)
+</span>                })
+        })
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package http
+
+import (
+        "errors"
+        "net/url"
+        "strconv"
+        "time"
+
+        "go.internal/business-data-api/internal/domain"
+)
+
+const dateLayout = "2006-01-02"
+
+type listParams struct {
+        Limit     int
+        StartDate *time.Time
+        EndDate   *time.Time
+}
+
+var (
+        ErrInvalidStartDate = errors.New("startDate format invalid, expected YYYY-MM-DD")
+        ErrInvalidEndDate   = errors.New("endDate format invalid, expected YYYY-MM-DD")
+        ErrInvalidLimit     = errors.New("limit must be positive integer")
+)
+
+func parseListParams(q url.Values) (listParams, error) {
+        <span class="cov8" title="1">limitStr := q.Get("limit")
+        var limit int
+        if limitStr == "" </span>{
+                <span class="cov8" title="1">limit = domain.DefaultLimit
+</span>        } else {
+                <span class="cov8" title="1">l, err := strconv.Atoi(limitStr)
+                if err != nil || l &lt; 0 </span>{
+                        <span class="cov8" title="1">return listParams{}, ErrInvalidLimit
+</span>                }
+                <span class="cov8" title="1">if l == 0 </span>{
+                        <span class="cov8" title="1">limit = domain.DefaultLimit
+</span>                } else <span class="cov8" title="1">if l &gt; domain.MaxLimit </span>{
+                        <span class="cov8" title="1">limit = domain.MaxLimit
+</span>                } else {
+                        <span class="cov8" title="1">limit = l
+</span>                }
+        }
+
+        <span class="cov8" title="1">var startDate, endDate *time.Time
+        if val := q.Get("startDate"); val != "" </span>{
+                <span class="cov8" title="1">t, err := time.Parse(dateLayout, val)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return listParams{}, ErrInvalidStartDate
+</span>                }
+                <span class="cov8" title="1">startDate = &amp;t</span>
+        }
+        <span class="cov8" title="1">if val := q.Get("endDate"); val != "" </span>{
+                <span class="cov8" title="1">t, err := time.Parse(dateLayout, val)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return listParams{}, ErrInvalidEndDate
+</span>                }
+                <span class="cov8" title="1">akhir := t.AddDate(0, 0, 1).Add(-time.Second)
+                endDate = &amp;akhir</span>
+        }
+
+        <span class="cov8" title="1">return listParams{
+                Limit:     limit,
+                StartDate: startDate,
+                EndDate:   endDate,
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package http
+
+import (
+        "net/http"
+        "os"
+        "path/filepath"
+
+        "github.com/go-chi/chi/v5"
+        "github.com/go-chi/cors"
+        httpSwagger "github.com/swaggo/http-swagger"
+        "go.internal/business-data-api/internal/config"
+        "go.internal/business-data-api/internal/version"
+        "go.internal/business-data-api/pkg/response"
+
+        api_middleware "go.internal/business-data-api/internal/middleware"
+)
+
+func swaggerYAMLPath() string {
+        <span class="cov8" title="1">candidates := []string{"docs/swagger.yaml"}
+        if exe, err := os.Executable(); err == nil </span>{
+                <span class="cov8" title="1">dir := filepath.Dir(exe)
+                candidates = append(candidates,
+                        filepath.Join(dir, "docs", "swagger.yaml"),
+                        filepath.Join(dir, "..", "docs", "swagger.yaml"),
+                )
+</span>        }
+        <span class="cov8" title="1">for _, p := range candidates </span>{
+                <span class="cov8" title="1">if _, err := os.Stat(p); err == nil </span>{
+                        <span class="cov8" title="1">if abs, err := filepath.Abs(p); err == nil </span>{
+                                <span class="cov8" title="1">return abs
+</span>                        }
+                        <span class="cov0" title="0">return p</span>
+                }
+        }
+        <span class="cov8" title="1">return candidates[0]</span>
+}
+
+func SetupRoutes(cfg *config.Config, resolver *api_middleware.TrustedProxyResolver, networkMatrix map[string]bool, roleMatrix map[string][]string, modules ...Module) (*chi.Mux, []*api_middleware.RateLimiter, *api_middleware.KeyManager) {
+        <span class="cov8" title="1">r := chi.NewRouter()
+</span>
+        <span class="cov8" title="1">r.Use(cors.Handler(cors.Options{
+                AllowedOrigins:   cfg.GetAllowedOrigins(),
+                AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+                AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-API-KEY", "X-DB-Source"},
+                ExposedHeaders:   []string{"Link", "Set-Cookie"},
+                AllowCredentials: true,
+                MaxAge:           cfg.CORSMaxAge,
+        }))
+</span>
+        <span class="cov8" title="1">r.Use(api_middleware.PanicRecoverer())
+        r.Use(api_middleware.SecurityTracer(resolver))
+        r.Use(api_middleware.RequestBodyLimit(cfg.MaxBodyBytes))
+</span>
+        <span class="cov8" title="1">if cfg.AppEnv != "production" </span>{
+                <span class="cov8" title="1">r.Get("/docs/swagger.yaml", func(w http.ResponseWriter, req *http.Request) </span>{
+                        <span class="cov8" title="1">http.ServeFile(w, req, swaggerYAMLPath())
+</span>                })
+
+                <span class="cov8" title="1">r.Get("/swagger/*", httpSwagger.Handler(
+                        httpSwagger.URL("/docs/swagger.yaml"),
+                ))</span>
+        }
+
+        <span class="cov8" title="1">keyPath := cfg.APIKeysPath
+        if keyPath == "" </span>{
+                <span class="cov8" title="1">keyPath = "api_keys.json"
+</span>        }
+        <span class="cov8" title="1">keyManager := api_middleware.NewKeyManager(keyPath)
+</span>
+        <span class="cov8" title="1">var limiters []*api_middleware.RateLimiter
+        globalLimiter := api_middleware.NewRateLimiter(cfg.RateLimitGlobalRate, cfg.RateLimitGlobalCapacity, resolver, cfg.RateLimitCleanupInterval)
+        limiters = append(limiters, globalLimiter)
+</span>
+        <span class="cov8" title="1">protectedApiKey := r.With(
+                keyManager.Middleware(),
+                globalLimiter.Middleware(),
+        )
+</span>
+        <span class="cov8" title="1">protectedApiKey.NotFound(func(w http.ResponseWriter, req *http.Request) </span>{
+                <span class="cov8" title="1">response.Error(w, req, http.StatusNotFound, "Endpoint tidak ditemukan")
+</span>        })
+
+        <span class="cov8" title="1">protectedApiKey.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) </span>{
+                <span class="cov8" title="1">response.Error(w, req, http.StatusMethodNotAllowed, "Method HTTP tidak diizinkan pada endpoint ini")
+</span>        })
+
+        <span class="cov8" title="1">protectedApiKey.Get("/health", func(w http.ResponseWriter, req *http.Request) </span>{
+                <span class="cov8" title="1">response.Success(w, req, map[string]string{
+                        "status":  "API berjalan dengan normal!",
+                        "version": version.Get(),
+                })
+</span>        })
+
+        <span class="cov8" title="1">public := protectedApiKey.With(
+                api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
+        )
+</span>
+        <span class="cov8" title="1">protected := protectedApiKey.With(
+                api_middleware.RequireToken(),
+                api_middleware.NetworkRoleGuard(cfg.GlobalLocalOnly, networkMatrix, resolver),
+        )
+</span>
+        <span class="cov8" title="1">for _, m := range modules </span>{
+                <span class="cov8" title="1">m.RegisterRoutes(public, protected, cfg, roleMatrix)
+                if limiterProvider, ok := m.(interface {
+                        RateLimiters() []*api_middleware.RateLimiter
+                }); ok </span>{
+                        <span class="cov8" title="1">limiters = append(limiters, limiterProvider.RateLimiters()...)
+</span>                }
+        }
+
+        <span class="cov8" title="1">return r, limiters, keyManager</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package middleware
+
+import (
+        "encoding/json"
+        "log/slog"
+        "net/http"
+        "os"
+        "sync"
+        "time"
+
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+)
+
+type KeyManager struct {
+        mu   sync.RWMutex
+        keys map[string]string
+        path string
+        done chan struct{}
+        once sync.Once
+}
+
+const keyReloadInterval = 60 * time.Second
+
+func NewKeyManager(path string) *KeyManager {
+        <span class="cov8" title="1">km := &amp;KeyManager{
+                keys: make(map[string]string),
+                path: path,
+                done: make(chan struct{}),
+</span>        }
+        <span class="cov8" title="1">if err := km.reload(); err != nil </span>{
+                <span class="cov8" title="1">slog.Warn("Gagal memuat api_keys.json saat startup", "path", path, "error", err)
+</span>        }
+        <span class="cov8" title="1">go km.runReload(keyReloadInterval)
+        return km</span>
+}
+
+func (km *KeyManager) reload() error {
+        <span class="cov8" title="1">data, err := os.ReadFile(km.path)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">var newKeys map[string]string
+        if err := json.Unmarshal(data, &amp;newKeys); err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">km.mu.Lock()
+        km.keys = newKeys
+        km.mu.Unlock()
+        return nil</span>
+}
+
+func (km *KeyManager) Lookup(key string) (string, bool) {
+        <span class="cov8" title="1">km.mu.RLock()
+        defer km.mu.RUnlock()
+        developer, ok := km.keys[key]
+        return developer, ok
+</span>}
+
+func (km *KeyManager) runReload(interval time.Duration) {
+        <span class="cov8" title="1">ticker := time.NewTicker(interval)
+        defer ticker.Stop()
+        for </span>{
+                <span class="cov8" title="1">select </span>{
+                case &lt;-ticker.C:
+                        <span class="cov8" title="1">if err := km.reload(); err != nil </span>{
+                                <span class="cov8" title="1">slog.Warn("Gagal reload api_keys.json, mempertahankan daftar lama", "path", km.path, "error", err)
+</span>                        }
+                case &lt;-km.done:
+                        <span class="cov8" title="1">return</span>
+                }
+        }
+}
+
+func (km *KeyManager) Stop() {
+        <span class="cov8" title="1">km.once.Do(func() </span>{
+                <span class="cov8" title="1">close(km.done)
+</span>        })
+}
+
+func (km *KeyManager) Middleware() func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                        key := r.Header.Get("X-API-KEY")
+</span>
+                        <span class="cov8" title="1">if key == "" </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusUnauthorized, "Akses ditolak: Header X-API-KEY kosong")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">developerName, exists := km.Lookup(key)
+                        if !exists </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusUnauthorized, "Akses ditolak: API Key tidak terdaftar")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">tCtx.Developer = developerName
+                        next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package middleware
+
+import (
+        "net/http"
+
+        "go.internal/business-data-api/pkg/response"
+)
+
+func RequestBodyLimit(maxBytes int64) func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">if r.ContentLength &gt; maxBytes </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusRequestEntityTooLarge, "Ukuran body permintaan melebihi batas")
+                                return
+</span>                        }
+                        <span class="cov8" title="1">if r.Body != nil </span>{
+                                <span class="cov8" title="1">r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+</span>                        }
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package middleware
+
+import (
+        "context"
+        "log/slog"
+        "net/http"
+        "slices"
+        "strings"
+
+        "github.com/go-chi/chi/v5"
+        "go.internal/business-data-api/pkg/jwt"
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+)
+
+type contextKey string
+
+const claimsKey contextKey = "user_claims"
+
+func RequireToken() func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">authHeader := r.Header.Get("Authorization")
+                        if authHeader == "" </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusUnauthorized, "Token otorisasi diperlukan")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">parts := strings.Split(authHeader, " ")
+                        if len(parts) != 2 || parts[0] != "Bearer" </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusUnauthorized, "Format token tidak valid")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">claims, err := jwt.ValidateToken(parts[1])
+                        if err != nil </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusUnauthorized, "Token kadaluarsa atau tidak valid")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">if userID, ok := claims["user_id"].(float64); ok </span>{
+                                <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                                tCtx.UserID = int(userID)
+</span>                        }
+
+                        <span class="cov8" title="1">tenant := chi.URLParam(r, "tenant")
+                        if claimTenant, ok := claims["tenant"].(string); !ok || claimTenant == "" || claimTenant != tenant </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusForbidden, "Token tidak berlaku untuk tenant ini")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">ctx := context.WithValue(r.Context(), claimsKey, map[string]any(claims))
+                        next.ServeHTTP(w, r.WithContext(ctx))</span>
+                })
+        }
+}
+
+func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">claims, ok := r.Context().Value(claimsKey).(map[string]any)
+                        if !ok </span>{
+                                <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                                slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
+                                response.Error(w, r, http.StatusForbidden, "Gagal mengidentifikasi role")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">userRole, ok := claims["rules"].(string)
+                        if !ok </span>{
+                                <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                                slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
+                                response.Error(w, r, http.StatusForbidden, "Role tidak ditemukan pada token")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">if !slices.Contains(allowedRoles, userRole) </span>{
+                                <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                                slog.Warn("Security Alert - RBAC Block", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "role", claims["rules"])
+                                response.Error(w, r, http.StatusForbidden, "Anda tidak memiliki akses ke resource ini")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package middleware
+
+import (
+        "net"
+        "net/http"
+        "net/netip"
+        "strings"
+
+        "go.internal/business-data-api/pkg/response"
+)
+
+type TrustedProxyResolver struct {
+        prefixes []netip.Prefix
+}
+
+func NewTrustedProxyResolver(prefixes []netip.Prefix) *TrustedProxyResolver {
+        <span class="cov8" title="1">return &amp;TrustedProxyResolver{prefixes: prefixes}
+</span>}
+
+func (t *TrustedProxyResolver) trust(remote netip.Addr) bool {
+        <span class="cov8" title="1">for _, p := range t.prefixes </span>{
+                <span class="cov8" title="1">if p.Contains(remote) </span>{
+                        <span class="cov8" title="1">return true
+</span>                }
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+func (t *TrustedProxyResolver) clientAddr(r *http.Request) netip.Addr {
+        <span class="cov8" title="1">remote := parseRemoteAddr(r.RemoteAddr)
+        if !remote.IsValid() </span>{
+                <span class="cov8" title="1">return netip.Addr{}
+</span>        }
+
+        <span class="cov8" title="1">if !t.trust(remote) </span>{
+                <span class="cov8" title="1">return remote
+</span>        }
+
+        <span class="cov8" title="1">if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" </span>{
+                <span class="cov8" title="1">chain := strings.Split(fwd, ",")
+                for i := len(chain) - 1; i &gt;= 0; i-- </span>{
+                        <span class="cov8" title="1">ip := parseRemoteAddr(chain[i])
+                        if !ip.IsValid() </span>{
+                                <span class="cov8" title="1">break</span>
+                        }
+                        <span class="cov8" title="1">if !t.trust(ip) </span>{
+                                <span class="cov8" title="1">return ip
+</span>                        }
+                }
+        }
+
+        <span class="cov8" title="1">if real := parseRemoteAddr(r.Header.Get("X-Real-IP")); real.IsValid() </span>{
+                <span class="cov8" title="1">return real
+</span>        }
+
+        <span class="cov8" title="1">return remote</span>
+}
+
+func parseRemoteAddr(raw string) netip.Addr {
+        <span class="cov8" title="1">raw = strings.TrimSpace(raw)
+        if raw == "" </span>{
+                <span class="cov8" title="1">return netip.Addr{}
+</span>        }
+        <span class="cov8" title="1">if addr, _, err := net.SplitHostPort(raw); err == nil </span>{
+                <span class="cov8" title="1">raw = addr
+</span>        }
+        <span class="cov8" title="1">ip, err := netip.ParseAddr(strings.TrimSpace(raw))
+        if err != nil </span>{
+                <span class="cov8" title="1">return netip.Addr{}
+</span>        }
+        <span class="cov8" title="1">return ip.Unmap()</span>
+}
+
+func (t *TrustedProxyResolver) IsLocal(r *http.Request) bool {
+        <span class="cov8" title="1">ip := t.clientAddr(r)
+        return ip.IsLoopback() || ip.IsPrivate()
+</span>}
+
+func NetworkRoleGuard(globalLocalOnly bool, roleMatrix map[string]bool, resolver *TrustedProxyResolver) func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">isLocal := resolver.IsLocal(r)
+                        if globalLocalOnly </span>{
+                                <span class="cov8" title="1">if !isLocal </span>{
+                                        <span class="cov8" title="1">response.Error(w, r, http.StatusForbidden, "Akses global ditutup. Hanya menerima koneksi lokal.")
+                                        return
+</span>                                }
+                                <span class="cov8" title="1">next.ServeHTTP(w, r)
+                                return</span>
+                        }
+
+                        <span class="cov8" title="1">claims, ok := r.Context().Value(claimsKey).(map[string]any)
+                        if !ok </span>{
+                                <span class="cov8" title="1">next.ServeHTTP(w, r)
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">userRole, _ := claims["rules"].(string)
+</span>
+                        <span class="cov8" title="1">wajibLokal, roleDefined := roleMatrix[userRole]
+                        if !roleDefined </span>{
+                                <span class="cov8" title="1">wajibLokal, _ = roleMatrix["*"]
+</span>                        }
+
+                        <span class="cov8" title="1">if wajibLokal &amp;&amp; !isLocal </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusForbidden, "Peran Anda hanya diizinkan mengakses modul ini dari jaringan lokal.")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+
+func IsRoleAllowedFromOutside(role string, roleMatrix map[string]bool) bool {
+        <span class="cov8" title="1">wajibLokal, roleDefined := roleMatrix[role]
+        if !roleDefined </span>{
+                <span class="cov8" title="1">wajibLokal, _ = roleMatrix["*"]
+</span>        }
+        <span class="cov8" title="1">return !wajibLokal</span>
+}
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package middleware
+
+import (
+        "net/http"
+
+        "go.internal/business-data-api/pkg/response"
+)
+
+func PostgresWriteGuard(enabled bool) func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete </span>{
+                                <span class="cov8" title="1">dbSource := r.Header.Get("X-DB-Source")
+                                if dbSource == "" </span>{
+                                        <span class="cov8" title="1">dbSource = "postgres"
+</span>                                }
+                                <span class="cov8" title="1">if dbSource == "postgres" &amp;&amp; !enabled </span>{
+                                        <span class="cov8" title="1">response.Error(w, r, http.StatusForbidden, "Operasi tulis ke PostgreSQL tidak diizinkan di environment ini.")
+                                        return
+</span>                                }
+                        }
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package middleware
+
+import (
+        "net/http"
+        "sync"
+        "time"
+
+        "go.internal/business-data-api/pkg/response"
+)
+
+type clientVisitor struct {
+        tokens     float64
+        lastRefill time.Time
+}
+
+type RateLimiter struct {
+        mu       sync.Mutex
+        visitors map[string]*clientVisitor
+        rate     float64
+        capacity float64
+        resolver *TrustedProxyResolver
+        done     chan struct{}
+        once     sync.Once
+}
+
+func (rl *RateLimiter) allow(ip string) bool {
+        <span class="cov8" title="1">rl.mu.Lock()
+        defer rl.mu.Unlock()
+</span>
+        <span class="cov8" title="1">now := time.Now()
+        v, exists := rl.visitors[ip]
+        if !exists </span>{
+                <span class="cov8" title="1">v = &amp;clientVisitor{tokens: rl.capacity, lastRefill: now}
+                rl.visitors[ip] = v
+</span>        } else {
+                <span class="cov8" title="1">elapsed := now.Sub(v.lastRefill).Seconds()
+                v.tokens += elapsed * rl.rate
+                if v.tokens &gt; rl.capacity </span>{
+                        <span class="cov8" title="1">v.tokens = rl.capacity
+</span>                }
+                <span class="cov8" title="1">v.lastRefill = now</span>
+        }
+
+        <span class="cov8" title="1">if v.tokens &gt;= 1 </span>{
+                <span class="cov8" title="1">v.tokens -= 1
+                return true
+</span>        }
+
+        <span class="cov8" title="1">return false</span>
+}
+
+func (rl *RateLimiter) runCleanup(ttl time.Duration) {
+        <span class="cov8" title="1">ticker := time.NewTicker(ttl)
+        defer ticker.Stop()
+        for </span>{
+                <span class="cov8" title="1">select </span>{
+                case &lt;-ticker.C:
+                        <span class="cov8" title="1">rl.cleanup(ttl)</span>
+                case &lt;-rl.done:
+                        <span class="cov8" title="1">return</span>
+                }
+        }
+}
+
+func (rl *RateLimiter) cleanup(ttl time.Duration) {
+        <span class="cov8" title="1">rl.mu.Lock()
+        defer rl.mu.Unlock()
+        for ip, v := range rl.visitors </span>{
+                <span class="cov8" title="1">if time.Since(v.lastRefill) &gt; ttl </span>{
+                        <span class="cov8" title="1">delete(rl.visitors, ip)
+</span>                }
+        }
+}
+
+func (rl *RateLimiter) Stop() {
+        <span class="cov8" title="1">rl.once.Do(func() </span>{
+                <span class="cov8" title="1">close(rl.done)
+</span>        })
+}
+
+func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">ip := r.RemoteAddr
+                        if rl.resolver != nil </span>{
+                                <span class="cov8" title="1">if addr := rl.resolver.clientAddr(r); addr.IsValid() </span>{
+                                        <span class="cov8" title="1">ip = addr.String()
+</span>                                }
+                        }
+
+                        <span class="cov8" title="1">if !rl.allow(ip) </span>{
+                                <span class="cov8" title="1">response.Error(w, r, http.StatusTooManyRequests, "Batas request terlampaui. Silakan coba sesaat lagi.")
+                                return
+</span>                        }
+
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+
+const defaultCleanupInterval = 3 * time.Minute
+
+func NewRateLimiter(ratePerSec float64, capacity int, resolver *TrustedProxyResolver, cleanupInterval time.Duration) *RateLimiter {
+        <span class="cov8" title="1">if cleanupInterval &lt;= 0 </span>{
+                <span class="cov8" title="1">cleanupInterval = defaultCleanupInterval
+</span>        }
+        <span class="cov8" title="1">rl := &amp;RateLimiter{
+                visitors: make(map[string]*clientVisitor),
+                rate:     ratePerSec,
+                capacity: float64(capacity),
+                resolver: resolver,
+                done:     make(chan struct{}),
+</span>        }
+        <span class="cov8" title="1">go rl.runCleanup(cleanupInterval)
+        return rl</span>
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package middleware
+
+import (
+        "fmt"
+        "log/slog"
+        "net/http"
+        "runtime/debug"
+
+        "go.internal/business-data-api/pkg/logger"
+        "go.internal/business-data-api/pkg/response"
+)
+
+func PanicRecoverer() func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">defer func() </span>{
+                                <span class="cov8" title="1">if err := recover(); err != nil </span>{
+                                        <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+                                        stack := string(debug.Stack())
+                                        slog.Error("System Panic / Crash", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "error", fmt.Sprintf("%v", err), "stack", stack)
+                                        response.Error(w, r, http.StatusInternalServerError, "Terjadi kesalahan sistem yang fatal")
+</span>                                }
+                        }()
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package middleware
+
+import (
+        "crypto/rand"
+        "fmt"
+        "log/slog"
+        "net/http"
+        "time"
+
+        "github.com/go-chi/chi/v5/middleware"
+        "go.internal/business-data-api/pkg/logger"
+)
+
+func SecurityTracer(resolver *TrustedProxyResolver) func(http.Handler) http.Handler {
+        <span class="cov8" title="1">return func(next http.Handler) http.Handler </span>{
+                <span class="cov8" title="1">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov8" title="1">start := time.Now()
+                        ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+</span>
+                        <span class="cov8" title="1">b := make([]byte, 16)
+                        rand.Read(b)
+                        traceID := fmt.Sprintf("TRC-%x", b)
+</span>
+                        <span class="cov8" title="1">ip := r.RemoteAddr
+                        if resolver != nil </span>{
+                                <span class="cov8" title="1">if addr := resolver.clientAddr(r); addr.IsValid() </span>{
+                                        <span class="cov8" title="1">ip = addr.String()
+</span>                                }
+                        }
+
+                        <span class="cov8" title="1">tCtx := &amp;logger.TraceContext{
+                                TraceID:   traceID,
+                                Developer: "Tidak Diketahui",
+                                IP:        ip,
+                                Path:      r.URL.Path,
+</span>                        }
+                        <span class="cov8" title="1">ctx := logger.SetTraceContext(r.Context(), tCtx)
+</span>
+                        <span class="cov8" title="1">next.ServeHTTP(ww, r.WithContext(ctx))
+</span>
+                        <span class="cov8" title="1">slog.Info("Audit Log",
+                                "trace_id", tCtx.TraceID,
+                                "method", r.Method,
+                                "path", tCtx.Path,
+                                "ip", tCtx.IP,
+                                "developer", tCtx.Developer,
+                                "status", ww.Status(),
+                                "latency_ms", time.Since(start).Milliseconds(),
+                        )</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file21" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+        "fmt"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/jackc/pgx/v5"
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/pkg/database"
+)
+
+const cutSlack = 50000
+
+func cutEndPG(ctx context.Context, db database.PGConn, table string, end time.Time) (int64, error) {
+        <span class="cov8" title="1">var kode int64
+        err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri &lt;= $1 ORDER BY kode DESC LIMIT 1", end).Scan(&amp;kode)
+        if errors.Is(err, pgx.ErrNoRows) </span>{
+                <span class="cov8" title="1">return 0, nil
+</span>        }
+        <span class="cov8" title="1">return kode, err</span>
+}
+
+func cutStartPG(ctx context.Context, db database.PGConn, table string, start time.Time) (int64, error) {
+        <span class="cov8" title="1">var kode int64
+        err := db.QueryRow(ctx, "SELECT kode FROM "+table+" WHERE tgl_entri &lt; $1 ORDER BY kode DESC LIMIT 1", start).Scan(&amp;kode)
+        if errors.Is(err, pgx.ErrNoRows) </span>{
+                <span class="cov8" title="1">return 0, nil
+</span>        }
+        <span class="cov8" title="1">return kode, err</span>
+}
+
+type InboxRepositories struct {
+        PG domain.InboxRepository
+        MS domain.InboxRepository
+}
+
+type inboxPGRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *inboxPGRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">f := filter
+        f.StartDate = nil
+        whereClause, args, argID := buildInboxFilterPG(f)
+</span>
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">cut, err := cutEndPG(ctx, db, "inbox", *filter.EndDate)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">whereClause = prependBound(whereClause, " AND kode &lt;= $"+strconv.Itoa(argID))
+                args = append(args, cut+cutSlack)
+                argID++</span>
+        }
+
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">cut, err := cutStartPG(ctx, db, "inbox", *filter.StartDate)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND kode &gt; $%d`, argID)
+                args = append(args, cut)
+                argID++</span>
+        }
+
+        <span class="cov8" title="1">cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
+</span>
+        <span class="cov8" title="1">useTglLeading := filter.EndDate != nil &amp;&amp; ((filter.JawabanFromProvider != nil &amp;&amp; *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil &amp;&amp; *filter.RequestFromReseller))
+</span>
+        <span class="cov8" title="1">query, pqArgs := buildListQueryPG(cols, "inbox", whereClause, args, argID, useTglLeading, filter.Limit)
+        rows, err := db.Query(ctx, query, pqArgs...)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var inboxes []dto.InboxItem
+</span>
+        <span class="cov8" title="1">for rows.Next() </span>{
+                <span class="cov8" title="1">var i dto.InboxItem
+                if err := rows.Scan(&amp;i.Kode, &amp;i.TglEntri, &amp;i.Pengirim, &amp;i.KodeReseller, &amp;i.Pesan, &amp;i.Status, &amp;i.TglStatus, &amp;i.KodeTerminal, &amp;i.ServiceCenter, &amp;i.KodeTransaksi); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">inboxes = append(inboxes, i)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return inboxes, nil</span>
+}
+func (r *inboxPGRepository) Insert(ctx context.Context, tenant string, data domain.Inbox) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.Exec(ctx, `INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`, time.Now(), data.Pengirim, data.TipePengirim, data.Penerima, data.Pesan, data.Status, data.KodeTerminal, data.KodeReseller, data.KodeTransaksi, data.IsJawaban, data.ServiceCenter, data.IsCs, data.KodeJawabanCs, data.Hash)
+        return err</span>
+}
+
+func (r *inboxPGRepository) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">var tglStatus *time.Time
+        if req.Status != nil </span>{
+                <span class="cov8" title="1">now := time.Now()
+                tglStatus = &amp;now
+</span>        }
+        <span class="cov8" title="1">query := `UPDATE inbox SET
+                tgl_status = COALESCE($1, tgl_status),
+                pesan = COALESCE($2, pesan),
+                status = COALESCE($3, status),
+                pengirim = COALESCE($4, pengirim),
+                tipe_pengirim = COALESCE($5, tipe_pengirim),
+                penerima = COALESCE($6, penerima),
+                kode_terminal = COALESCE($7, kode_terminal),
+                kode_reseller = COALESCE($8, kode_reseller),
+                kode_transaksi = COALESCE($9, kode_transaksi),
+                is_jawaban = COALESCE($10, is_jawaban),
+                service_center = COALESCE($11, service_center),
+                is_cs = COALESCE($12, is_cs),
+                kode_jawaban_cs = COALESCE($13, kode_jawaban_cs),
+                hash = COALESCE($14, hash)
+        WHERE kode = $15`
+        _, err = db.Exec(ctx, query, tglStatus, req.Pesan, req.Status, req.Pengirim, req.TipePengirim, req.Penerima, req.KodeTerminal, req.KodeReseller, req.KodeTransaksi, req.IsJawaban, req.ServiceCenter, req.IsCs, req.KodeJawabanCs, req.Hash, kode)
+        return err</span>
+}
+
+type inboxMSRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *inboxMSRepository) Get(ctx context.Context, tenant string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">whereClause, namedArgs := buildInboxFilterMS(filter)
+</span>
+        <span class="cov8" title="1">cols := []string{"kode", "tgl_entri", "pengirim", "kode_reseller", "pesan", "status", "tgl_status", "kode_terminal", "service_center", "kode_transaksi"}
+        useTglLeading := filter.EndDate != nil &amp;&amp; ((filter.JawabanFromProvider != nil &amp;&amp; *filter.JawabanFromProvider) || (filter.RequestFromReseller != nil &amp;&amp; *filter.RequestFromReseller))
+        query, pqNamed := buildListQueryMS(cols, "inbox", whereClause, namedArgs, useTglLeading, filter.Limit)
+</span>
+        <span class="cov8" title="1">rows, err := db.QueryContext(ctx, query, pqNamed...)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var inboxes []dto.InboxItem
+</span>
+        <span class="cov8" title="1">for rows.Next() </span>{
+                <span class="cov8" title="1">var i dto.InboxItem
+                if err := rows.Scan(&amp;i.Kode, &amp;i.TglEntri, &amp;i.Pengirim, &amp;i.KodeReseller, &amp;i.Pesan, &amp;i.Status, &amp;i.TglStatus, &amp;i.KodeTerminal, &amp;i.ServiceCenter, &amp;i.KodeTransaksi); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">inboxes = append(inboxes, i)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return inboxes, nil</span>
+}
+func (r *inboxMSRepository) Insert(ctx context.Context, tenant string, data domain.Inbox) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.ExecContext(ctx, `INSERT INTO inbox (tgl_entri, pengirim, tipe_pengirim, penerima, pesan, status, kode_terminal, kode_reseller, kode_transaksi, is_jawaban, service_center, is_cs, kode_jawaban_cs, hash) VALUES (@tgl_entri, @pengirim, @tipe_pengirim, @penerima, @pesan, @status, @kode_terminal, @kode_reseller, @kode_transaksi, @is_jawaban, @service_center, @is_cs, @kode_jawaban_cs, @hash)`, sql.Named("tgl_entri", time.Now()), sql.Named("pengirim", data.Pengirim), sql.Named("tipe_pengirim", data.TipePengirim), sql.Named("penerima", data.Penerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("kode_reseller", data.KodeReseller), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("is_jawaban", data.IsJawaban), sql.Named("service_center", data.ServiceCenter), sql.Named("is_cs", data.IsCs), sql.Named("kode_jawaban_cs", data.KodeJawabanCs), sql.Named("hash", data.Hash))
+        return err</span>
+}
+
+func (r *inboxMSRepository) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateInboxRequest) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">var tglStatus *time.Time
+        if req.Status != nil </span>{
+                <span class="cov8" title="1">now := time.Now()
+                tglStatus = &amp;now
+</span>        }
+        <span class="cov8" title="1">query := `UPDATE inbox SET
+                tgl_status = COALESCE(@tgl_status, tgl_status),
+                pesan = COALESCE(@pesan, pesan),
+                status = COALESCE(@status, status),
+                pengirim = COALESCE(@pengirim, pengirim),
+                tipe_pengirim = COALESCE(@tipe_pengirim, tipe_pengirim),
+                penerima = COALESCE(@penerima, penerima),
+                kode_terminal = COALESCE(@kode_terminal, kode_terminal),
+                kode_reseller = COALESCE(@kode_reseller, kode_reseller),
+                kode_transaksi = COALESCE(@kode_transaksi, kode_transaksi),
+                is_jawaban = COALESCE(@is_jawaban, is_jawaban),
+                service_center = COALESCE(@service_center, service_center),
+                is_cs = COALESCE(@is_cs, is_cs),
+                kode_jawaban_cs = COALESCE(@kode_jawaban_cs, kode_jawaban_cs),
+                hash = COALESCE(@hash, hash)
+        WHERE kode = @kode`
+        _, err = db.ExecContext(ctx, query,
+                sql.Named("tgl_status", tglStatus),
+                sql.Named("pesan", req.Pesan),
+                sql.Named("status", req.Status),
+                sql.Named("pengirim", req.Pengirim),
+                sql.Named("tipe_pengirim", req.TipePengirim),
+                sql.Named("penerima", req.Penerima),
+                sql.Named("kode_terminal", req.KodeTerminal),
+                sql.Named("kode_reseller", req.KodeReseller),
+                sql.Named("kode_transaksi", req.KodeTransaksi),
+                sql.Named("is_jawaban", req.IsJawaban),
+                sql.Named("service_center", req.ServiceCenter),
+                sql.Named("is_cs", req.IsCs),
+                sql.Named("kode_jawaban_cs", req.KodeJawabanCs),
+                sql.Named("hash", req.Hash),
+                sql.Named("kode", kode),
+        )
+        return err</span>
+}
+
+func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {
+        <span class="cov8" title="1">whereClause := ` WHERE 1=1`
+        args := []any{}
+        argID := 1
+</span>
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tgl_entri &gt;= $%d`, argID)
+                args = append(args, *filter.StartDate)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tgl_entri &lt;= $%d`, argID)
+                args = append(args, *filter.EndDate)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Terminal != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND kode_terminal = $%d`, argID)
+                args = append(args, *filter.Terminal)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Reseller != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND kode_reseller = $%d`, argID)
+                args = append(args, *filter.Reseller)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Pengirim != nil </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Pengirim, "%", "\\%"), "_", "\\_")
+                whereClause += fmt.Sprintf(` AND pengirim ILIKE $%d`, argID)
+                args = append(args, "%"+escaped+"%")
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Tipe != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tipe_pengirim = $%d`, argID)
+                args = append(args, *filter.Tipe)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Status != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND status = $%d`, argID)
+                args = append(args, *filter.Status)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.StatusMin != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND status &gt;= $%d`, argID)
+                args = append(args, *filter.StatusMin)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Pesan != "" </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
+                whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
+                args = append(args, "%"+escaped+"%")
+                argID++
+</span>        }
+        <span class="cov8" title="1">jawaban := filter.JawabanFromProvider != nil &amp;&amp; *filter.JawabanFromProvider
+        request := filter.RequestFromReseller != nil &amp;&amp; *filter.RequestFromReseller
+        if request &amp;&amp; !jawaban </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
+</span>        } else <span class="cov8" title="1">if jawaban &amp;&amp; !request </span>{
+                <span class="cov0" title="0">whereClause += ` AND is_jawaban = 1`
+</span>        }
+
+        <span class="cov8" title="1">return whereClause, args, argID</span>
+}
+
+func buildInboxFilterMS(filter domain.InboxFilter) (string, []any) {
+        <span class="cov8" title="1">whereClause := ` WHERE 1=1`
+        namedArgs := []any{}
+</span>
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tgl_entri &gt;= @startDate`
+                namedArgs = append(namedArgs, sql.Named("startDate", *filter.StartDate))
+</span>        }
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tgl_entri &lt;= @endDate`
+                namedArgs = append(namedArgs, sql.Named("endDate", *filter.EndDate))
+</span>        }
+        <span class="cov8" title="1">if filter.Terminal != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_terminal = @terminal`
+                namedArgs = append(namedArgs, sql.Named("terminal", *filter.Terminal))
+</span>        }
+        <span class="cov8" title="1">if filter.Reseller != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller = @reseller`
+                namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
+</span>        }
+        <span class="cov8" title="1">if filter.Pengirim != nil </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Pengirim, "%", "\\%"), "_", "\\_")
+                whereClause += ` AND pengirim LIKE '%' + @pengirim + '%'`
+                namedArgs = append(namedArgs, sql.Named("pengirim", escaped))
+</span>        }
+        <span class="cov8" title="1">if filter.Tipe != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tipe_pengirim = @tipe`
+                namedArgs = append(namedArgs, sql.Named("tipe", *filter.Tipe))
+</span>        }
+        <span class="cov8" title="1">if filter.Status != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND status = @status`
+                namedArgs = append(namedArgs, sql.Named("status", *filter.Status))
+</span>        }
+        <span class="cov8" title="1">if filter.StatusMin != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND status &gt;= @statusMin`
+                namedArgs = append(namedArgs, sql.Named("statusMin", *filter.StatusMin))
+</span>        }
+        <span class="cov8" title="1">if filter.Pesan != "" </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
+                whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
+                namedArgs = append(namedArgs, sql.Named("pesan", escaped))
+</span>        }
+        <span class="cov8" title="1">jawaban := filter.JawabanFromProvider != nil &amp;&amp; *filter.JawabanFromProvider
+        request := filter.RequestFromReseller != nil &amp;&amp; *filter.RequestFromReseller
+        if request &amp;&amp; !jawaban </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller IS NOT NULL AND is_jawaban = 0`
+</span>        } else <span class="cov8" title="1">if jawaban &amp;&amp; !request </span>{
+                <span class="cov0" title="0">whereClause += ` AND is_jawaban = 1`
+</span>        }
+
+        <span class="cov8" title="1">return whereClause, namedArgs</span>
+}
+
+func NewInboxRepositories(dbRegistry *database.DBRegistry) *InboxRepositories {
+        <span class="cov8" title="1">return &amp;InboxRepositories{
+                PG: &amp;inboxPGRepository{dbRegistry: dbRegistry},
+                MS: &amp;inboxMSRepository{dbRegistry: dbRegistry},
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file22" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "strconv"
+        "strings"
+        "time"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/pkg/database"
+)
+
+type OutboxRepositories struct {
+        PG domain.OutboxRepository
+        MS domain.OutboxRepository
+}
+
+type outboxPGRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *outboxPGRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">f := filter
+        f.StartDate = nil
+        whereClause, args, argID := buildOutboxFilterPG(f)
+</span>
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">cut, err := cutEndPG(ctx, db, "outbox", *filter.EndDate)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">whereClause = prependBound(whereClause, " AND kode &lt;= $"+strconv.Itoa(argID))
+                args = append(args, cut+cutSlack)
+                argID++</span>
+        }
+
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">cut, err := cutStartPG(ctx, db, "outbox", *filter.StartDate)
+                if err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND kode &gt; $%d`, argID)
+                args = append(args, cut)
+                argID++</span>
+        }
+
+        <span class="cov8" title="1">cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi", "tipe_penerima", "kode_inbox"}
+</span>
+        <span class="cov8" title="1">useTglLeading := filter.EndDate != nil &amp;&amp; ((filter.PerintahProvider != nil &amp;&amp; *filter.PerintahProvider) || (filter.ReplyToReseller != nil &amp;&amp; *filter.ReplyToReseller))
+        query, pqArgs := buildListQueryPG(cols, "outbox", whereClause, args, argID, useTglLeading, filter.Limit)
+        rows, err := db.Query(ctx, query, pqArgs...)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var outboxes []dto.OutboxItem
+</span>
+        <span class="cov8" title="1">for rows.Next() </span>{
+                <span class="cov8" title="1">var o dto.OutboxItem
+                if err := rows.Scan(&amp;o.Kode, &amp;o.TglEntri, &amp;o.Penerima, &amp;o.KodeReseller, &amp;o.Pesan, &amp;o.Status, &amp;o.TglStatus, &amp;o.KodeTransaksi, &amp;o.TipePenerima, &amp;o.KodeInbox); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">outboxes = append(outboxes, o)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return outboxes, nil</span>
+}
+
+func (r *outboxPGRepository) Insert(ctx context.Context, tenant string, data domain.Outbox) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">query := `INSERT INTO outbox (tgl_entri, penerima, tipe_penerima, pesan, status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
+        _, err = db.Exec(ctx, query, time.Now(), data.Penerima, data.TipePenerima, data.Pesan, data.Status, data.KodeInbox, data.KodeTransaksi, data.KodeReseller, data.BebasBiaya, data.IsPerintah, data.KodeModul, data.Prioritas, data.ModulProses, data.Pengirim, data.KodeTerminal, data.CtrKirim)
+        return err</span>
+}
+
+func (r *outboxPGRepository) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">var tglStatus *time.Time
+        if req.Status != nil </span>{
+                <span class="cov8" title="1">now := time.Now()
+                tglStatus = &amp;now
+</span>        }
+        <span class="cov8" title="1">query := `UPDATE outbox SET
+                tgl_status = COALESCE($1, tgl_status),
+                penerima = COALESCE($2, penerima),
+                tipe_penerima = COALESCE($3, tipe_penerima),
+                pesan = COALESCE($4, pesan),
+                status = COALESCE($5, status),
+                bebas_biaya = COALESCE($6, bebas_biaya),
+                kode_inbox = COALESCE($7, kode_inbox),
+                kode_transaksi = COALESCE($8, kode_transaksi),
+                kode_reseller = COALESCE($9, kode_reseller),
+                is_perintah = COALESCE($10, is_perintah),
+                kode_modul = COALESCE($11, kode_modul),
+                prioritas = COALESCE($12, prioritas),
+                modul_proses = COALESCE($13, modul_proses),
+                pengirim = COALESCE($14, pengirim),
+                kode_terminal = COALESCE($15, kode_terminal),
+                ctr_kirim = COALESCE($16, ctr_kirim)
+        WHERE kode = $17`
+        _, err = db.Exec(ctx, query, tglStatus, req.Penerima, req.TipePenerima, req.Pesan, req.Status, req.BebasBiaya, req.KodeInbox, req.KodeTransaksi, req.KodeReseller, req.IsPerintah, req.KodeModul, req.Prioritas, req.ModulProses, req.Pengirim, req.KodeTerminal, req.CtrKirim, kode)
+        return err</span>
+}
+
+type outboxMSRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *outboxMSRepository) Get(ctx context.Context, tenant string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">whereClause, namedArgs := buildOutboxFilterMS(filter)
+</span>
+        <span class="cov8" title="1">cols := []string{"kode", "tgl_entri", "penerima", "kode_reseller", "pesan", "status", "tgl_status", "kode_transaksi", "tipe_penerima", "kode_inbox"}
+        useTglLeading := filter.EndDate != nil &amp;&amp; ((filter.PerintahProvider != nil &amp;&amp; *filter.PerintahProvider) || (filter.ReplyToReseller != nil &amp;&amp; *filter.ReplyToReseller))
+        query, pqNamed := buildListQueryMS(cols, "outbox", whereClause, namedArgs, useTglLeading, filter.Limit)
+</span>
+        <span class="cov8" title="1">rows, err := db.QueryContext(ctx, query, pqNamed...)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var outboxes []dto.OutboxItem
+</span>
+        <span class="cov8" title="1">for rows.Next() </span>{
+                <span class="cov8" title="1">var o dto.OutboxItem
+                if err := rows.Scan(&amp;o.Kode, &amp;o.TglEntri, &amp;o.Penerima, &amp;o.KodeReseller, &amp;o.Pesan, &amp;o.Status, &amp;o.TglStatus, &amp;o.KodeTransaksi, &amp;o.TipePenerima, &amp;o.KodeInbox); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">outboxes = append(outboxes, o)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return outboxes, nil</span>
+}
+
+func (r *outboxMSRepository) Insert(ctx context.Context, tenant string, data domain.Outbox) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">query := `INSERT INTO outbox (tgl_entri, penerima, tipe_penerima, pesan, status, kode_inbox, kode_transaksi, kode_reseller, bebas_biaya, is_perintah, kode_modul, prioritas, modul_proses, pengirim, kode_terminal, ctr_kirim) VALUES (@tgl_entri, @penerima, @tipe_penerima, @pesan, @status, @kode_inbox, @kode_transaksi, @kode_reseller, @bebas_biaya, @is_perintah, @kode_modul, @prioritas, @modul_proses, @pengirim, @kode_terminal, @ctr_kirim)`
+        _, err = db.ExecContext(ctx, query, sql.Named("tgl_entri", time.Now()), sql.Named("penerima", data.Penerima), sql.Named("tipe_penerima", data.TipePenerima), sql.Named("pesan", data.Pesan), sql.Named("status", data.Status), sql.Named("kode_inbox", data.KodeInbox), sql.Named("kode_transaksi", data.KodeTransaksi), sql.Named("kode_reseller", data.KodeReseller), sql.Named("bebas_biaya", data.BebasBiaya), sql.Named("is_perintah", data.IsPerintah), sql.Named("kode_modul", data.KodeModul), sql.Named("prioritas", data.Prioritas), sql.Named("modul_proses", data.ModulProses), sql.Named("pengirim", data.Pengirim), sql.Named("kode_terminal", data.KodeTerminal), sql.Named("ctr_kirim", data.CtrKirim))
+        return err</span>
+}
+
+func (r *outboxMSRepository) Update(ctx context.Context, tenant string, kode int64, req dto.UpdateOutboxRequest) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">var tglStatus *time.Time
+        if req.Status != nil </span>{
+                <span class="cov8" title="1">now := time.Now()
+                tglStatus = &amp;now
+</span>        }
+        <span class="cov8" title="1">query := `UPDATE outbox SET
+                tgl_status = COALESCE(@tgl_status, tgl_status),
+                penerima = COALESCE(@penerima, penerima),
+                tipe_penerima = COALESCE(@tipe_penerima, tipe_penerima),
+                pesan = COALESCE(@pesan, pesan),
+                status = COALESCE(@status, status),
+                bebas_biaya = COALESCE(@bebas_biaya, bebas_biaya),
+                kode_inbox = COALESCE(@kode_inbox, kode_inbox),
+                kode_transaksi = COALESCE(@kode_transaksi, kode_transaksi),
+                kode_reseller = COALESCE(@kode_reseller, kode_reseller),
+                is_perintah = COALESCE(@is_perintah, is_perintah),
+                kode_modul = COALESCE(@kode_modul, kode_modul),
+                prioritas = COALESCE(@prioritas, prioritas),
+                modul_proses = COALESCE(@modul_proses, modul_proses),
+                pengirim = COALESCE(@pengirim, pengirim),
+                kode_terminal = COALESCE(@kode_terminal, kode_terminal),
+                ctr_kirim = COALESCE(@ctr_kirim, ctr_kirim)
+        WHERE kode = @kode`
+        _, err = db.ExecContext(ctx, query,
+                sql.Named("tgl_status", tglStatus),
+                sql.Named("penerima", req.Penerima),
+                sql.Named("tipe_penerima", req.TipePenerima),
+                sql.Named("pesan", req.Pesan),
+                sql.Named("status", req.Status),
+                sql.Named("bebas_biaya", req.BebasBiaya),
+                sql.Named("kode_inbox", req.KodeInbox),
+                sql.Named("kode_transaksi", req.KodeTransaksi),
+                sql.Named("kode_reseller", req.KodeReseller),
+                sql.Named("is_perintah", req.IsPerintah),
+                sql.Named("kode_modul", req.KodeModul),
+                sql.Named("prioritas", req.Prioritas),
+                sql.Named("modul_proses", req.ModulProses),
+                sql.Named("pengirim", req.Pengirim),
+                sql.Named("kode_terminal", req.KodeTerminal),
+                sql.Named("ctr_kirim", req.CtrKirim),
+                sql.Named("kode", kode),
+        )
+        return err</span>
+}
+
+func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
+        <span class="cov8" title="1">whereClause := ` WHERE 1=1`
+        args := []any{}
+        argID := 1
+</span>
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tgl_entri &gt;= $%d`, argID)
+                args = append(args, *filter.StartDate)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tgl_entri &lt;= $%d`, argID)
+                args = append(args, *filter.EndDate)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Reseller != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND kode_reseller = $%d`, argID)
+                args = append(args, *filter.Reseller)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Penerima != nil </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Penerima, "%", "\\%"), "_", "\\_")
+                whereClause += fmt.Sprintf(` AND penerima ILIKE $%d`, argID)
+                args = append(args, "%"+escaped+"%")
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Tipe != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND tipe_penerima = $%d`, argID)
+                args = append(args, *filter.Tipe)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Status != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND status = $%d`, argID)
+                args = append(args, *filter.Status)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.StatusMin != nil </span>{
+                <span class="cov8" title="1">whereClause += fmt.Sprintf(` AND status &gt;= $%d`, argID)
+                args = append(args, *filter.StatusMin)
+                argID++
+</span>        }
+        <span class="cov8" title="1">if filter.Pesan != "" </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
+                whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
+                args = append(args, "%"+escaped+"%")
+                argID++
+</span>        }
+        <span class="cov8" title="1">perintah := filter.PerintahProvider != nil &amp;&amp; *filter.PerintahProvider
+        reply := filter.ReplyToReseller != nil &amp;&amp; *filter.ReplyToReseller
+        if reply &amp;&amp; !perintah </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
+</span>        } else <span class="cov8" title="1">if perintah &amp;&amp; !reply </span>{
+                <span class="cov0" title="0">whereClause += ` AND is_perintah = 1`
+</span>        }
+
+        <span class="cov8" title="1">return whereClause, args, argID</span>
+}
+
+func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
+        <span class="cov8" title="1">whereClause := ` WHERE 1=1`
+        namedArgs := []any{}
+</span>
+        <span class="cov8" title="1">if filter.StartDate != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tgl_entri &gt;= @startDate`
+                namedArgs = append(namedArgs, sql.Named("startDate", *filter.StartDate))
+</span>        }
+        <span class="cov8" title="1">if filter.EndDate != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tgl_entri &lt;= @endDate`
+                namedArgs = append(namedArgs, sql.Named("endDate", *filter.EndDate))
+</span>        }
+        <span class="cov8" title="1">if filter.Reseller != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller = @reseller`
+                namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
+</span>        }
+        <span class="cov8" title="1">if filter.Penerima != nil </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Penerima, "%", "\\%"), "_", "\\_")
+                whereClause += ` AND penerima LIKE '%' + @penerima + '%'`
+                namedArgs = append(namedArgs, sql.Named("penerima", escaped))
+</span>        }
+        <span class="cov8" title="1">if filter.Tipe != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND tipe_penerima = @tipe`
+                namedArgs = append(namedArgs, sql.Named("tipe", *filter.Tipe))
+</span>        }
+        <span class="cov8" title="1">if filter.Status != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND status = @status`
+                namedArgs = append(namedArgs, sql.Named("status", *filter.Status))
+</span>        }
+        <span class="cov8" title="1">if filter.StatusMin != nil </span>{
+                <span class="cov8" title="1">whereClause += ` AND status &gt;= @statusMin`
+                namedArgs = append(namedArgs, sql.Named("statusMin", *filter.StatusMin))
+</span>        }
+        <span class="cov8" title="1">if filter.Pesan != "" </span>{
+                <span class="cov8" title="1">escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
+                whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
+                namedArgs = append(namedArgs, sql.Named("pesan", escaped))
+</span>        }
+        <span class="cov8" title="1">perintah := filter.PerintahProvider != nil &amp;&amp; *filter.PerintahProvider
+        reply := filter.ReplyToReseller != nil &amp;&amp; *filter.ReplyToReseller
+        if reply &amp;&amp; !perintah </span>{
+                <span class="cov8" title="1">whereClause += ` AND kode_reseller IS NOT NULL AND is_perintah = 0`
+</span>        } else <span class="cov8" title="1">if perintah &amp;&amp; !reply </span>{
+                <span class="cov0" title="0">whereClause += ` AND is_perintah = 1`
+</span>        }
+
+        <span class="cov8" title="1">return whereClause, namedArgs</span>
+}
+
+func NewOutboxRepositories(dbRegistry *database.DBRegistry) *OutboxRepositories {
+        <span class="cov8" title="1">return &amp;OutboxRepositories{
+                PG: &amp;outboxPGRepository{dbRegistry: dbRegistry},
+                MS: &amp;outboxMSRepository{dbRegistry: dbRegistry},
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file23" style="display: none">package repository
+
+import "strings"
+
+const whereBase = " WHERE 1=1"
+
+func qualifyCols(cols []string, alias string) string {
+        <span class="cov8" title="1">out := make([]string, len(cols))
+        for i, c := range cols </span>{
+                <span class="cov8" title="1">out[i] = alias + "." + c
+</span>        }
+        <span class="cov8" title="1">return strings.Join(out, ", ")</span>
+}
+
+func prependBound(whereClause, cond string) string {
+        <span class="cov8" title="1">return whereBase + cond + strings.TrimPrefix(whereClause, whereBase)
+</span>}
+</pre>
+		
+		<pre class="file" id="file24" style="display: none">package repository
+
+import (
+        "database/sql"
+        "strings"
+)
+
+func buildListQueryMS(cols []string, from, whereClause string, namedArgs []any, useTglLeading bool, limitVal int) (string, []any) {
+        <span class="cov8" title="1">if useTglLeading </span>{
+                <span class="cov8" title="1">subQ := `SELECT TOP (@p_limit) kode FROM ` + from + whereClause + ` ORDER BY tgl_entri DESC, kode DESC`
+                namedArgs = append(namedArgs, sql.Named("p_limit", limitVal))
+                query := `SELECT ` + qualifyCols(cols, "i") + ` FROM ` + from + ` i JOIN (` + subQ + `) s ON i.kode=s.kode ORDER BY i.kode DESC`
+                return query, namedArgs
+</span>        }
+        <span class="cov8" title="1">query := `SELECT TOP (@p_limit) ` + strings.Join(cols, ", ") + ` FROM ` + from + whereClause + ` ORDER BY kode DESC`
+        namedArgs = append(namedArgs, sql.Named("p_limit", limitVal))
+        return query, namedArgs</span>
+}
+</pre>
+		
+		<pre class="file" id="file25" style="display: none">package repository
+
+import (
+        "fmt"
+        "strconv"
+        "strings"
+)
+
+func buildListQueryPG(cols []string, from, whereClause string, args []any, argID int, useTglLeading bool, limitVal int) (string, []any) {
+        <span class="cov8" title="1">if useTglLeading </span>{
+                <span class="cov8" title="1">subQ := `SELECT kode FROM ` + from + whereClause + fmt.Sprintf(` ORDER BY tgl_entri DESC, kode DESC LIMIT $%d`, argID)
+                args = append(args, limitVal)
+                argID++
+                query := `SELECT ` + qualifyCols(cols, "i") + ` FROM ` + from + ` i JOIN (` + subQ + `) s ON i.kode=s.kode ORDER BY i.kode DESC LIMIT $` + strconv.Itoa(argID)
+                args = append(args, limitVal)
+                return query, args
+</span>        }
+        <span class="cov8" title="1">query := `SELECT ` + strings.Join(cols, ", ") + ` FROM ` + from + whereClause + fmt.Sprintf(` ORDER BY kode DESC LIMIT $%d`, argID)
+        args = append(args, limitVal)
+        return query, args</span>
+}
+</pre>
+		
+		<pre class="file" id="file26" style="display: none">package repository
+
+import (
+        "context"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+        "go.internal/business-data-api/pkg/database"
+)
+
+type ResellerRepositories struct {
+        PG domain.ResellerRepository
+        MS domain.ResellerRepository
+}
+
+type resellerPGRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *resellerPGRepository) ListForDropdown(ctx context.Context, tenant string) ([]dto.ResellerDropdown, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">rows, err := db.Query(ctx, `SELECT kode, nama FROM reseller ORDER BY nama`)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var res []dto.ResellerDropdown
+        for rows.Next() </span>{
+                <span class="cov8" title="1">var r dto.ResellerDropdown
+                if err := rows.Scan(&amp;r.Kode, &amp;r.Nama); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">res = append(res, r)</span>
+        }
+        <span class="cov8" title="1">return res, rows.Err()</span>
+}
+
+type resellerMSRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *resellerMSRepository) ListForDropdown(ctx context.Context, tenant string) ([]dto.ResellerDropdown, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">rows, err := db.QueryContext(ctx, `SELECT kode, nama FROM reseller ORDER BY nama`)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">defer rows.Close()
+</span>
+        <span class="cov8" title="1">var res []dto.ResellerDropdown
+        for rows.Next() </span>{
+                <span class="cov8" title="1">var r dto.ResellerDropdown
+                if err := rows.Scan(&amp;r.Kode, &amp;r.Nama); err != nil </span>{
+                        <span class="cov8" title="1">return nil, err
+</span>                }
+                <span class="cov8" title="1">res = append(res, r)</span>
+        }
+        <span class="cov8" title="1">return res, rows.Err()</span>
+}
+
+func NewResellerRepositories(dbRegistry *database.DBRegistry) *ResellerRepositories {
+        <span class="cov8" title="1">return &amp;ResellerRepositories{
+                PG: &amp;resellerPGRepository{dbRegistry: dbRegistry},
+                MS: &amp;resellerMSRepository{dbRegistry: dbRegistry},
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file27" style="display: none">package repository
+
+import (
+        "context"
+        "database/sql"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/pkg/database"
+)
+
+type UserRepositories struct {
+        PG domain.UserRepository
+        MS domain.UserRepository
+}
+
+type userPGRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *userPGRepository) GetByUsername(ctx context.Context, tenant string, username string) (domain.User, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return domain.User{}, err
+</span>        }
+
+        <span class="cov8" title="1">var u domain.User
+        err = db.QueryRow(ctx, `SELECT userid, username, pass, rules FROM users WHERE username=$1`, username).Scan(&amp;u.UserID, &amp;u.Username, &amp;u.Password, &amp;u.Rules)
+        return u, err</span>
+}
+
+func (r *userPGRepository) Insert(ctx context.Context, tenant string, data domain.User) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.Exec(ctx, `INSERT INTO users (username, pass, rules) VALUES ($1, $2, $3)`, data.Username, data.Password, data.Rules)
+        return err</span>
+}
+
+func (r *userPGRepository) Update(ctx context.Context, tenant string, username string, password *string, rules *string) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.Postgres(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.Exec(ctx, `UPDATE users SET pass=COALESCE($1, pass), rules=COALESCE($2, rules) WHERE username=$3`, password, rules, username)
+        return err</span>
+}
+
+type userMSRepository struct {
+        dbRegistry *database.DBRegistry
+}
+
+func (r *userMSRepository) GetByUsername(ctx context.Context, tenant string, username string) (domain.User, error) {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return domain.User{}, err
+</span>        }
+
+        <span class="cov8" title="1">var u domain.User
+        err = db.QueryRowContext(ctx, `SELECT userid, username, pass, rules FROM users WHERE username=@username`, sql.Named("username", username)).Scan(&amp;u.UserID, &amp;u.Username, &amp;u.Password, &amp;u.Rules)
+        return u, err</span>
+}
+
+func (r *userMSRepository) Insert(ctx context.Context, tenant string, data domain.User) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.ExecContext(ctx, `INSERT INTO users (username, pass, rules) VALUES (@username, @password, @rules)`, sql.Named("username", data.Username), sql.Named("password", data.Password), sql.Named("rules", data.Rules))
+        return err</span>
+}
+
+func (r *userMSRepository) Update(ctx context.Context, tenant string, username string, password *string, rules *string) error {
+        <span class="cov8" title="1">db, err := r.dbRegistry.MSSQL(tenant)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">_, err = db.ExecContext(ctx, `UPDATE users SET pass=COALESCE(@password, pass), rules=COALESCE(@rules, rules) WHERE username=@username`, sql.Named("password", password), sql.Named("rules", rules), sql.Named("username", username))
+        return err</span>
+}
+
+func NewUserRepositories(dbRegistry *database.DBRegistry) *UserRepositories {
+        <span class="cov8" title="1">return &amp;UserRepositories{
+                PG: &amp;userPGRepository{dbRegistry: dbRegistry},
+                MS: &amp;userMSRepository{dbRegistry: dbRegistry},
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file28" style="display: none">package usecase
+
+import (
+        "context"
+        "errors"
+        "strings"
+
+        "go.internal/business-data-api/internal/domain"
+)
+
+var ErrInvalidInput = errors.New("input tidak valid")
+
+func pickUserRepo(source string, pg, ms domain.UserRepository) (domain.UserRepository, error) {
+        <span class="cov8" title="1">switch source </span>{
+        case domain.SourcePostgres:
+                <span class="cov8" title="1">return pg, nil</span>
+        case domain.SourceMSSQL:
+                <span class="cov8" title="1">return ms, nil</span>
+        default:
+                <span class="cov8" title="1">return nil, domain.ErrSourceNotValid</span>
+        }
+}
+
+type AuthUsecase struct {
+        userRepoPG domain.UserRepository
+        userRepoMS domain.UserRepository
+}
+
+func (u *AuthUsecase) Login(ctx context.Context, tenant string, dbSource string, username string, password string) (domain.User, error) {
+        <span class="cov8" title="1">repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return domain.User{}, err
+</span>        }
+
+        <span class="cov8" title="1">user, err := repo.GetByUsername(ctx, tenant, username)
+        if err != nil </span>{
+                <span class="cov8" title="1">return user, errors.New("user tidak ditemukan")
+</span>        }
+
+        <span class="cov8" title="1">if user.Password != password </span>{
+                <span class="cov8" title="1">return user, errors.New("password salah")
+</span>        }
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+func (u *AuthUsecase) CreateUser(ctx context.Context, tenant string, dbSource string, data domain.User) error {
+        <span class="cov8" title="1">if strings.TrimSpace(data.Username) == "" || strings.TrimSpace(data.Password) == "" || strings.TrimSpace(data.Rules) == "" </span>{
+                <span class="cov8" title="1">return ErrInvalidInput
+</span>        }
+        <span class="cov8" title="1">repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return repo.Insert(ctx, tenant, data)</span>
+}
+
+func (u *AuthUsecase) UpdateUser(ctx context.Context, tenant string, dbSource string, username string, password *string, rules *string) error {
+        <span class="cov8" title="1">if password != nil &amp;&amp; *password == "" </span>{
+                <span class="cov8" title="1">return ErrInvalidInput
+</span>        }
+        <span class="cov8" title="1">if rules != nil &amp;&amp; *rules == "" </span>{
+                <span class="cov8" title="1">return ErrInvalidInput
+</span>        }
+        <span class="cov8" title="1">repo, err := pickUserRepo(dbSource, u.userRepoPG, u.userRepoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return repo.Update(ctx, tenant, username, password, rules)</span>
+}
+
+func NewAuthUsecase(userRepoPG domain.UserRepository, userRepoMS domain.UserRepository) *AuthUsecase {
+        <span class="cov8" title="1">return &amp;AuthUsecase{userRepoPG: userRepoPG, userRepoMS: userRepoMS}
+</span>}
+</pre>
+		
+		<pre class="file" id="file29" style="display: none">package usecase
+
+import (
+        "context"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+)
+
+func pickInboxRepo(source string, pg, ms domain.InboxRepository) (domain.InboxRepository, error) {
+        <span class="cov8" title="1">switch source </span>{
+        case domain.SourcePostgres:
+                <span class="cov8" title="1">return pg, nil</span>
+        case domain.SourceMSSQL:
+                <span class="cov8" title="1">return ms, nil</span>
+        default:
+                <span class="cov8" title="1">return nil, domain.ErrSourceNotValid</span>
+        }
+}
+
+type InboxUsecase struct {
+        repoPG domain.InboxRepository
+        repoMS domain.InboxRepository
+}
+
+func (u *InboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
+        <span class="cov8" title="1">if filter.Limit &lt;= 0 </span>{
+                <span class="cov8" title="1">filter.Limit = domain.DefaultLimit
+</span>        } else <span class="cov8" title="1">if filter.Limit &gt; domain.MaxLimit </span>{
+                <span class="cov8" title="1">filter.Limit = domain.MaxLimit
+</span>        }
+
+        <span class="cov8" title="1">repo, err := pickInboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return repo.Get(ctx, tenant, filter)</span>
+}
+
+func (u *InboxUsecase) CreateInbox(ctx context.Context, tenant string, dbSource string, data domain.Inbox) error {
+        <span class="cov8" title="1">repo, err := pickInboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">if err := repo.Insert(ctx, tenant, data); err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (u *InboxUsecase) UpdateInbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateInboxRequest) error {
+        <span class="cov8" title="1">repo, err := pickInboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">if err := repo.Update(ctx, tenant, kode, req); err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func NewInboxUsecase(repoPG domain.InboxRepository, repoMS domain.InboxRepository) *InboxUsecase {
+        <span class="cov8" title="1">return &amp;InboxUsecase{repoPG: repoPG, repoMS: repoMS}
+</span>}
+</pre>
+		
+		<pre class="file" id="file30" style="display: none">package usecase
+
+import (
+        "context"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+)
+
+func pickResellerRepo(source string, pg, ms domain.ResellerRepository) (domain.ResellerRepository, error) {
+        <span class="cov8" title="1">switch source </span>{
+        case domain.SourcePostgres:
+                <span class="cov8" title="1">return pg, nil</span>
+        case domain.SourceMSSQL:
+                <span class="cov8" title="1">return ms, nil</span>
+        default:
+                <span class="cov8" title="1">return nil, domain.ErrSourceNotValid</span>
+        }
+}
+
+type MasterUsecase struct {
+        repoPG domain.ResellerRepository
+        repoMS domain.ResellerRepository
+}
+
+func (u *MasterUsecase) ListResellerForDropdown(ctx context.Context, tenant string, dbSource string) ([]dto.ResellerDropdown, error) {
+        <span class="cov8" title="1">repo, err := pickResellerRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">return repo.ListForDropdown(ctx, tenant)</span>
+}
+
+func NewMasterUsecase(repoPG domain.ResellerRepository, repoMS domain.ResellerRepository) *MasterUsecase {
+        <span class="cov8" title="1">return &amp;MasterUsecase{repoPG: repoPG, repoMS: repoMS}
+</span>}
+</pre>
+		
+		<pre class="file" id="file31" style="display: none">package usecase
+
+import (
+        "context"
+
+        "go.internal/business-data-api/internal/domain"
+        "go.internal/business-data-api/internal/dto"
+)
+
+func pickOutboxRepo(source string, pg, ms domain.OutboxRepository) (domain.OutboxRepository, error) {
+        <span class="cov8" title="1">switch source </span>{
+        case domain.SourcePostgres:
+                <span class="cov8" title="1">return pg, nil</span>
+        case domain.SourceMSSQL:
+                <span class="cov8" title="1">return ms, nil</span>
+        default:
+                <span class="cov8" title="1">return nil, domain.ErrSourceNotValid</span>
+        }
+}
+
+type OutboxUsecase struct {
+        repoPG domain.OutboxRepository
+        repoMS domain.OutboxRepository
+}
+
+func (u *OutboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
+        <span class="cov8" title="1">if filter.Limit &lt;= 0 </span>{
+                <span class="cov8" title="1">filter.Limit = domain.DefaultLimit
+</span>        } else <span class="cov8" title="1">if filter.Limit &gt; domain.MaxLimit </span>{
+                <span class="cov8" title="1">filter.Limit = domain.MaxLimit
+</span>        }
+
+        <span class="cov8" title="1">repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">return repo.Get(ctx, tenant, filter)</span>
+}
+
+func (u *OutboxUsecase) CreateOutbox(ctx context.Context, tenant string, dbSource string, data domain.Outbox) error {
+        <span class="cov8" title="1">repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">if err := repo.Insert(ctx, tenant, data); err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (u *OutboxUsecase) UpdateOutbox(ctx context.Context, tenant string, dbSource string, kode int64, req dto.UpdateOutboxRequest) error {
+        <span class="cov8" title="1">repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
+        if err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">if err := repo.Update(ctx, tenant, kode, req); err != nil </span>{
+                <span class="cov8" title="1">return err
+</span>        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func NewOutboxUsecase(repoPG domain.OutboxRepository, repoMS domain.OutboxRepository) *OutboxUsecase {
+        <span class="cov8" title="1">return &amp;OutboxUsecase{repoPG: repoPG, repoMS: repoMS}
+</span>}
+</pre>
+		
+		<pre class="file" id="file32" style="display: none">package version
+
+var Version = "dev"
+
+func Get() string {
+        <span class="cov0" title="0">return Version
+</span>}
+</pre>
+		
+		<pre class="file" id="file33" style="display: none">package database
+
+import (
+        "context"
+        "database/sql"
+        "database/sql/driver"
+        "fmt"
+        "log/slog"
+        "time"
+
+        mssql "github.com/microsoft/go-mssqldb"
+        "github.com/ngrok/sqlmw"
+        "go.internal/business-data-api/pkg/logger"
+)
+
+type mssqlLogger struct {
+        sqlmw.NullInterceptor
+}
+
+func logMSSQLQuery(ctx context.Context, query string, start time.Time) {
+        <span class="cov8" title="1">ms := time.Since(start).Milliseconds()
+        tCtx := logger.GetTraceContext(ctx)
+</span>
+        <span class="cov8" title="1">if time.Since(start) &gt; slowQueryThreshold </span>{
+                <span class="cov8" title="1">slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "mssql", "sql", query, "duration_ms", ms)
+</span>        } else {
+                <span class="cov8" title="1">slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "mssql", "sql", query, "duration_ms", ms)
+</span>        }
+}
+
+func (l *mssqlLogger) ConnQueryContext(ctx context.Context, conn driver.QueryerContext, query string, args []driver.NamedValue) (context.Context, driver.Rows, error) {
+        <span class="cov8" title="1">start := time.Now()
+        rows, err := conn.QueryContext(ctx, query, args)
+        logMSSQLQuery(ctx, query, start)
+        return ctx, rows, err
+</span>}
+
+func (l *mssqlLogger) ConnExecContext(ctx context.Context, conn driver.ExecerContext, query string, args []driver.NamedValue) (driver.Result, error) {
+        <span class="cov8" title="1">start := time.Now()
+        res, err := conn.ExecContext(ctx, query, args)
+        logMSSQLQuery(ctx, query, start)
+        return res, err
+</span>}
+
+func init() {
+        <span class="cov8" title="1">sql.Register("mssql-logged", sqlmw.Driver(&amp;mssql.Driver{}, new(mssqlLogger)))
+</span>}
+
+type MSSQLPoolOptions struct {
+        MaxOpenConns    int
+        MaxIdleConns    int
+        MaxConnLifetime time.Duration
+}
+
+func NewMSSQLDB(ctx context.Context, connString string, opts MSSQLPoolOptions) (*sql.DB, error) {
+        <span class="cov8" title="1">db, err := sql.Open("mssql-logged", connString)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, fmt.Errorf("gagal membuka koneksi MSSQL: %w", err)
+</span>        }
+
+        <span class="cov8" title="1">if opts.MaxOpenConns &gt; 0 </span>{
+                <span class="cov8" title="1">db.SetMaxOpenConns(opts.MaxOpenConns)
+</span>        }
+        <span class="cov8" title="1">if opts.MaxIdleConns &gt; 0 </span>{
+                <span class="cov8" title="1">db.SetMaxIdleConns(opts.MaxIdleConns)
+</span>        }
+        <span class="cov8" title="1">if opts.MaxConnLifetime &gt; 0 </span>{
+                <span class="cov8" title="1">db.SetConnMaxLifetime(opts.MaxConnLifetime)
+</span>        }
+
+        <span class="cov8" title="1">if err := db.Ping(); err != nil </span>{
+                <span class="cov8" title="1">db.Close()
+                return nil, fmt.Errorf("MSSQL tidak dapat di-ping: %w", err)
+</span>        }
+
+        <span class="cov0" title="0">return db, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file34" style="display: none">package database
+
+import (
+        "context"
+        "fmt"
+        "log/slog"
+        "time"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+        "github.com/jackc/pgx/v5/pgxpool"
+        "github.com/jackc/pgx/v5/tracelog"
+        "go.internal/business-data-api/pkg/logger"
+)
+
+type PGConn interface {
+        Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+        QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+        Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+        Close()
+}
+
+var _ PGConn = (*pgxpool.Pool)(nil)
+
+type SlogLogger struct{}
+
+func (l *SlogLogger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
+        <span class="cov8" title="1">if msg == "Query" </span>{
+                <span class="cov8" title="1">execTime, ok := data["time"].(time.Duration)
+                ms := int64(0)
+                if ok </span>{
+                        <span class="cov8" title="1">ms = execTime.Milliseconds()
+</span>                }
+
+                <span class="cov8" title="1">tCtx := logger.GetTraceContext(ctx)
+</span>
+                <span class="cov8" title="1">if execTime &gt; slowQueryThreshold </span>{
+                        <span class="cov8" title="1">slog.Warn("Slow SQL Query", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
+</span>                } else {
+                        <span class="cov8" title="1">slog.Info("SQL Query Executed", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "path", tCtx.Path, "db", "postgres", "sql", data["sql"], "duration_ms", ms)
+</span>                }
+        }
+}
+
+type PostgresPoolOptions struct {
+        MaxConns          int
+        MinConns          int
+        MaxConnIdleTime   time.Duration
+        MaxConnLifetime   time.Duration
+        HealthCheckPeriod time.Duration
+}
+
+func NewPostgresPool(ctx context.Context, connString string, opts PostgresPoolOptions) (*pgxpool.Pool, error) {
+        <span class="cov8" title="1">poolConfig, err := pgxpool.ParseConfig(connString)
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, fmt.Errorf("gagal mem-parsing URL Postgres: %w", err)
+</span>        }
+
+        <span class="cov8" title="1">if opts.MaxConns &gt; 0 </span>{
+                <span class="cov8" title="1">poolConfig.MaxConns = int32(opts.MaxConns)
+</span>        }
+        <span class="cov8" title="1">if opts.MinConns &gt; 0 </span>{
+                <span class="cov8" title="1">poolConfig.MinConns = int32(opts.MinConns)
+</span>        }
+        <span class="cov8" title="1">if opts.MaxConnIdleTime &gt; 0 </span>{
+                <span class="cov8" title="1">poolConfig.MaxConnIdleTime = opts.MaxConnIdleTime
+</span>        }
+        <span class="cov8" title="1">if opts.MaxConnLifetime &gt; 0 </span>{
+                <span class="cov8" title="1">poolConfig.MaxConnLifetime = opts.MaxConnLifetime
+</span>        }
+        <span class="cov8" title="1">if opts.HealthCheckPeriod &gt; 0 </span>{
+                <span class="cov8" title="1">poolConfig.HealthCheckPeriod = opts.HealthCheckPeriod
+</span>        }
+
+        <span class="cov8" title="1">poolConfig.ConnConfig.Tracer = &amp;tracelog.TraceLog{
+                Logger:   &amp;SlogLogger{},
+                LogLevel: tracelog.LogLevelInfo,
+</span>        }
+
+        <span class="cov8" title="1">pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+        if err != nil </span>{
+                <span class="cov0" title="0">return nil, fmt.Errorf("gagal membuat connection pool Postgres: %w", err)
+</span>        }
+
+        <span class="cov8" title="1">if err := pool.Ping(ctx); err != nil </span>{
+                <span class="cov8" title="1">pool.Close()
+                return nil, fmt.Errorf("Postgres tidak dapat di-ping: %w", err)
+</span>        }
+
+        <span class="cov0" title="0">return pool, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file35" style="display: none">package database
+
+import (
+        "database/sql"
+        "errors"
+        "fmt"
+        "sync"
+)
+
+var ErrTenantNotFound = errors.New("tenant tidak ditemukan")
+
+type TenantDB struct {
+        Postgres PGConn
+        MSSQL    *sql.DB
+}
+
+type DBRegistry struct {
+        mu      sync.RWMutex
+        tenants map[string]*TenantDB
+}
+
+func NewDBRegistry() *DBRegistry {
+        <span class="cov8" title="1">return &amp;DBRegistry{
+                tenants: make(map[string]*TenantDB),
+</span>        }
+}
+
+func (r *DBRegistry) Register(tenantName string, pg PGConn, ms *sql.DB) {
+        <span class="cov8" title="1">r.mu.Lock()
+        defer r.mu.Unlock()
+        r.tenants[tenantName] = &amp;TenantDB{
+                Postgres: pg,
+                MSSQL:    ms,
+</span>        }
+}
+
+func (r *DBRegistry) Postgres(tenantName string) (PGConn, error) {
+        <span class="cov8" title="1">r.mu.RLock()
+        tenant, exists := r.tenants[tenantName]
+        r.mu.RUnlock()
+        if !exists </span>{
+                <span class="cov8" title="1">return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, tenantName)
+</span>        }
+        <span class="cov8" title="1">return tenant.Postgres, nil</span>
+}
+
+func (r *DBRegistry) MSSQL(tenantName string) (*sql.DB, error) {
+        <span class="cov8" title="1">r.mu.RLock()
+        tenant, exists := r.tenants[tenantName]
+        r.mu.RUnlock()
+        if !exists </span>{
+                <span class="cov8" title="1">return nil, fmt.Errorf("%w: %s", ErrTenantNotFound, tenantName)
+</span>        }
+        <span class="cov8" title="1">return tenant.MSSQL, nil</span>
+}
+
+func (r *DBRegistry) CloseAll() {
+        <span class="cov8" title="1">r.mu.Lock()
+        defer r.mu.Unlock()
+</span>
+        <span class="cov8" title="1">for _, tenant := range r.tenants </span>{
+                <span class="cov8" title="1">if tenant.Postgres != nil </span>{
+                        <span class="cov8" title="1">tenant.Postgres.Close()
+</span>                }
+                <span class="cov8" title="1">if tenant.MSSQL != nil </span>{
+                        <span class="cov8" title="1">tenant.MSSQL.Close()
+</span>                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file36" style="display: none">package jwt
+
+import (
+        "errors"
+        "sync/atomic"
+        "time"
+
+        "github.com/golang-jwt/jwt/v5"
+)
+
+const MinSecretLength = 32
+
+const tokenLeeway = 30 * time.Second
+
+var errNotInitialized = errors.New("JWT secret belum diinisialisasi")
+
+type manager struct {
+        secretKey     []byte
+        tokenDuration time.Duration
+        issuer        string
+}
+
+var active atomic.Pointer[manager]
+
+func newManager(secret string, duration time.Duration, jwtIssuer string) *manager {
+        <span class="cov8" title="1">if duration &lt;= 0 </span>{
+                <span class="cov8" title="1">duration = 24 * time.Hour
+</span>        }
+        <span class="cov8" title="1">return &amp;manager{
+                secretKey:     []byte(secret),
+                tokenDuration: duration,
+                issuer:        jwtIssuer,
+</span>        }
+}
+
+func InitJWT(secret string, duration time.Duration, jwtIssuer string) {
+        <span class="cov8" title="1">active.Store(newManager(secret, duration, jwtIssuer))
+</span>}
+
+func current() (*manager, error) {
+        <span class="cov8" title="1">m := active.Load()
+        if m == nil || len(m.secretKey) == 0 </span>{
+                <span class="cov8" title="1">return nil, errNotInitialized
+</span>        }
+        <span class="cov8" title="1">return m, nil</span>
+}
+
+func (m *manager) generateToken(userID int, username string, rules string, tenant string) (string, error) {
+        <span class="cov8" title="1">if len(m.secretKey) == 0 </span>{
+                <span class="cov8" title="1">return "", errNotInitialized
+</span>        }
+        <span class="cov8" title="1">now := time.Now()
+        claims := jwt.MapClaims{
+                "user_id":  userID,
+                "username": username,
+                "rules":    rules,
+                "tenant":   tenant,
+                "iss":      m.issuer,
+                "iat":      now.Unix(),
+                "nbf":      now.Unix(),
+                "exp":      now.Add(m.tokenDuration).Unix(),
+</span>        }
+
+        <span class="cov8" title="1">token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        return token.SignedString(m.secretKey)</span>
+}
+
+func (m *manager) validateToken(tokenString string) (jwt.MapClaims, error) {
+        <span class="cov8" title="1">if len(m.secretKey) == 0 </span>{
+                <span class="cov8" title="1">return nil, errNotInitialized
+</span>        }
+        <span class="cov8" title="1">token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) </span>{
+                <span class="cov8" title="1">if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok </span>{
+                        <span class="cov8" title="1">return nil, errors.New("metode signature tidak valid")
+</span>                }
+                <span class="cov8" title="1">return m.secretKey, nil</span>
+        }, jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(tokenLeeway))
+
+        <span class="cov8" title="1">if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+
+        <span class="cov8" title="1">claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid </span>{
+                <span class="cov0" title="0">return nil, errors.New("token tidak valid")
+</span>        }
+        <span class="cov8" title="1">if m.issuer != "" </span>{
+                <span class="cov8" title="1">claimIss, exists := claims["iss"]
+                if !exists </span>{
+                        <span class="cov8" title="1">return nil, errors.New("penerbit token tidak sesuai")
+</span>                }
+                <span class="cov8" title="1">if iss, isStr := claimIss.(string); !isStr || iss != m.issuer </span>{
+                        <span class="cov8" title="1">return nil, errors.New("penerbit token tidak sesuai")
+</span>                }
+        }
+        <span class="cov8" title="1">return claims, nil</span>
+}
+
+func GenerateToken(userID int, username string, rules string, tenant string) (string, error) {
+        <span class="cov8" title="1">m, err := current()
+        if err != nil </span>{
+                <span class="cov8" title="1">return "", err
+</span>        }
+        <span class="cov8" title="1">return m.generateToken(userID, username, rules, tenant)</span>
+}
+
+func ValidateToken(tokenString string) (jwt.MapClaims, error) {
+        <span class="cov8" title="1">m, err := current()
+        if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
+</span>        }
+        <span class="cov8" title="1">return m.validateToken(tokenString)</span>
+}
+</pre>
+		
+		<pre class="file" id="file37" style="display: none">package logger
+
+import "context"
+
+type contextKey string
+
+const TraceCtxKey contextKey = "traceCtx"
+
+type TraceContext struct {
+        TraceID   string
+        Developer string
+        IP        string
+        Path      string
+        UserID    int
+}
+
+func SetTraceContext(ctx context.Context, tCtx *TraceContext) context.Context {
+        <span class="cov8" title="1">return context.WithValue(ctx, TraceCtxKey, tCtx)
+</span>}
+
+func GetTraceContext(ctx context.Context) *TraceContext {
+        <span class="cov8" title="1">if tCtx, ok := ctx.Value(TraceCtxKey).(*TraceContext); ok </span>{
+                <span class="cov8" title="1">return tCtx
+</span>        }
+        <span class="cov8" title="1">return &amp;TraceContext{
+                TraceID:   "UNKNOWN",
+                Developer: "UNKNOWN",
+                IP:        "UNKNOWN",
+                Path:      "UNKNOWN",
+</span>        }
+}
+</pre>
+		
+		<pre class="file" id="file38" style="display: none">package logger
+
+import (
+        "context"
+        "log/slog"
+        "os"
+
+        "gopkg.in/natefinch/lumberjack.v2"
+)
+
+type TeeHandler struct {
+        Terminal slog.Handler
+        File     slog.Handler
+}
+
+func (t *TeeHandler) Enabled(ctx context.Context, level slog.Level) bool {
+        <span class="cov8" title="1">return t.Terminal.Enabled(ctx, level) || t.File.Enabled(ctx, level)
+</span>}
+
+func (t *TeeHandler) Handle(ctx context.Context, r slog.Record) error {
+        <span class="cov8" title="1">_ = t.Terminal.Handle(ctx, r)
+        return t.File.Handle(ctx, r)
+</span>}
+
+func (t *TeeHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+        <span class="cov8" title="1">return &amp;TeeHandler{
+                Terminal: t.Terminal.WithAttrs(attrs),
+                File:     t.File.WithAttrs(attrs),
+</span>        }
+}
+
+func (t *TeeHandler) WithGroup(name string) slog.Handler {
+        <span class="cov8" title="1">return &amp;TeeHandler{
+                Terminal: t.Terminal.WithGroup(name),
+                File:     t.File.WithGroup(name),
+</span>        }
+}
+
+func SetupLogger(env string) {
+        <span class="cov8" title="1">os.MkdirAll("logs", os.ModePerm)
+</span>
+        <span class="cov8" title="1">fileWriter := &amp;lumberjack.Logger{
+                Filename:   "logs/api.log",
+                MaxSize:    10,
+                MaxBackups: 30,
+                MaxAge:     30,
+                Compress:   true,
+</span>        }
+
+        <span class="cov8" title="1">var level slog.Level
+        if env == "production" </span>{
+                <span class="cov8" title="1">level = slog.LevelInfo
+</span>        } else {
+                <span class="cov8" title="1">level = slog.LevelDebug
+</span>        }
+        <span class="cov8" title="1">opts := &amp;slog.HandlerOptions{Level: level}
+</span>
+        <span class="cov8" title="1">terminalHandler := slog.NewTextHandler(os.Stdout, opts)
+        fileHandler := slog.NewJSONHandler(fileWriter, opts)
+</span>
+        <span class="cov8" title="1">slog.SetDefault(slog.New(&amp;TeeHandler{
+                Terminal: terminalHandler,
+                File:     fileHandler,
+        }))</span>
+}
+</pre>
+		
+		<pre class="file" id="file39" style="display: none">package response
+
+import (
+        "encoding/json"
+        "log/slog"
+        "net/http"
+
+        "go.internal/business-data-api/pkg/logger"
+)
+
+var hideInternalDetails bool
+
+func Init(appEnv string) {
+        <span class="cov8" title="1">hideInternalDetails = appEnv != "development"
+</span>}
+
+type JSONResponse struct {
+        Status  string `json:"status"`
+        Message string `json:"message,omitempty"`
+        Data    any    `json:"data,omitempty"`
+}
+
+func Success(w http.ResponseWriter, r *http.Request, data any) {
+        <span class="cov8" title="1">write(w, r, http.StatusOK, "API Success", data)
+</span>}
+
+func SuccessCreated(w http.ResponseWriter, r *http.Request, data any) {
+        <span class="cov8" title="1">write(w, r, http.StatusCreated, "API Created", data)
+</span>}
+
+func write(w http.ResponseWriter, r *http.Request, statusCode int, logMsg string, data any) {
+        <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+        slog.Info(logMsg, "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", statusCode)
+</span>
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(statusCode)
+        json.NewEncoder(w).Encode(JSONResponse{
+                Status: "sukses",
+                Data:   data,
+        })
+</span>}
+
+func Error(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
+        <span class="cov8" title="1">tCtx := logger.GetTraceContext(r.Context())
+        slog.Error("API Error", "trace_id", tCtx.TraceID, "developer", tCtx.Developer, "ip", tCtx.IP, "path", tCtx.Path, "status", statusCode, "error", message)
+</span>
+        <span class="cov8" title="1">if hideInternalDetails </span>{
+                <span class="cov8" title="1">switch </span>{
+                case statusCode &gt;= 500:
+                        <span class="cov8" title="1">message = "Terjadi kesalahan internal pada server"</span>
+                case statusCode == http.StatusUnauthorized:
+                        <span class="cov8" title="1">message = "Akses ditolak"</span>
+                case statusCode == http.StatusForbidden:
+                        <span class="cov8" title="1">message = "Akses ditolak"</span>
+                case statusCode == http.StatusNotFound:
+                        <span class="cov8" title="1">message = "Resource tidak ditemukan"</span>
+                case statusCode == http.StatusBadRequest:
+                        <span class="cov8" title="1">message = "Permintaan tidak valid"</span>
+                case statusCode == http.StatusMethodNotAllowed:
+                        <span class="cov8" title="1">message = "Method HTTP tidak diizinkan pada endpoint ini"</span>
+                case statusCode == http.StatusRequestEntityTooLarge:
+                        <span class="cov8" title="1">message = "Ukuran body permintaan melebihi batas"</span>
+                case statusCode == http.StatusTooManyRequests:
+                        <span class="cov8" title="1">message = "Batas request terlampaui. Silakan coba sesaat lagi."</span>
+                default:
+                        <span class="cov8" title="1">message = "Permintaan tidak dapat diproses"</span>
+                }
+        }
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(statusCode)
+        json.NewEncoder(w).Encode(JSONResponse{
+                Status:  "gagal",
+                Message: message,
+        })</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
