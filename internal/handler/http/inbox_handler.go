@@ -72,14 +72,26 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 
 	var reqFromResellerPtr *bool
 	if val := queryParams.Get("requestFromReseller"); val != "" {
-		b := val == "true" || val == "1"
-		reqFromResellerPtr = &b
+		switch val {
+		case "true", "1":
+			b := true
+			reqFromResellerPtr = &b
+		case "false", "0":
+			b := false
+			reqFromResellerPtr = &b
+		}
 	}
 
 	var jawFromProviderPtr *bool
 	if val := queryParams.Get("jawabanFromProvider"); val != "" {
-		b := val == "true" || val == "1"
-		jawFromProviderPtr = &b
+		switch val {
+		case "true", "1":
+			b := true
+			jawFromProviderPtr = &b
+		case "false", "0":
+			b := false
+			jawFromProviderPtr = &b
+		}
 	}
 
 	filter := domain.InboxFilter{

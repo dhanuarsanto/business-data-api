@@ -195,10 +195,10 @@ func TestGetInboxParameterRusakDiabaikanDanSumberDefault(t *testing.T) {
 		t.Fatal("terminal dan status rusak harus diabaikan")
 	}
 	if f.RequestFromReseller == nil || *f.RequestFromReseller {
-		t.Fatal("nilai selain true/1 harus berarti false")
+		t.Fatal("requestFromReseller=false harus false")
 	}
-	if f.JawabanFromProvider == nil || *f.JawabanFromProvider {
-		t.Fatal("nilai selain true/1 harus berarti false")
+	if f.JawabanFromProvider != nil {
+		t.Fatal("jawabanFromProvider=ya invalid harus diabaikan (nil)")
 	}
 	body := decodeJSON(t, rec)
 	if _, ada := body["items"]; !ada {
@@ -467,10 +467,10 @@ func TestGetOutboxParameterRusakDanError(t *testing.T) {
 		t.Fatal("status rusak harus diabaikan")
 	}
 	if repo.filter.ReplyToReseller == nil || *repo.filter.ReplyToReseller {
-		t.Fatal("replyToReseller selain true/1 harus false")
+		t.Fatal("replyToReseller=0 harus false")
 	}
-	if repo.filter.PerintahProvider == nil || *repo.filter.PerintahProvider {
-		t.Fatal("perintahProvider selain true/1 harus false")
+	if repo.filter.PerintahProvider != nil {
+		t.Fatal("perintahProvider=nope invalid harus diabaikan (nil)")
 	}
 
 	gagal := &stubOutboxRepo{getErr: errors.New("boom")}

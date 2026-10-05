@@ -65,14 +65,26 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 
 	var replyToResellerPtr *bool
 	if val := queryParams.Get("replyToReseller"); val != "" {
-		b := val == "true" || val == "1"
-		replyToResellerPtr = &b
+		switch val {
+		case "true", "1":
+			b := true
+			replyToResellerPtr = &b
+		case "false", "0":
+			b := false
+			replyToResellerPtr = &b
+		}
 	}
 
 	var perintahProviderPtr *bool
 	if val := queryParams.Get("perintahProvider"); val != "" {
-		b := val == "true" || val == "1"
-		perintahProviderPtr = &b
+		switch val {
+		case "true", "1":
+			b := true
+			perintahProviderPtr = &b
+		case "false", "0":
+			b := false
+			perintahProviderPtr = &b
+		}
 	}
 
 	filter := domain.OutboxFilter{
