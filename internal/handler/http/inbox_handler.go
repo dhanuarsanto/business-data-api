@@ -28,70 +28,43 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryParams := r.URL.Query()
-	params := parseListParams(queryParams)
-
-	var terminalPtr *int
-	if val := queryParams.Get("terminal"); val != "" {
-		if v, err := strconv.Atoi(val); err == nil {
-			terminalPtr = &v
-		}
+	params, err := parseListParams(queryParams)
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var resellerPtr *string
-	if val := queryParams.Get("reseller"); val != "" {
-		v := strings.TrimSpace(val)
-		resellerPtr = &v
+	terminalPtr, err := parseTerminalFilter(queryParams.Get("terminal"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var pengirimPtr *string
-	if val := queryParams.Get("pengirim"); val != "" {
-		v := strings.TrimSpace(val)
-		pengirimPtr = &v
+	resellerPtr := parseStringFilter(queryParams.Get("reseller"))
+	pengirimPtr := parseStringFilter(queryParams.Get("pengirim"))
+	tipePtr := parseStringFilter(queryParams.Get("tipe"))
+
+	statusPtr, statusMinPtr, err := parseStatusFilter(queryParams.Get("status"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var tipePtr *string
-	if val := queryParams.Get("tipe"); val != "" {
-		v := strings.TrimSpace(val)
-		tipePtr = &v
+	reqFromResellerPtr, err := parseBoolFilter(queryParams.Get("requestFromReseller"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var statusPtr *int16
-	var statusMinPtr *int16
-	if val := queryParams.Get("status"); val != "" {
-		v := strings.TrimSpace(val)
-		if v == "failed" || v == "gagal" {
-			min40 := int16(40)
-			statusMinPtr = &min40
-		} else if s, err := strconv.ParseInt(v, 10, 16); err == nil {
-			if s >= -32768 && s <= 32767 {
-				v16 := int16(s)
-				statusPtr = &v16
-			}
-		}
+	jawFromProviderPtr, err := parseBoolFilter(queryParams.Get("jawabanFromProvider"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var reqFromResellerPtr *bool
-	if val := queryParams.Get("requestFromReseller"); val != "" {
-		switch val {
-		case "true", "1":
-			b := true
-			reqFromResellerPtr = &b
-		case "false", "0":
-			b := false
-			reqFromResellerPtr = &b
-		}
-	}
-
-	var jawFromProviderPtr *bool
-	if val := queryParams.Get("jawabanFromProvider"); val != "" {
-		switch val {
-		case "true", "1":
-			b := true
-			jawFromProviderPtr = &b
-		case "false", "0":
-			b := false
-			jawFromProviderPtr = &b
-		}
+	pesan := strings.TrimSpace(queryParams.Get("pesan"))
+	if len(pesan) > maxStringLen {
+		pesan = ""
 	}
 
 	filter := domain.InboxFilter{
@@ -104,7 +77,7 @@ func (h *InboxHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		Tipe:                tipePtr,
 		Status:              statusPtr,
 		StatusMin:           statusMinPtr,
-		Pesan:               strings.TrimSpace(queryParams.Get("pesan")),
+		Pesan:               pesan,
 		RequestFromReseller: reqFromResellerPtr,
 		JawabanFromProvider: jawFromProviderPtr,
 	}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -258,8 +259,9 @@ func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {
 		argID++
 	}
 	if filter.Pengirim != nil {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Pengirim, "%", "\\%"), "_", "\\_")
 		whereClause += fmt.Sprintf(` AND pengirim ILIKE $%d`, argID)
-		args = append(args, "%"+*filter.Pengirim+"%")
+		args = append(args, "%"+escaped+"%")
 		argID++
 	}
 	if filter.Tipe != nil {
@@ -278,8 +280,9 @@ func buildInboxFilterPG(filter domain.InboxFilter) (string, []any, int) {
 		argID++
 	}
 	if filter.Pesan != "" {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
 		whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
-		args = append(args, "%"+filter.Pesan+"%")
+		args = append(args, "%"+escaped+"%")
 		argID++
 	}
 	jawaban := filter.JawabanFromProvider != nil && *filter.JawabanFromProvider
@@ -314,8 +317,9 @@ func buildInboxFilterMS(filter domain.InboxFilter) (string, []any) {
 		namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
 	}
 	if filter.Pengirim != nil {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Pengirim, "%", "\\%"), "_", "\\_")
 		whereClause += ` AND pengirim LIKE '%' + @pengirim + '%'`
-		namedArgs = append(namedArgs, sql.Named("pengirim", *filter.Pengirim))
+		namedArgs = append(namedArgs, sql.Named("pengirim", escaped))
 	}
 	if filter.Tipe != nil {
 		whereClause += ` AND tipe_pengirim = @tipe`
@@ -330,8 +334,9 @@ func buildInboxFilterMS(filter domain.InboxFilter) (string, []any) {
 		namedArgs = append(namedArgs, sql.Named("statusMin", *filter.StatusMin))
 	}
 	if filter.Pesan != "" {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
-		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
+		namedArgs = append(namedArgs, sql.Named("pesan", escaped))
 	}
 	jawaban := filter.JawabanFromProvider != nil && *filter.JawabanFromProvider
 	request := filter.RequestFromReseller != nil && *filter.RequestFromReseller

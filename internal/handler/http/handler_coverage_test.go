@@ -177,7 +177,7 @@ func TestGetInboxMemetakanSemuaParameter(t *testing.T) {
 	}
 }
 
-func TestGetInboxParameterRusakDiabaikanDanSumberDefault(t *testing.T) {
+func TestGetInboxInvalidParamsReturn400(t *testing.T) {
 	response.Init("test")
 
 	repo := &stubInboxRepo{}
@@ -187,25 +187,30 @@ func TestGetInboxParameterRusakDiabaikanDanSumberDefault(t *testing.T) {
 	target := "/?terminal=abc&status=99999&requestFromReseller=false&jawabanFromProvider=ya"
 	h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
 
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("harus 400 untuk param invalid, dapat %d", rec.Code)
+	}
+}
+
+func TestGetInboxValidBoolParams(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	rec := httptest.NewRecorder()
+	target := "/?requestFromReseller=false&jawabanFromProvider=0"
+	h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+
 	if rec.Code != http.StatusOK {
-		t.Fatalf("harus 200, dapat %d", rec.Code)
+		t.Fatalf("harus 200 untuk bool valid, dapat %d", rec.Code)
 	}
 	f := repo.filter
-	if f.Terminal != nil || f.Status != nil {
-		t.Fatal("terminal dan status rusak harus diabaikan")
-	}
 	if f.RequestFromReseller == nil || *f.RequestFromReseller {
 		t.Fatal("requestFromReseller=false harus false")
 	}
-	if f.JawabanFromProvider != nil {
-		t.Fatal("jawabanFromProvider=ya invalid harus diabaikan (nil)")
-	}
-	body := decodeJSON(t, rec)
-	if _, ada := body["items"]; !ada {
-		t.Fatalf("items harus ada, dapat %v", body)
-	}
-	if f.Limit != domain.DefaultLimit {
-		t.Fatalf("limit rusak harus default, dapat %d", f.Limit)
+	if f.JawabanFromProvider == nil || *f.JawabanFromProvider {
+		t.Fatal("jawabanFromProvider=0 harus false")
 	}
 }
 
@@ -452,7 +457,7 @@ func TestGetOutboxSemuaCabang(t *testing.T) {
 	}
 }
 
-func TestGetOutboxParameterRusakDanError(t *testing.T) {
+func TestGetOutboxInvalidParamsReturn400(t *testing.T) {
 	response.Init("test")
 
 	repo := &stubOutboxRepo{}
@@ -460,18 +465,32 @@ func TestGetOutboxParameterRusakDanError(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.GetOutbox(rec, reqWithParams(http.MethodGet,
 		"/?status=abc&replyToReseller=0&perintahProvider=nope", "", map[string]string{"tenant": "t"}, nil))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("harus 200, dapat %d", rec.Code)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("harus 400 untuk param invalid, dapat %d", rec.Code)
 	}
-	if repo.filter.Status != nil {
-		t.Fatal("status rusak harus diabaikan")
+}
+
+func TestGetOutboxValidBoolParams(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+	rec := httptest.NewRecorder()
+	h.GetOutbox(rec, reqWithParams(http.MethodGet,
+		"/?replyToReseller=false&perintahProvider=0", "", map[string]string{"tenant": "t"}, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("harus 200 untuk bool valid, dapat %d", rec.Code)
 	}
 	if repo.filter.ReplyToReseller == nil || *repo.filter.ReplyToReseller {
 		t.Fatal("replyToReseller=0 harus false")
 	}
-	if repo.filter.PerintahProvider != nil {
-		t.Fatal("perintahProvider=nope invalid harus diabaikan (nil)")
+	if repo.filter.PerintahProvider == nil || *repo.filter.PerintahProvider {
+		t.Fatal("perintahProvider=0 harus false")
 	}
+}
+
+func TestGetOutboxErrorFromRepo(t *testing.T) {
+	response.Init("test")
 
 	gagal := &stubOutboxRepo{getErr: errors.New("boom")}
 	h2 := NewOutboxHandler(usecase.NewOutboxUsecase(gagal, gagal))

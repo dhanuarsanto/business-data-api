@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/url"
 	"strconv"
 	"time"
@@ -16,31 +17,57 @@ type listParams struct {
 	EndDate   *time.Time
 }
 
-func parseListParams(q url.Values) listParams {
-	limit, _ := strconv.Atoi(q.Get("limit"))
-	if limit <= 0 {
+var (
+	ErrInvalidStartDate = errors.New("startDate format invalid, expected YYYY-MM-DD")
+	ErrInvalidEndDate   = errors.New("endDate format invalid, expected YYYY-MM-DD")
+	ErrInvalidLimit     = errors.New("limit must be positive integer")
+)
+
+func parseListParams(q url.Values) (listParams, error) {
+	limitStr := q.Get("limit")
+	var limit int
+	if limitStr == "" {
 		limit = domain.DefaultLimit
-	}
-	if limit > domain.MaxLimit {
-		limit = domain.MaxLimit
+	} else {
+		l, err := strconv.Atoi(limitStr)
+		if err != nil || l < 0 {
+			return listParams{}, ErrInvalidLimit
+		}
+		if l == 0 {
+			limit = domain.DefaultLimit
+		} else if l > domain.MaxLimit {
+			limit = domain.MaxLimit
+		} else {
+			limit = l
+		}
 	}
 
 	var startDate, endDate *time.Time
 	if val := q.Get("startDate"); val != "" {
-		if t, err := time.Parse(dateLayout, val); err == nil {
-			startDate = &t
+		if val == "" {
+			return listParams{}, ErrInvalidStartDate
 		}
+		t, err := time.Parse(dateLayout, val)
+		if err != nil {
+			return listParams{}, ErrInvalidStartDate
+		}
+		startDate = &t
 	}
 	if val := q.Get("endDate"); val != "" {
-		if t, err := time.Parse(dateLayout, val); err == nil {
-			akhir := t.AddDate(0, 0, 1).Add(-time.Second)
-			endDate = &akhir
+		if val == "" {
+			return listParams{}, ErrInvalidEndDate
 		}
+		t, err := time.Parse(dateLayout, val)
+		if err != nil {
+			return listParams{}, ErrInvalidEndDate
+		}
+		akhir := t.AddDate(0, 0, 1).Add(-time.Second)
+		endDate = &akhir
 	}
 
 	return listParams{
 		Limit:     limit,
 		StartDate: startDate,
 		EndDate:   endDate,
-	}
+	}, nil
 }

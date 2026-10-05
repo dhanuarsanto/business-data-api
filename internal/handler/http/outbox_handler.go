@@ -28,63 +28,37 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryParams := r.URL.Query()
-	params := parseListParams(queryParams)
-
-	var resellerPtr *string
-	if val := queryParams.Get("reseller"); val != "" {
-		v := strings.TrimSpace(val)
-		resellerPtr = &v
+	params, err := parseListParams(queryParams)
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var penerimaPtr *string
-	if val := queryParams.Get("penerima"); val != "" {
-		v := strings.TrimSpace(val)
-		penerimaPtr = &v
+	resellerPtr := parseStringFilter(queryParams.Get("reseller"))
+	penerimaPtr := parseStringFilter(queryParams.Get("penerima"))
+	tipePtr := parseStringFilter(queryParams.Get("tipe"))
+
+	statusPtr, statusMinPtr, err := parseStatusFilter(queryParams.Get("status"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var tipePtr *string
-	if val := queryParams.Get("tipe"); val != "" {
-		v := strings.TrimSpace(val)
-		tipePtr = &v
+	replyToResellerPtr, err := parseBoolFilter(queryParams.Get("replyToReseller"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var statusPtr *int16
-	var statusMinPtr *int16
-	if val := queryParams.Get("status"); val != "" {
-		v := strings.TrimSpace(val)
-		if v == "failed" || v == "gagal" {
-			min40 := int16(40)
-			statusMinPtr = &min40
-		} else if s, err := strconv.ParseInt(v, 10, 16); err == nil {
-			if s >= -32768 && s <= 32767 {
-				v16 := int16(s)
-				statusPtr = &v16
-			}
-		}
+	perintahProviderPtr, err := parseBoolFilter(queryParams.Get("perintahProvider"))
+	if err != nil {
+		response.Error(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	var replyToResellerPtr *bool
-	if val := queryParams.Get("replyToReseller"); val != "" {
-		switch val {
-		case "true", "1":
-			b := true
-			replyToResellerPtr = &b
-		case "false", "0":
-			b := false
-			replyToResellerPtr = &b
-		}
-	}
-
-	var perintahProviderPtr *bool
-	if val := queryParams.Get("perintahProvider"); val != "" {
-		switch val {
-		case "true", "1":
-			b := true
-			perintahProviderPtr = &b
-		case "false", "0":
-			b := false
-			perintahProviderPtr = &b
-		}
+	pesan := strings.TrimSpace(queryParams.Get("pesan"))
+	if len(pesan) > maxStringLen {
+		pesan = ""
 	}
 
 	filter := domain.OutboxFilter{
@@ -96,7 +70,7 @@ func (h *OutboxHandler) GetOutbox(w http.ResponseWriter, r *http.Request) {
 		Tipe:             tipePtr,
 		Status:           statusPtr,
 		StatusMin:        statusMinPtr,
-		Pesan:            strings.TrimSpace(queryParams.Get("pesan")),
+		Pesan:            pesan,
 		ReplyToReseller:  replyToResellerPtr,
 		PerintahProvider: perintahProviderPtr,
 	}
@@ -123,16 +97,24 @@ func (h *OutboxHandler) CreateOutbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tipePenerima := payload.TipePenerima
+	if tipePenerima == "" {
+		tipePenerima = "P"
+	}
+	status := int16(payload.Status)
+	isPerintah := payload.IsPerintah
+	bebasBiaya := int16(payload.BebasBiaya)
+
 	data := domain.Outbox{
-		Penerima:      payload.Penerima,
-		TipePenerima:  payload.TipePenerima,
 		Pesan:         payload.Pesan,
-		Status:        payload.Status,
-		BebasBiaya:    payload.BebasBiaya,
+		Penerima:      payload.Penerima,
+		TipePenerima:  tipePenerima,
+		Status:        status,
+		IsPerintah:    isPerintah,
+		BebasBiaya:    bebasBiaya,
 		KodeInbox:     payload.KodeInbox,
 		KodeTransaksi: payload.KodeTransaksi,
 		KodeReseller:  payload.KodeReseller,
-		IsPerintah:    payload.IsPerintah,
 		KodeModul:     payload.KodeModul,
 		Prioritas:     payload.Prioritas,
 		ModulProses:   payload.ModulProses,

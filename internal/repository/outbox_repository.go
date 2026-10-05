@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.internal/business-data-api/internal/domain"
@@ -240,8 +241,9 @@ func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
 		argID++
 	}
 	if filter.Penerima != nil {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Penerima, "%", "\\%"), "_", "\\_")
 		whereClause += fmt.Sprintf(` AND penerima ILIKE $%d`, argID)
-		args = append(args, "%"+*filter.Penerima+"%")
+		args = append(args, "%"+escaped+"%")
 		argID++
 	}
 	if filter.Tipe != nil {
@@ -260,8 +262,9 @@ func buildOutboxFilterPG(filter domain.OutboxFilter) (string, []any, int) {
 		argID++
 	}
 	if filter.Pesan != "" {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
 		whereClause += fmt.Sprintf(` AND pesan ILIKE $%d`, argID)
-		args = append(args, "%"+filter.Pesan+"%")
+		args = append(args, "%"+escaped+"%")
 		argID++
 	}
 	perintah := filter.PerintahProvider != nil && *filter.PerintahProvider
@@ -292,8 +295,9 @@ func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
 		namedArgs = append(namedArgs, sql.Named("reseller", *filter.Reseller))
 	}
 	if filter.Penerima != nil {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(*filter.Penerima, "%", "\\%"), "_", "\\_")
 		whereClause += ` AND penerima LIKE '%' + @penerima + '%'`
-		namedArgs = append(namedArgs, sql.Named("penerima", *filter.Penerima))
+		namedArgs = append(namedArgs, sql.Named("penerima", escaped))
 	}
 	if filter.Tipe != nil {
 		whereClause += ` AND tipe_penerima = @tipe`
@@ -308,8 +312,9 @@ func buildOutboxFilterMS(filter domain.OutboxFilter) (string, []any) {
 		namedArgs = append(namedArgs, sql.Named("statusMin", *filter.StatusMin))
 	}
 	if filter.Pesan != "" {
+		escaped := strings.ReplaceAll(strings.ReplaceAll(filter.Pesan, "%", "\\%"), "_", "\\_")
 		whereClause += ` AND pesan LIKE '%' + @pesan + '%'`
-		namedArgs = append(namedArgs, sql.Named("pesan", filter.Pesan))
+		namedArgs = append(namedArgs, sql.Named("pesan", escaped))
 	}
 	perintah := filter.PerintahProvider != nil && *filter.PerintahProvider
 	reply := filter.ReplyToReseller != nil && *filter.ReplyToReseller

@@ -9,7 +9,10 @@ import (
 )
 
 func TestParseListParamsTanpaParameter(t *testing.T) {
-	p := parseListParams(url.Values{})
+	p, err := parseListParams(url.Values{})
+	if err != nil {
+		t.Fatalf("tidak boleh error: %v", err)
+	}
 
 	if p.Limit != domain.DefaultLimit {
 		t.Fatalf("limit kosong harus default, dapat %d", p.Limit)
@@ -19,40 +22,76 @@ func TestParseListParamsTanpaParameter(t *testing.T) {
 	}
 }
 
-func TestParseListParamsLimitDibatasi(t *testing.T) {
+func TestParseListParamsLimitValid(t *testing.T) {
 	cases := []struct {
 		masuk string
 		want  int
 	}{
-		{"99999", domain.MaxLimit},
-		{"500000", domain.MaxLimit},
-		{"  ", domain.DefaultLimit},
-		{"-10", domain.DefaultLimit},
-		{"bukan-angka", domain.DefaultLimit},
 		{"50", 50},
+		{"1", 1},
+		{"100", 100},
 	}
 
 	for _, c := range cases {
-		got := parseListParams(url.Values{"limit": {c.masuk}}).Limit
-		if got != c.want {
-			t.Fatalf("limit %q harus jadi %d, dapat %d", c.masuk, c.want, got)
+		p, err := parseListParams(url.Values{"limit": {c.masuk}})
+		if err != nil {
+			t.Fatalf("limit %q tidak boleh error: %v", c.masuk, err)
+		}
+		if p.Limit != c.want {
+			t.Fatalf("limit %q harus jadi %d, dapat %d", c.masuk, c.want, p.Limit)
 		}
 	}
 }
 
+func TestParseListParamsLimitClamped(t *testing.T) {
+	p, err := parseListParams(url.Values{"limit": {"99999"}})
+	if err != nil {
+		t.Fatalf("limit > MaxLimit tidak boleh error: %v", err)
+	}
+	if p.Limit != domain.MaxLimit {
+		t.Fatalf("limit > MaxLimit harus clamp ke MaxLimit, dapat %d", p.Limit)
+	}
+}
+
+func TestParseListParamsLimitInvalid400(t *testing.T) {
+	cases := []string{"-10", "abc", "1.5"}
+	for _, c := range cases {
+		_, err := parseListParams(url.Values{"limit": {c}})
+		if err == nil {
+			t.Fatalf("limit %q harus error 400, tapi nil", c)
+		}
+	}
+}
+
+func TestParseListParamsLimitZeroIgnored(t *testing.T) {
+	p, err := parseListParams(url.Values{"limit": {"0"}})
+	if err != nil {
+		t.Fatalf("limit 0 tidak boleh error: %v", err)
+	}
+	if p.Limit != domain.DefaultLimit {
+		t.Fatalf("limit 0 harus pakai DefaultLimit, dapat %d", p.Limit)
+	}
+}
+
 func TestParseListParamsParameterPagingDiabaikan(t *testing.T) {
-	p := parseListParams(url.Values{"pageSize": {"999"}, "cursor": {"77"}})
+	p, err := parseListParams(url.Values{"pageSize": {"999"}, "cursor": {"77"}})
+	if err != nil {
+		t.Fatalf("tidak boleh error: %v", err)
+	}
 
 	if p.Limit != domain.DefaultLimit {
 		t.Fatalf("pageSize/cursor tak boleh memengaruhi limit, dapat %d", p.Limit)
 	}
 }
 
-func TestParseListParamsTanggalDivalidasiDanDigeserAkhirHari(t *testing.T) {
-	p := parseListParams(url.Values{
+func TestParseListParamsTanggalValid(t *testing.T) {
+	p, err := parseListParams(url.Values{
 		"startDate": {"2026-01-15"},
 		"endDate":   {"2026-01-15"},
 	})
+	if err != nil {
+		t.Fatalf("tanggal valid tidak boleh error: %v", err)
+	}
 
 	if p.StartDate == nil || p.StartDate.Format(dateLayout) != "2026-01-15" {
 		t.Fatalf("startDate harus terparse, dapat %v", p.StartDate)
@@ -66,15 +105,38 @@ func TestParseListParamsTanggalDivalidasiDanDigeserAkhirHari(t *testing.T) {
 	}
 }
 
-func TestParseListParamsTanggalRusakDiabaikan(t *testing.T) {
-	p := parseListParams(url.Values{
-		"startDate": {"15-01-2026"},
+func TestParseListParamsTanggalInvalid400(t *testing.T) {
+	cases := []struct {
+		startDate string
+		endDate   string
+	}{
+		{"15-01-2026", "2026-01-15"},
+		{"2026-13-01", "2026-01-15"},
+		{"abc", "2026-01-15"},
+		{"2026-01-15", "01-01-2026"},
+		{"2026-01-15", "abc"},
+	}
+
+	for _, c := range cases {
+		_, err := parseListParams(url.Values{
+			"startDate": {c.startDate},
+			"endDate":   {c.endDate},
+		})
+		if err == nil {
+			t.Fatalf("tanggal invalid startDate=%q endDate=%q harus error 400, tapi nil", c.startDate, c.endDate)
+		}
+	}
+}
+
+func TestParseListParamsTanggalEmptyIgnored(t *testing.T) {
+	p, err := parseListParams(url.Values{
+		"startDate": {""},
 		"endDate":   {""},
 	})
-	if p.StartDate != nil {
-		t.Fatalf("startDate rusak harus diabaikan, dapat %v", p.StartDate)
+	if err != nil {
+		t.Fatalf("tanggal kosong tidak boleh error: %v", err)
 	}
-	if p.EndDate != nil {
-		t.Fatalf("endDate kosong harus diabaikan, dapat %v", p.EndDate)
+	if p.StartDate != nil || p.EndDate != nil {
+		t.Fatal("tanggal kosong harus nil")
 	}
 }
