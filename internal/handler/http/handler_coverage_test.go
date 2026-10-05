@@ -192,6 +192,42 @@ func TestGetInboxInvalidParamsReturn400(t *testing.T) {
 	}
 }
 
+func TestGetInboxStatusInvalidReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	cases := []string{"abc", "-1", "99999", "1.5"}
+	for _, status := range cases {
+		rec := httptest.NewRecorder()
+		target := "/?status=" + status
+		h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status=%q harus 400, dapat %d", status, rec.Code)
+		}
+	}
+}
+
+func TestGetInboxBoolInvalidReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	cases := []string{"yes", "no", "null", "2", "truee", "falsee"}
+	for _, param := range []string{"requestFromReseller", "jawabanFromProvider"} {
+		for _, val := range cases {
+			rec := httptest.NewRecorder()
+			target := "/?" + param + "=" + val
+			h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("%s=%q harus 400, dapat %d", param, val, rec.Code)
+			}
+		}
+	}
+}
+
 func TestGetInboxValidBoolParams(t *testing.T) {
 	response.Init("test")
 
@@ -211,6 +247,83 @@ func TestGetInboxValidBoolParams(t *testing.T) {
 	}
 	if f.JawabanFromProvider == nil || *f.JawabanFromProvider {
 		t.Fatal("jawabanFromProvider=0 harus false")
+	}
+}
+
+func TestGetInboxInvalidDateReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	cases := []string{
+		"/?startDate=abc",
+		"/?endDate=abc",
+		"/?startDate=2026-13-01",
+		"/?endDate=01-01-2026",
+	}
+	for _, target := range cases {
+		rec := httptest.NewRecorder()
+		h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("target %q harus 400, dapat %d", target, rec.Code)
+		}
+	}
+}
+
+func TestGetInboxStatusFailedGagal(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{items: []dto.InboxItem{{Kode: 1}}}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	for _, status := range []string{"failed", "gagal"} {
+		rec := httptest.NewRecorder()
+		target := "/?status=" + status
+		h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status=%s harus 200, dapat %d", status, rec.Code)
+		}
+		if repo.filter.StatusMin == nil || *repo.filter.StatusMin != 40 {
+			t.Fatalf("status=%s harus set StatusMin=40, dapat %v", status, repo.filter.StatusMin)
+		}
+		if repo.filter.Status != nil {
+			t.Fatalf("status=%s tidak boleh set Status, hanya StatusMin", status)
+		}
+	}
+}
+
+func TestGetInboxLimitZeroUsesDefault(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{items: []dto.InboxItem{{Kode: 1}}}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	rec := httptest.NewRecorder()
+	h.GetInbox(rec, reqWithParams(http.MethodGet, "/?limit=0", "", map[string]string{"tenant": "maxtop"}, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("limit=0 harus 200, dapat %d", rec.Code)
+	}
+	if repo.filter.Limit != domain.DefaultLimit {
+		t.Fatalf("limit=0 harus pakai DefaultLimit=%d, dapat %d", domain.DefaultLimit, repo.filter.Limit)
+	}
+}
+
+func TestGetInboxPesanOverMaxLengthIgnored(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubInboxRepo{}
+	h := NewInboxHandler(usecase.NewInboxUsecase(repo, repo))
+
+	pesan := strings.Repeat("a", 300)
+	rec := httptest.NewRecorder()
+	target := "/?pesan=" + pesan
+	h.GetInbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "maxtop"}, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("pesan > 255 harus 200, dapat %d", rec.Code)
+	}
+	if repo.filter.Pesan != "" {
+		t.Fatalf("pesan > 255 harus diabaikan (empty), dapat %q", repo.filter.Pesan)
 	}
 }
 
@@ -486,6 +599,119 @@ func TestGetOutboxValidBoolParams(t *testing.T) {
 	}
 	if repo.filter.PerintahProvider == nil || *repo.filter.PerintahProvider {
 		t.Fatal("perintahProvider=0 harus false")
+	}
+}
+
+func TestGetOutboxStatusInvalidReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	cases := []string{"abc", "-1", "99999", "1.5"}
+	for _, status := range cases {
+		rec := httptest.NewRecorder()
+		target := "/?status=" + status
+		h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "t"}, nil))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status=%q harus 400, dapat %d", status, rec.Code)
+		}
+	}
+}
+
+func TestGetOutboxBoolInvalidReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	cases := []string{"yes", "no", "null", "2", "truee", "falsee"}
+	for _, param := range []string{"replyToReseller", "perintahProvider"} {
+		for _, val := range cases {
+			rec := httptest.NewRecorder()
+			target := "/?" + param + "=" + val
+			h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "t"}, nil))
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("%s=%q harus 400, dapat %d", param, val, rec.Code)
+			}
+		}
+	}
+}
+
+func TestGetOutboxInvalidDateReturns400(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	cases := []string{
+		"/?startDate=abc",
+		"/?endDate=abc",
+		"/?startDate=2026-13-01",
+		"/?endDate=01-01-2026",
+	}
+	for _, target := range cases {
+		rec := httptest.NewRecorder()
+		h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "t"}, nil))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("target %q harus 400, dapat %d", target, rec.Code)
+		}
+	}
+}
+
+func TestGetOutboxStatusFailedGagal(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{items: []dto.OutboxItem{{Kode: 1}}}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	for _, status := range []string{"failed", "gagal"} {
+		rec := httptest.NewRecorder()
+		target := "/?status=" + status
+		h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "t"}, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status=%s harus 200, dapat %d", status, rec.Code)
+		}
+		if repo.filter.StatusMin == nil || *repo.filter.StatusMin != 40 {
+			t.Fatalf("status=%s harus set StatusMin=40, dapat %v", status, repo.filter.StatusMin)
+		}
+		if repo.filter.Status != nil {
+			t.Fatalf("status=%s tidak boleh set Status, hanya StatusMin", status)
+		}
+	}
+}
+
+func TestGetOutboxLimitZeroUsesDefault(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{items: []dto.OutboxItem{{Kode: 1}}}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	rec := httptest.NewRecorder()
+	h.GetOutbox(rec, reqWithParams(http.MethodGet, "/?limit=0", "", map[string]string{"tenant": "t"}, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("limit=0 harus 200, dapat %d", rec.Code)
+	}
+	if repo.filter.Limit != domain.DefaultLimit {
+		t.Fatalf("limit=0 harus pakai DefaultLimit=%d, dapat %d", domain.DefaultLimit, repo.filter.Limit)
+	}
+}
+
+func TestGetOutboxPesanOverMaxLengthIgnored(t *testing.T) {
+	response.Init("test")
+
+	repo := &stubOutboxRepo{}
+	h := NewOutboxHandler(usecase.NewOutboxUsecase(repo, repo))
+
+	pesan := strings.Repeat("a", 300)
+	rec := httptest.NewRecorder()
+	target := "/?pesan=" + pesan
+	h.GetOutbox(rec, reqWithParams(http.MethodGet, target, "", map[string]string{"tenant": "t"}, nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("pesan > 255 harus 200, dapat %d", rec.Code)
+	}
+	if repo.filter.Pesan != "" {
+		t.Fatalf("pesan > 255 harus diabaikan (empty), dapat %q", repo.filter.Pesan)
 	}
 }
 

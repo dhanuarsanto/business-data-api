@@ -44,9 +44,6 @@ func parseListParams(q url.Values) (listParams, error) {
 
 	var startDate, endDate *time.Time
 	if val := q.Get("startDate"); val != "" {
-		if val == "" {
-			return listParams{}, ErrInvalidStartDate
-		}
 		t, err := time.Parse(dateLayout, val)
 		if err != nil {
 			return listParams{}, ErrInvalidStartDate
@@ -54,9 +51,6 @@ func parseListParams(q url.Values) (listParams, error) {
 		startDate = &t
 	}
 	if val := q.Get("endDate"); val != "" {
-		if val == "" {
-			return listParams{}, ErrInvalidEndDate
-		}
 		t, err := time.Parse(dateLayout, val)
 		if err != nil {
 			return listParams{}, ErrInvalidEndDate
