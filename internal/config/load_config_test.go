@@ -190,14 +190,19 @@ const penandaSubproses = "LOAD_CONFIG_SUBPROSES"
 func TestLoadConfigKeluarSaatVariabelWajibHilang(t *testing.T) {
 	if os.Getenv(penandaSubproses) == "1" {
 		dir := t.TempDir()
+		// Preserve JWT_SECRET for env.Parse to pass, clear DB URLs for our validation
+		jwtSecret := os.Getenv("JWT_SECRET")
 		bersihkanLingkunganTanpaRestore(t)
+		if jwtSecret != "" {
+			os.Setenv("JWT_SECRET", jwtSecret)
+		}
 		chdirSementara(t, dir)
 		LoadConfig()
 		t.Fatal("LoadConfig harus keluar sendiri, bukan kembali")
 	}
 
 	cmd := exec.Command(os.Args[0], "-test.run=^TestLoadConfigKeluarSaatVariabelWajibHilang$", "-test.count=1")
-	cmd.Env = append(os.Environ(), penandaSubproses+"=1")
+	cmd.Env = append(os.Environ(), penandaSubproses+"=1", "JWT_SECRET=dummy-secret-for-test-only")
 	keluaran, err := cmd.CombinedOutput()
 
 	var exitErr *exec.ExitError
@@ -207,8 +212,11 @@ func TestLoadConfigKeluarSaatVariabelWajibHilang(t *testing.T) {
 	if strings.Contains(string(keluaran), "PASS") {
 		t.Fatalf("proses anak seharusnya gagal: %s", keluaran)
 	}
+	if !strings.Contains(string(keluaran), "Konfigurasi wajib tapi kosong") {
+		t.Fatalf("pesan kegagalan harus menyebut konfigurasi wajib, dapat: %s", keluaran)
+	}
 	if !strings.Contains(string(keluaran), "POSTGRES_MAXTOP_URL") {
-		t.Fatalf("pesan kegagalan harus menyebut variabel wajib, dapat: %s", keluaran)
+		t.Fatalf("pesan kegagalan harus menyebut POSTGRES_MAXTOP_URL, dapat: %s", keluaran)
 	}
 }
 

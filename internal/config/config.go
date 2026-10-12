@@ -25,14 +25,21 @@ type Config struct {
 	CookieSecure         bool   `env:"COOKIE_SECURE" envDefault:"true"`
 	APIKeysPath          string `env:"API_KEYS_PATH" envDefault:"api_keys.json"`
 
-	PostgresMaxtopURL string `env:"POSTGRES_MAXTOP_URL,required"`
-	MSSQLMaxtopURL    string `env:"MSSQL_MAXTOP_URL,required"`
+	PostgresMaxtopURL string `env:"POSTGRES_MAXTOP_URL"`
+	MSSQLMaxtopURL    string `env:"MSSQL_MAXTOP_URL"`
 
-	PostgresPandoraURL string `env:"POSTGRES_PANDORA_URL,required"`
-	MSSQLPandoraURL    string `env:"MSSQL_PANDORA_URL,required"`
+	PostgresPandoraURL string `env:"POSTGRES_PANDORA_URL"`
+	MSSQLPandoraURL    string `env:"MSSQL_PANDORA_URL"`
 
-	PostgresToplinkURL string `env:"POSTGRES_TOPLINK_URL,required"`
-	MSSQLToplinkURL    string `env:"MSSQL_TOPLINK_URL,required"`
+	PostgresToplinkURL string `env:"POSTGRES_TOPLINK_URL"`
+	MSSQLToplinkURL    string `env:"MSSQL_TOPLINK_URL"`
+
+	PostgresMaxtopRequire  bool `env:"POSTGRES_MAXTOP_REQUIRE" envDefault:"true"`
+	MSSQLMaxtopRequire     bool `env:"MSSQL_MAXTOP_REQUIRE" envDefault:"true"`
+	PostgresPandoraRequire bool `env:"POSTGRES_PANDORA_REQUIRE" envDefault:"true"`
+	MSSQLPandoraRequire    bool `env:"MSSQL_PANDORA_REQUIRE" envDefault:"true"`
+	PostgresToplinkRequire bool `env:"POSTGRES_TOPLINK_REQUIRE" envDefault:"true"`
+	MSSQLToplinkRequire    bool `env:"MSSQL_TOPLINK_REQUIRE" envDefault:"true"`
 
 	PostgresMaxConns          int           `env:"POSTGRES_MAX_CONNS" envDefault:"10"`
 	PostgresMinConns          int           `env:"POSTGRES_MIN_CONNS" envDefault:"0"`
@@ -101,6 +108,27 @@ func (c *Config) ParseTrustedProxies() ([]netip.Prefix, error) {
 	return prefixes, nil
 }
 
+func (c *Config) validateRequiredDB() {
+	checks := []struct {
+		url     string
+		require bool
+		name    string
+	}{
+		{c.PostgresMaxtopURL, c.PostgresMaxtopRequire, "POSTGRES_MAXTOP_URL"},
+		{c.MSSQLMaxtopURL, c.MSSQLMaxtopRequire, "MSSQL_MAXTOP_URL"},
+		{c.PostgresPandoraURL, c.PostgresPandoraRequire, "POSTGRES_PANDORA_URL"},
+		{c.MSSQLPandoraURL, c.MSSQLPandoraRequire, "MSSQL_PANDORA_URL"},
+		{c.PostgresToplinkURL, c.PostgresToplinkRequire, "POSTGRES_TOPLINK_URL"},
+		{c.MSSQLToplinkURL, c.MSSQLToplinkRequire, "MSSQL_TOPLINK_URL"},
+	}
+	for _, chk := range checks {
+		if chk.require && strings.TrimSpace(chk.url) == "" {
+			slog.Error("Konfigurasi wajib tapi kosong", "key", chk.name)
+			os.Exit(1)
+		}
+	}
+}
+
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		slog.Warn("Gagal memuat berkas .env, lanjut memakai variabel lingkungan", "error", err)
@@ -111,6 +139,8 @@ func LoadConfig() *Config {
 		slog.Error("Gagal mem-parsing konfigurasi", "error", err)
 		os.Exit(1)
 	}
+
+	cfg.validateRequiredDB()
 
 	return &cfg
 }

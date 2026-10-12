@@ -155,7 +155,10 @@ func TestMainGagalSaatKonfigurasiWajibKosong(t *testing.T) {
 	if kode != 1 {
 		t.Fatalf("harus keluar dengan kode 1, dapat %d: %s", kode, keluaran)
 	}
-	if !strings.Contains(keluaran, "Gagal mem-parsing konfigurasi") {
-		t.Fatalf("harus melaporkan konfigurasi tidak lengkap, dapat: %s", keluaran)
+	if !strings.Contains(keluaran, "Konfigurasi wajib tapi kosong") {
+		t.Fatalf("harus melaporkan konfigurasi wajib kosong, dapat: %s", keluaran)
+	}
+	if !strings.Contains(keluaran, "MSSQL_MAXTOP_URL") {
+		t.Fatalf("harus menyebut MSSQL_MAXTOP_URL, dapat: %s", keluaran)
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -43,10 +44,13 @@ func main() {
 		slog.Error("Gagal koneksi Postgres Maxtop", "error", err)
 		os.Exit(1)
 	}
-	msMaxtop, err := database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL, msPoolOptions(cfg))
-	if err != nil {
-		slog.Error("Gagal koneksi MSSQL Maxtop", "error", err)
-		os.Exit(1)
+	var msMaxtop *sql.DB
+	if cfg.MSSQLMaxtopRequire {
+		msMaxtop, err = database.NewMSSQLDB(ctx, cfg.MSSQLMaxtopURL, msPoolOptions(cfg))
+		if err != nil {
+			slog.Error("Gagal koneksi MSSQL Maxtop", "error", err)
+			os.Exit(1)
+		}
 	}
 	dbRegistry.Register(tenantMaxtop, pgMaxtop, msMaxtop)
 
@@ -55,10 +59,13 @@ func main() {
 		slog.Error("Gagal koneksi Postgres Pandora", "error", err)
 		os.Exit(1)
 	}
-	msPandora, err := database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL, msPoolOptions(cfg))
-	if err != nil {
-		slog.Error("Gagal koneksi MSSQL Pandora", "error", err)
-		os.Exit(1)
+	var msPandora *sql.DB
+	if cfg.MSSQLPandoraRequire {
+		msPandora, err = database.NewMSSQLDB(ctx, cfg.MSSQLPandoraURL, msPoolOptions(cfg))
+		if err != nil {
+			slog.Error("Gagal koneksi MSSQL Pandora", "error", err)
+			os.Exit(1)
+		}
 	}
 	dbRegistry.Register(tenantPandora, pgPandora, msPandora)
 
@@ -67,10 +74,13 @@ func main() {
 		slog.Error("Gagal koneksi Postgres Toplink", "error", err)
 		os.Exit(1)
 	}
-	msToplink, err := database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL, msPoolOptions(cfg))
-	if err != nil {
-		slog.Error("Gagal koneksi MSSQL Toplink", "error", err)
-		os.Exit(1)
+	var msToplink *sql.DB
+	if cfg.MSSQLToplinkRequire {
+		msToplink, err = database.NewMSSQLDB(ctx, cfg.MSSQLToplinkURL, msPoolOptions(cfg))
+		if err != nil {
+			slog.Error("Gagal koneksi MSSQL Toplink", "error", err)
+			os.Exit(1)
+		}
 	}
 	dbRegistry.Register(tenantToplink, pgToplink, msToplink)
 
