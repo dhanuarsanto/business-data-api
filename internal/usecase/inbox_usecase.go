@@ -19,15 +19,16 @@ func pickInboxRepo(source string, pg, ms domain.InboxRepository) (domain.InboxRe
 }
 
 type InboxUsecase struct {
-	repoPG domain.InboxRepository
-	repoMS domain.InboxRepository
+	repoPG   domain.InboxRepository
+	repoMS   domain.InboxRepository
+	maxLimit int
 }
 
 func (u *InboxUsecase) GetInbox(ctx context.Context, tenant string, dbSource string, filter domain.InboxFilter) ([]dto.InboxItem, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = domain.DefaultLimit
-	} else if filter.Limit > domain.MaxLimit {
-		filter.Limit = domain.MaxLimit
+	} else if filter.Limit > u.maxLimit {
+		filter.Limit = u.maxLimit
 	}
 
 	repo, err := pickInboxRepo(dbSource, u.repoPG, u.repoMS)
@@ -60,6 +61,10 @@ func (u *InboxUsecase) UpdateInbox(ctx context.Context, tenant string, dbSource 
 	return nil
 }
 
-func NewInboxUsecase(repoPG domain.InboxRepository, repoMS domain.InboxRepository) *InboxUsecase {
-	return &InboxUsecase{repoPG: repoPG, repoMS: repoMS}
+func NewInboxUsecase(repoPG domain.InboxRepository, repoMS domain.InboxRepository, maxLimit ...int) *InboxUsecase {
+	batas := domain.MaxLimit
+	if len(maxLimit) > 0 {
+		batas = maxLimit[0]
+	}
+	return &InboxUsecase{repoPG: repoPG, repoMS: repoMS, maxLimit: batas}
 }

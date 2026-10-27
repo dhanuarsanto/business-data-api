@@ -35,8 +35,6 @@ func parseListParams(q url.Values) (listParams, error) {
 		}
 		if l == 0 {
 			limit = domain.DefaultLimit
-		} else if l > domain.MaxLimit {
-			limit = domain.MaxLimit
 		} else {
 			limit = l
 		}

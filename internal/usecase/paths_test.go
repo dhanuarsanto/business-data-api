@@ -174,6 +174,16 @@ func TestGetInboxMenormalkanLimit(t *testing.T) {
 		}
 	}
 }
+func TestGetInboxMemakaiBatasKustom(t *testing.T) {
+	repo := &recordingInboxRepo{}
+	u := NewInboxUsecase(repo, repo, 50)
+	if _, err := u.GetInbox(context.Background(), "t", domain.SourcePostgres, domain.InboxFilter{Limit: 999}); err != nil {
+		t.Fatalf("tidak boleh error: %v", err)
+	}
+	if repo.filter.Limit != 50 {
+		t.Fatalf("limit harus dipangkas ke 50, dapat %d", repo.filter.Limit)
+	}
+}
 func TestGetInboxMeneruskanErrorRepoGet(t *testing.T) {
 	boom := errors.New("query gagal")
 	repo := &stubWriteInboxRepo{errGet: boom}
@@ -225,6 +235,17 @@ func TestGetOutboxMenormalkanLimit(t *testing.T) {
 		if repo.filter.Limit != tc.want {
 			t.Fatalf("limit %d harus jadi %d, dapat %d", tc.masuk, tc.want, repo.filter.Limit)
 		}
+	}
+}
+
+func TestGetOutboxMemakaiBatasKustom(t *testing.T) {
+	repo := &recordingOutboxRepo{}
+	u := NewOutboxUsecase(repo, repo, 50)
+	if _, err := u.GetOutbox(context.Background(), "t", domain.SourcePostgres, domain.OutboxFilter{Limit: 999}); err != nil {
+		t.Fatalf("tidak boleh error: %v", err)
+	}
+	if repo.filter.Limit != 50 {
+		t.Fatalf("limit harus dipangkas ke 50, dapat %d", repo.filter.Limit)
 	}
 }
 

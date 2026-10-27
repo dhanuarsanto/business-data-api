@@ -40,11 +40,11 @@ func BuildModules(dbRegistry *database.DBRegistry, cfg *config.Config, ipResolve
 	authHandler := http_handler.NewAuthHandler(authUsecase, networkMatrix, ipResolver, cfg.CookieSecure)
 
 	inboxRepos := repository.NewInboxRepositories(dbRegistry)
-	inboxUsecase := usecase.NewInboxUsecase(inboxRepos.PG, inboxRepos.MS)
+	inboxUsecase := usecase.NewInboxUsecase(inboxRepos.PG, inboxRepos.MS, cfg.MaxListLimit)
 	inboxHandler := http_handler.NewInboxHandler(inboxUsecase)
 
 	outboxRepos := repository.NewOutboxRepositories(dbRegistry)
-	outboxUsecase := usecase.NewOutboxUsecase(outboxRepos.PG, outboxRepos.MS)
+	outboxUsecase := usecase.NewOutboxUsecase(outboxRepos.PG, outboxRepos.MS, cfg.MaxListLimit)
 	outboxHandler := http_handler.NewOutboxHandler(outboxUsecase)
 
 	resellerRepos := repository.NewResellerRepositories(dbRegistry)

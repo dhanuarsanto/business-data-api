@@ -19,15 +19,16 @@ func pickOutboxRepo(source string, pg, ms domain.OutboxRepository) (domain.Outbo
 }
 
 type OutboxUsecase struct {
-	repoPG domain.OutboxRepository
-	repoMS domain.OutboxRepository
+	repoPG   domain.OutboxRepository
+	repoMS   domain.OutboxRepository
+	maxLimit int
 }
 
 func (u *OutboxUsecase) GetOutbox(ctx context.Context, tenant string, dbSource string, filter domain.OutboxFilter) ([]dto.OutboxItem, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = domain.DefaultLimit
-	} else if filter.Limit > domain.MaxLimit {
-		filter.Limit = domain.MaxLimit
+	} else if filter.Limit > u.maxLimit {
+		filter.Limit = u.maxLimit
 	}
 
 	repo, err := pickOutboxRepo(dbSource, u.repoPG, u.repoMS)
@@ -60,6 +61,10 @@ func (u *OutboxUsecase) UpdateOutbox(ctx context.Context, tenant string, dbSourc
 	return nil
 }
 
-func NewOutboxUsecase(repoPG domain.OutboxRepository, repoMS domain.OutboxRepository) *OutboxUsecase {
-	return &OutboxUsecase{repoPG: repoPG, repoMS: repoMS}
+func NewOutboxUsecase(repoPG domain.OutboxRepository, repoMS domain.OutboxRepository, maxLimit ...int) *OutboxUsecase {
+	batas := domain.MaxLimit
+	if len(maxLimit) > 0 {
+		batas = maxLimit[0]
+	}
+	return &OutboxUsecase{repoPG: repoPG, repoMS: repoMS, maxLimit: batas}
 }

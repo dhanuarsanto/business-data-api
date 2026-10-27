@@ -43,13 +43,13 @@ func TestParseListParamsLimitValid(t *testing.T) {
 	}
 }
 
-func TestParseListParamsLimitClamped(t *testing.T) {
+func TestParseListParamsLimitBesarDiteruskan(t *testing.T) {
 	p, err := parseListParams(url.Values{"limit": {"99999"}})
 	if err != nil {
-		t.Fatalf("limit > MaxLimit tidak boleh error: %v", err)
+		t.Fatalf("limit besar tidak boleh error: %v", err)
 	}
-	if p.Limit != domain.MaxLimit {
-		t.Fatalf("limit > MaxLimit harus clamp ke MaxLimit, dapat %d", p.Limit)
+	if p.Limit != 99999 {
+		t.Fatalf("limit besar diteruskan apa adanya, dapat %d", p.Limit)
 	}
 }
 

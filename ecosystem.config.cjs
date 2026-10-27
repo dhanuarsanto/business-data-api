@@ -1,7 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const version = fs.readFileSync(path.join(__dirname, "version.txt"), "utf8").trim();
+const version = fs
+  .readFileSync(path.join(__dirname, "version.txt"), "utf8")
+  .trim();
 
 module.exports = {
   apps: [

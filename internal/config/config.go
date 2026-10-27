@@ -22,6 +22,7 @@ type Config struct {
 	TrustedProxies       string `env:"TRUSTED_PROXIES" envDefault:""`
 	AllowDirectClients   bool   `env:"ALLOW_DIRECT_CLIENTS" envDefault:"false"`
 	MaxBodyBytes         int64  `env:"MAX_BODY_BYTES" envDefault:"1048576"`
+	MaxListLimit         int    `env:"MAX_LIST_LIMIT" envDefault:"10000"`
 	CookieSecure         bool   `env:"COOKIE_SECURE" envDefault:"true"`
 	APIKeysPath          string `env:"API_KEYS_PATH" envDefault:"api_keys.json"`
 
@@ -129,6 +130,13 @@ func (c *Config) validateRequiredDB() {
 	}
 }
 
+func (c *Config) validateMaxListLimit() {
+	if c.MaxListLimit <= 0 {
+		slog.Error("MAX_LIST_LIMIT harus lebih dari 0", "nilai", c.MaxListLimit)
+		os.Exit(1)
+	}
+}
+
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		slog.Warn("Gagal memuat berkas .env, lanjut memakai variabel lingkungan", "error", err)
@@ -141,6 +149,7 @@ func LoadConfig() *Config {
 	}
 
 	cfg.validateRequiredDB()
+	cfg.validateMaxListLimit()
 
 	return &cfg
 }
